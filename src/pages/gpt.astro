@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/gpt.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="GPT · Codex 检测 — ChatGPT 网页与 Codex / API 出口分别检测 · JudgeIP"
+  description="分别检测 chatgpt.com、auth.openai.com 与 api.openai.com 的出口 IP、地区与可用性，排查网页能用但 Codex 连不上的问题。"
+  canonicalPath="/gpt"
+  bodyClass="page-ai page-gpt"
+  currentLabel="GPT · Codex 检测"
+  activeNav="/gpt"
+  extraCss={["/assets/css/ai.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/history.js", "/assets/js/ai.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

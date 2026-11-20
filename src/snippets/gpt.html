@@ -1,0 +1,352 @@
+<section class="hero">
+  <h1 class="hero__title">GPT · Codex 检测</h1>
+  <p class="hero__lede">分别检测 ChatGPT 网页、登录、App 与 Codex / API 入口的出口和可用性。网页能开、Codex 却连不上，问题多半出在这里。</p>
+</section>
+
+<div class="probe ai"
+     id="ai"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-vendors="{&quot;openai&quot;:{&quot;name&quot;:&quot;OpenAI&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;]},&quot;deepseek&quot;:{&quot;name&quot;:&quot;DeepSeek&quot;,&quot;basis&quot;:&quot;reference&quot;,&quot;denied&quot;:[]}}"
+     data-tz="{&quot;US&quot;:[-600,-240],&quot;CA&quot;:[-480,-150],&quot;MX&quot;:[-480,-300],&quot;BR&quot;:[-300,-120],&quot;AR&quot;:[-180,-180],&quot;CL&quot;:[-360,-180],&quot;CO&quot;:[-300,-300],&quot;PE&quot;:[-300,-300],&quot;VE&quot;:[-240,-240],&quot;EC&quot;:[-360,-300],&quot;UY&quot;:[-180,-180],&quot;PA&quot;:[-300,-300],&quot;CR&quot;:[-360,-360],&quot;GB&quot;:[0,60],&quot;IE&quot;:[0,60],&quot;PT&quot;:[-60,60],&quot;IS&quot;:[0,0],&quot;ES&quot;:[0,120],&quot;FR&quot;:[60,120],&quot;DE&quot;:[60,120],&quot;NL&quot;:[60,120],&quot;BE&quot;:[60,120],&quot;LU&quot;:[60,120],&quot;CH&quot;:[60,120],&quot;AT&quot;:[60,120],&quot;IT&quot;:[60,120],&quot;SE&quot;:[60,120],&quot;NO&quot;:[60,120],&quot;DK&quot;:[60,120],&quot;PL&quot;:[60,120],&quot;CZ&quot;:[60,120],&quot;SK&quot;:[60,120],&quot;HU&quot;:[60,120],&quot;SI&quot;:[60,120],&quot;HR&quot;:[60,120],&quot;RS&quot;:[60,120],&quot;MT&quot;:[60,120],&quot;FI&quot;:[120,180],&quot;EE&quot;:[120,180],&quot;LV&quot;:[120,180],&quot;LT&quot;:[120,180],&quot;RO&quot;:[120,180],&quot;BG&quot;:[120,180],&quot;GR&quot;:[120,180],&quot;CY&quot;:[120,180],&quot;UA&quot;:[120,180],&quot;MD&quot;:[120,180],&quot;TR&quot;:[180,180],&quot;BY&quot;:[180,180],&quot;RU&quot;:[120,720],&quot;IL&quot;:[120,180],&quot;AE&quot;:[240,240],&quot;SA&quot;:[180,180],&quot;QA&quot;:[180,180],&quot;BH&quot;:[180,180],&quot;KW&quot;:[180,180],&quot;OM&quot;:[240,240],&quot;IR&quot;:[210,210],&quot;EG&quot;:[120,180],&quot;ZA&quot;:[120,120],&quot;NG&quot;:[60,60],&quot;KE&quot;:[180,180],&quot;MA&quot;:[0,60],&quot;IN&quot;:[330,330],&quot;PK&quot;:[300,300],&quot;BD&quot;:[360,360],&quot;LK&quot;:[330,330],&quot;NP&quot;:[345,345],&quot;KZ&quot;:[300,300],&quot;UZ&quot;:[300,300],&quot;GE&quot;:[240,240],&quot;AM&quot;:[240,240],&quot;AZ&quot;:[240,240],&quot;TH&quot;:[420,420],&quot;VN&quot;:[420,420],&quot;KH&quot;:[420,420],&quot;LA&quot;:[420,420],&quot;MM&quot;:[390,390],&quot;ID&quot;:[420,540],&quot;MY&quot;:[480,480],&quot;SG&quot;:[480,480],&quot;PH&quot;:[480,480],&quot;BN&quot;:[480,480],&quot;CN&quot;:[480,480],&quot;HK&quot;:[480,480],&quot;MO&quot;:[480,480],&quot;TW&quot;:[480,480],&quot;MN&quot;:[420,480],&quot;JP&quot;:[540,540],&quot;KR&quot;:[540,540],&quot;AU&quot;:[480,660],&quot;NZ&quot;:[720,780]}"
+     data-lanes="4"
+     data-trace-timeout="8000"
+     data-optional-timeout="5000"
+     data-timing-timeout="6000"
+     data-rounds="3"
+     data-fast="250"
+     data-slow="500">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-ai-run>重新检测</button>
+    <span class="probe__hint" data-ai-progress>打开页面即自动开始：8 个入口由你的浏览器直接请求，4 路并发，先读出每个入口看到的出口，再测三次延迟取中位数。</span>
+  </div>
+
+  <div class="verdict" data-ai-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ai-verdict-title></p>
+      <div class="ainotes" data-ai-verdict-notes></div>
+    </div>
+  </div>
+
+  <div class="fixnote" data-ai-v6 hidden>
+    <p class="fixnote__title">当前经 IPv6 访问 OpenAI，不建议这样用</p>
+    <p class="fixnote__note" data-ai-v6-note></p>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">ChatGPT 网页与 App</h2>
+      <div class="rows aitable" role="table" aria-label="ChatGPT 网页与 App的出口与可用性">
+        <div class="airow airow--head" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="chatgpt"
+             data-name="ChatGPT 网页"
+             data-vendor="openai"
+             data-trace="chatgpt.com"
+             data-optional="0"
+             data-timing="https://chatgpt.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">ChatGPT 网页</span>
+            </span>
+            <span class="airow__how">读 chatgpt.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-auth"
+             data-name="登录与认证"
+             data-vendor="openai"
+             data-trace="auth.openai.com"
+             data-optional="0"
+             data-timing="https://auth.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">登录与认证</span>
+              <span class="tag tag--name">登录</span>
+            </span>
+            <span class="airow__how">读 auth.openai.com 的 trace · 网页登录与 codex login 都经过这里</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-static"
+             data-name="网页静态资源"
+             data-vendor="openai"
+             data-trace="cdn.oaistatic.com"
+             data-optional="0"
+             data-timing="https://cdn.oaistatic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">网页静态资源</span>
+              <span class="tag tag--name">CDN</span>
+            </span>
+            <span class="airow__how">读 cdn.oaistatic.com 的 trace · 不通时网页白屏或样式错乱</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-ios"
+             data-name="手机 App"
+             data-vendor="openai"
+             data-trace="ios.chat.openai.com"
+             data-optional="0"
+             data-timing="https://ios.chat.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">手机 App</span>
+              <span class="tag tag--name">App</span>
+            </span>
+            <span class="airow__how">读 ios.chat.openai.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Codex 与 API</h2>
+      <div class="rows aitable" role="table" aria-label="Codex 与 API的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-api"
+             data-name="Codex / OpenAI API"
+             data-vendor="openai"
+             data-trace="api.openai.com"
+             data-optional="0"
+             data-timing="https://api.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Codex / OpenAI API</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">读 api.openai.com 的 trace · Codex CLI、IDE 插件与 API 调用都走这里</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai"
+             data-name="OpenAI 官网"
+             data-vendor="openai"
+             data-trace="openai.com"
+             data-optional="0"
+             data-timing="https://openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI 官网</span>
+              <span class="tag tag--name">官网</span>
+            </span>
+            <span class="airow__how">读 openai.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="sora"
+             data-name="Sora"
+             data-vendor="openai"
+             data-trace="sora.com"
+             data-optional="0"
+             data-timing="https://sora.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Sora</span>
+              <span class="tag tag--name">视频</span>
+            </span>
+            <span class="airow__how">读 sora.com 的 trace · 开放地区比 ChatGPT 窄</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">国内参照</h2>
+      <div class="rows aitable" role="table" aria-label="国内参照的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="deepseek"
+             data-name="DeepSeek"
+             data-vendor="deepseek"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://www.deepseek.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">DeepSeek</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="airow__how">只测 www.deepseek.com 延迟</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">出口与环境对照</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">OpenAI 看到的出口</div>
+          <div class="row__value" data-ai-sum-exit><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">本站看到的地址</div>
+          <div class="row__value aisum">
+            <span class="mono">__VISITOR_IP__</span>
+            <span class="aisum__tags" data-ai-sum-self></span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">浏览器时区</div>
+          <div class="row__value aisum" data-ai-sum-tz><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">浏览器语言</div>
+          <div class="row__value aisum" data-ai-sum-lang><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">延伸检测</div>
+          <div class="row__value ailinks">
+            <a href="/ai">AI 解锁检测</a><span class="dim">：Claude、Gemini、Grok 等其他 AI 服务的出口</span><br>
+            <a href="/claude">Claude 检测</a><span class="dim">：时区、语言、字体等 10 项浏览器环境评分</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">OpenAI 支持地区名单</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">OpenAI</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">不提供服务：</span>
+            <span class="tags">
+              <span class="tag tag--muted">中国大陆</span>
+              <span class="tag tag--muted">中国香港</span>
+              <span class="tag tag--muted">中国澳门</span>
+              <span class="tag tag--muted">俄罗斯</span>
+              <span class="tag tag--muted">白俄罗斯</span>
+              <span class="tag tag--muted">伊朗</span>
+              <span class="tag tag--muted">朝鲜</span>
+              <span class="tag tag--muted">叙利亚</span>
+              <span class="tag tag--muted">古巴</span>
+              <span class="tag tag--muted">委内瑞拉</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://developers.openai.com/api/docs/supported-countries" target="_blank" rel="noopener external">官方名单</a> ·
+              ChatGPT、Codex、Sora 与 API 共用这份名单；Sora 实际开放的地区更窄，以官方帮助中心为准。
+            </span>
+          </div>
+        </div>
+      </div>
+      <p class="ailist__foot">名单整理于 2026-10-26，与 AI 解锁检测页同一份。请以官方页面为准。</p>
+    </section>
+  </div>
+
+  <section class="group history" data-history="judgeip:history:gpt" hidden>
+    <h2 class="group__title">检测历史 <button class="history__clear" type="button" data-history-clear hidden>清除</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">只存在这台设备的浏览器里（localStorage），最多 20 条，不会发送给本站。</p>
+  </section>
+  <noscript>
+    <p class="notice" role="alert">
+      <span>GPT · Codex 检测必须由浏览器直接访问 OpenAI 的各个入口，当前浏览器禁用了 JavaScript，本页只能显示入口清单与说明，无法出结果。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>为什么要把 ChatGPT 和 Codex 分开测</h2>
+  <p>
+    ChatGPT 网页、登录、静态资源、手机 App 与 Codex / API 用的是 OpenAI 的不同域名：
+    网页是 <span class="mono">chatgpt.com</span>，登录走 <span class="mono">auth.openai.com</span>，
+    页面脚本与样式来自 <span class="mono">cdn.oaistatic.com</span>，
+    Codex CLI、IDE 插件和 API 调用则全部请求 <span class="mono">api.openai.com</span>。
+    代理软件按域名分流时，规则只要漏写一个，就会出现「网页正常、Codex 报网络错误」或「Codex 能用、网页登录转圈」这类只坏一半的情况。
+  </p>
+  <p>
+    本页对每个入口各读一次 Cloudflare 的 <span class="mono">/cdn-cgi/trace</span>，拿到的就是那个入口看到的出口 IP、国家与机房，
+    再测三次延迟取中位数。几个入口的出口国家不一致、或其中一个连不上，结论里会直接点出是哪一个。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+    <li><strong>ChatGPT 网页能开，Codex / API 不通</strong>：<span class="mono">api.openai.com</span> 没有被代理规则覆盖，或被单独拦截。
+        把它加进与 <span class="mono">chatgpt.com</span> 相同的规则、指向同一个节点。</li>
+    <li><strong>登录与认证不通</strong>：网页会卡在登录页，<span class="mono">codex login</span> 也无法完成浏览器授权。</li>
+    <li><strong>网页静态资源不通</strong>：<span class="mono">chatgpt.com</span> 本身能连上，但页面白屏、按钮没反应。</li>
+    <li><strong>几个入口的出口国家不同</strong>：同一个账号的网页与 Codex 请求会从两个国家进来，这是风控最常见的触发条件之一。</li>
+    <li><strong>IPv6 提醒</strong>：OpenAI 看到的是 IPv6 出口时，页面顶部会单独提示。IPv6 的地理库数据普遍不如 IPv4 准，
+        代理的 IPv6 出口又多是整段机房地址，建议对 OpenAI 的域名关闭 IPv6 或让系统优先使用 IPv4。</li>
+  </ul>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>Codex 报网络错误，但 ChatGPT 网页一切正常，是 OpenAI 故障吗？</dt>
+    <dd>先看本页「Codex / OpenAI API」那一行。它不通而 ChatGPT 网页正常，几乎都是本地分流规则没有覆盖 api.openai.com；两行都正常再去「服务状态」页看 OpenAI 是否在故障中。</dd>
+    <dt>出口在支持地区，账号就一定安全吗？</dt>
+    <dd>不一定。机房 IP、频繁切换节点、浏览器时区与出口对不上、支付信息与出口不符，都可能触发风控。出口 IP 是家宽还是机房、有没有代理记录，可以复制到本站首页查询。</dd>
+    <dt>本站会记录这次检测的结果吗？</dt>
+    <dd>不会发回本站。所有请求都由你的浏览器直接发给 OpenAI 的各个入口，不带 Cookie、不带来源页面。页面下方的「检测历史」只存在你本机浏览器的 localStorage 里（出口地址、国家与结论，最多 20 条），点「清除」即删除。</dd>
+  </dl>
+</article>

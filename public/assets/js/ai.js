@@ -9,7 +9,7 @@
 
    判据全部来自页面：各家的地区名单、出口国家的时区区间都由 src/AiServices.php 印进 data-*，
    页面上印着的名单和脚本里比对的永远是同一份。地区中文名用 probe.js 的 P.countryName，与全站各页同一套叫法。
-   结果只留在当前页面里，不回传本站，也不写任何本地存储。 */
+   结果不回传本站；页面上有「检测历史」块时，每轮的出口摘要经 history.js 记进本机 localStorage，方便对比出口有没有变。 */
 (function () {
   'use strict';
 
@@ -88,6 +88,15 @@
   var sumSelf = root.querySelector('[data-ai-sum-self]');
   var sumTz = root.querySelector('[data-ai-sum-tz]');
   var sumLang = root.querySelector('[data-ai-sum-lang]');
+  var v6Box = root.querySelector('[data-ai-v6]');
+  var v6Note = root.querySelector('[data-ai-v6-note]');
+  var history = window.JudgeHistory ? window.JudgeHistory.mount(document.querySelector('[data-history]')) : null;
+
+  /* 同一家的网页入口与 API 入口：网页能开、API 不通（或反过来）时单独说一句，Codex / Claude Code 用户最常踩的就是这个 */
+  var PAIRS = [
+    { web: 'chatgpt', api: 'openai-api', apiUse: 'Codex、OpenAI API' },
+    { web: 'claude', api: 'claude-api', apiUse: 'Claude Code、Claude API' }
+  ];
 
   var rows = Array.prototype.slice.call(root.querySelectorAll('[data-ai-row]')).map(function (node) {
     return {
@@ -529,6 +538,44 @@
     fill(verdictNotes, notes.map(function (text) { return P.el('p', 'verdict__note', text); }));
   }
 
+  /* 走 IPv6 访问 AI 服务时的提醒：IPv6 地址的地理库普遍不如 IPv4 准，代理的 IPv6 出口又多是整段机房地址 */
+  function renderV6(traced) {
+    if (!v6Box) return;
+    var v6 = traced.filter(function (r) { return !isReference(r.row) && P.isIPv6(r.exit.ip); });
+    v6Box.hidden = !v6.length;
+    if (!v6.length || !v6Note) return;
+    v6Note.textContent = listNames(v6, 4) + ' 看到的是 IPv6 出口（' + P.compactIp(v6[0].exit.ip) + '）。'
+      + 'IPv6 地址的地理库数据普遍不如 IPv4 准，代理的 IPv6 出口又常是整段机房地址，更容易被判为数据中心；'
+      + '双栈网络下同一台设备还可能在 IPv4 与 IPv6 之间来回切换，出口随之变化。建议在代理里对这些域名关闭 IPv6，或让系统优先使用 IPv4，'
+      + '改完回到本页重测。';
+  }
+
+  var TONE_LABEL = {
+    'is-good': { tone: 'ok', label: '正常' },
+    'is-warn': { tone: 'warn', label: '需注意' },
+    'is-bad': { tone: 'leak', label: '有问题' }
+  };
+
+  /* 历史里一条只记出口摘要：地址、国家与结论档位，不记延迟这类每次都会抖的数 */
+  function remember(tone, traced, byExit) {
+    if (!history) return;
+    var t = TONE_LABEL[tone] || TONE_LABEL['is-warn'];
+    if (!traced.length) {
+      history.add({ main: '没有读到出口', tone: t.tone, label: t.label, note: verdictTitle.textContent });
+      return;
+    }
+    var main = byExit.slice(0, 2).map(function (g) { return P.compactIp(g.items[0].exit.ip); }).join(' / ')
+      + (byExit.length > 2 ? ' 等 ' + byExit.length + ' 个' : '');
+    history.add({
+      main: main,
+      key: byExit.map(function (g) { return g.key; }).sort().join(','),
+      tone: t.tone,
+      label: t.label,
+      note: byExit.map(function (g) { return countryLabel(locOf(g.items[0])); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join('、')
+        + ' · ' + verdictTitle.textContent
+    });
+  }
+
   function finalize(results) {
     var foreign = results.filter(function (r) { return !isReference(r.row); });
     var refs = results.filter(function (r) { return isReference(r.row); });
@@ -594,6 +641,24 @@
         + (byExit.length === 1 ? '的同一个出口。' : '的 ' + byExit.length + ' 个出口。'));
     }
 
+    /* 网页与 API 只坏一半，是最该先改的一条，紧跟主结论 */
+    var byKey = {};
+    results.forEach(function (r) { byKey[r.row.key] = r; });
+    PAIRS.forEach(function (pair) {
+      var web = byKey[pair.web];
+      var api = byKey[pair.api];
+      if (!web || !api) return;
+      var webHost = web.row.trace || web.row.name;
+      var apiHost = api.row.trace || api.row.name;
+      if (web.reachable && !api.reachable) {
+        notes.push(webHost + ' 能打开，但 ' + apiHost + ' 连不上：网页版正常，' + pair.apiUse + ' 会请求失败。把 ' + apiHost + ' 加进与 ' + webHost + ' 相同的代理规则。');
+      } else if (!web.reachable && api.reachable) {
+        notes.push(apiHost + ' 能连上，但 ' + webHost + ' 打不开：' + pair.apiUse + ' 可用，网页版与网页登录不可用。');
+      } else if (web.exit && api.exit && locOf(web) !== locOf(api)) {
+        notes.push(webHost + ' 的出口在' + nameOf(locOf(web)) + '，' + apiHost + ' 的出口在' + nameOf(locOf(api)) + '：同一个账号的网页与 ' + pair.apiUse + ' 请求来自两个国家。');
+      }
+    });
+
     /* ---- 以下几条与主结论叠加：结论只说最要紧的一件事，其余的破绽逐条列出 */
 
     /* 同一家的几个入口分在不同国家，比不同服务之间不一致更要紧——同一个账号的请求在两国之间来回切换 */
@@ -639,7 +704,9 @@
         + '完整的浏览器环境检查见「Claude 检测」。');
     }
 
+    renderV6(traced);
     showVerdict(tone, title, notes);
+    remember(tone, traced, byExit);
 
     progress.textContent = '检测完成：' + results.length + ' 个入口，可访问 ' + results.filter(function (r) { return r.reachable; }).length
       + ' 个，读到出口 ' + results.filter(function (r) { return !!r.exit; }).length + ' 个。';
@@ -649,6 +716,7 @@
 
   function reset() {
     verdict.hidden = true;
+    if (v6Box) v6Box.hidden = true;
     rows.forEach(function (row) {
       row.node.classList.remove('is-active', 'is-down', 'is-noexit');
       fill(row.ipCell, [dim('等待中')]);

@@ -7,7 +7,7 @@
    权重不写在这里：它们由 src/ClaudeSignals.php 渲染进每一行的 data-weight，
    脚本从 DOM 上读回来，页面上印着的数字和脚本里算的永远是同一份。
 
-   全部检测只读浏览器 API，探到的值不会离开这个页面。 */
+   全部检测只读浏览器 API，探到的值不会离开这个页面；每轮只把总分、分档与命中项名称经 history.js 记进本机 localStorage。 */
 (function () {
   'use strict';
 
@@ -28,6 +28,8 @@
   var stunUrls = (root.getAttribute('data-stun') || '').split(' ').filter(Boolean);
 
   var runButton = root.querySelector('[data-claude-run]');
+  var history = window.JudgeHistory ? window.JudgeHistory.mount(document.querySelector('[data-history]')) : null;
+  var HISTORY_TONE = { green: 'ok', amber: 'warn', red: 'leak' };
   var progress = root.querySelector('[data-claude-progress]');
   var verdict = root.querySelector('[data-claude-verdict]');
   var verdictTitle = root.querySelector('[data-claude-verdict-title]');
@@ -519,6 +521,15 @@
     verdictNote.textContent = band.note + (hits.length
       ? '命中 ' + hits.length + ' 项：' + hits.map(function (hit) { return hit.name + '（+' + hit.points + '）'; }).join('、') + '。'
       : '没有命中任何信号。');
+
+    if (history) {
+      history.add({
+        main: total + ' / 100',
+        tone: HISTORY_TONE[band.badge] || 'muted',
+        label: band.name,
+        note: hits.length ? '命中：' + hits.map(function (hit) { return hit.name; }).join('、') : '没有命中任何信号'
+      });
+    }
 
     /* 低风险的人不需要被塞一份整改清单 */
     if (fixNote) fixNote.hidden = band === BANDS.low;

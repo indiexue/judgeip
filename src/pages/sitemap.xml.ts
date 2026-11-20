@@ -5,6 +5,7 @@ const CORE_ROUTES = [
   '/check',
   '/claude',
   '/ai',
+  '/gpt',
   '/webrtc',
   '/dnsleak',
   '/cloudflare',

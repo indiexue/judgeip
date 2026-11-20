@@ -15,7 +15,7 @@ const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
   currentLabel="Claude 检测"
   activeNav="/claude"
   extraCss={[]}
-  extraJs={["/assets/js/claude.js"]}
+  extraJs={["/assets/js/history.js", "/assets/js/claude.js"]}
 >
   <Fragment set:html={html} />
 </IpcxLayout>

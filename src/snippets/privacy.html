@@ -75,8 +75,10 @@
     本站只使用一个会话 Cookie（<span class="mono">ipcx</span>），关闭浏览器即失效，用于：防止跨站请求伪造（CSRF）、
     记住你刚刚通过了人机验证（10 分钟、20 次内免再次验证）、记住上一次成功查询的 IP，以及授权「多库定位」向本站服务器查询你刚刚在页面上看到的 IP。
     本站不使用任何广告 Cookie 或跨站追踪 Cookie。
-    浏览器的 localStorage 里只可能有一项：你点过导航条上的浅色 / 深色切换按钮后，这个选择（<span class="mono">ipcx-theme</span>）会记在那里，
-    它只保存在你的浏览器中、不会发送给本站服务器；没点过就不写入，选回与系统设置一致的那一套时会把它删掉。
+    浏览器的 localStorage 里可能有两类内容，都只保存在你的浏览器中、不会发送给本站服务器：
+    一是你点过导航条上的浅色 / 深色切换按钮后，这个选择（<span class="mono">ipcx-theme</span>）会记在那里，没点过就不写入，选回与系统设置一致的那一套时会把它删掉；
+    二是 AI 解锁检测、GPT · Codex 检测与 Claude 检测页的「检测历史」（<span class="mono">judgeip:history:*</span>），
+    记的是每轮的出口地址、国家与结论或风险分，最多 20 条，在对应页面点「清除」即删除。
   </p>
 
   <h3>6. 访问限流</h3>
@@ -96,7 +98,7 @@
 
   <h3>8. 浏览器端网络探测</h3>
   <p>
-    网络连通性、Cloudflare 节点检测、CDN 命中节点、网站分流测试、AI 解锁检测，以及首页查看本机 IP 时的「本机网络」「网络连通性」两栏，
+    网络连通性、Cloudflare 节点检测、CDN 命中节点、网站分流测试、AI 解锁检测、GPT · Codex 检测，以及首页查看本机 IP 时的「本机网络」「网络连通性」两栏，
     都是由<strong>你的浏览器直接</strong>向第三方站点发出请求，本站服务器不转发、不接收、不保存任何一条结果。
     唯一发回本站的是 Cloudflare 节点检测与 CDN 命中节点两页的一次位置查询：页面向本站服务器询问「本站看到的你的 IP 大致在哪」，
     用来估算节点离你多远。这次请求不携带 Cookie，也不含任何检测结果（只多带一个内容固定的请求头，表明它出自本站的页面），本站从中得知的只有你的 IP；
@@ -126,6 +128,8 @@
     <li><strong>AI 解锁检测</strong>（/ai）：请求 ChatGPT、OpenAI、Sora、OpenAI API（api.openai.com，读不到时改为只测耗时）、Claude、Anthropic、
         Claude API（api.anthropic.com）、Grok、Perplexity、Mistral、Poe 的 <span class="mono">/cdn-cgi/trace</span>，并对 Gemini API、DeepSeek 发只测耗时的请求。
         页面会在本地读取你的系统时区与浏览器语言，用于提示与出口不一致的情况，这些值不发送到任何地方。</li>
+    <li><strong>GPT · Codex 检测</strong>（/gpt）：请求 chatgpt.com、auth.openai.com、cdn.oaistatic.com、ios.chat.openai.com、api.openai.com、openai.com、sora.com 的
+        <span class="mono">/cdn-cgi/trace</span>，并对 DeepSeek 发只测耗时的请求；时区与语言的处理与 AI 解锁检测相同。</li>
   </ul>
 
   <h3>9. 全球 Ping</h3>

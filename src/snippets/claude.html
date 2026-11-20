@@ -208,6 +208,12 @@
     </section>
   </div>
 
+  <section class="group history" data-history="judgeip:history:claude" hidden>
+    <h2 class="group__title">检测历史 <button class="history__clear" type="button" data-history-clear hidden>清除</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">只记风险分、分档与命中项名称，存在这台设备的浏览器里（localStorage），最多 20 条，不会发送给本站。改完设置重测时，可以和上一次对比。</p>
+  </section>
+
   <noscript>
     <p class="notice" role="alert">
       <span>时区、语言、字体这些信号只能在浏览器里读到。当前浏览器禁用了 JavaScript，本页只能显示信号清单与说明，无法出结果。</span>
@@ -306,7 +312,7 @@
     <dt>换了 IP、挂上 VPN，分数会变吗？</dt>
     <dd>大多不会。时区、语言、字体、设备型号读的都是操作系统和浏览器本身，与网络出口无关——这正是很多「干净」的 VPN 配置在这里依然高分的原因。十项里只有 WebRTC 一项和网络有关。</dd>
     <dt>本站会保存这次检测的结果吗？</dt>
-    <dd>不会。全部检测在你的浏览器里完成，探测到的时区、语言、字体、设备信息一个字节都不会发回本站。WebRTC 那一项会向 STUN 服务器发一次探测请求，取回的地址也只留在当前页面里，关掉即消失。</dd>
+    <dd>不会。全部检测在你的浏览器里完成，探测到的时区、语言、字体、设备信息一个字节都不会发回本站。WebRTC 那一项会向 STUN 服务器发一次探测请求，取回的地址也只留在当前页面里，关掉即消失。页面下方的「检测历史」只在你本机浏览器里记风险分、分档与命中项名称，不含任何探测到的具体值，点「清除」即删除。</dd>
   </dl>
 
   <p class="prose__note">

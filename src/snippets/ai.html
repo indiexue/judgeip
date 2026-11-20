@@ -31,6 +31,11 @@
     </div>
   </div>
 
+  <div class="fixnote" data-ai-v6 hidden>
+    <p class="fixnote__title">当前经 IPv6 访问 AI 服务，不建议这样用</p>
+    <p class="fixnote__note" data-ai-v6-note></p>
+  </div>
+
   <div class="groups">
     <section class="group">
       <h2 class="group__title">OpenAI</h2>
@@ -490,6 +495,11 @@
     </section>
   </div>
 
+  <section class="group history" data-history="judgeip:history:ai" hidden>
+    <h2 class="group__title">检测历史 <button class="history__clear" type="button" data-history-clear hidden>清除</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">只存在这台设备的浏览器里（localStorage），最多 20 条，不会发送给本站。</p>
+  </section>
   <noscript>
     <p class="notice" role="alert">
       <span>AI 解锁检测必须由浏览器直接访问各家服务，当前浏览器禁用了 JavaScript，本页只能显示服务清单、地区名单与说明部分，无法出结果。</span>
@@ -522,7 +532,7 @@
         把本站看到的地址与 AI 服务看到的出口摆在一起。</li>
   </ol>
   <p>
-    所有请求都由你的浏览器直接发出，不带 Cookie、不带来源页面，结果只留在当前页面上，不会发回本站，也不保存历史。
+    所有请求都由你的浏览器直接发出，不带 Cookie、不带来源页面，结果不会发回本站。每轮的出口摘要会记在你本机浏览器的「检测历史」里，随时可以清除。
   </p>
 
   <h2>怎么读检测结果</h2>
@@ -554,6 +564,6 @@
     <dt>时区和出口不一致，会有什么影响？</dt>
     <dd>网页和客户端都能直接读到系统时区，「IP 在美国、时区却是东八区」是识别代理最常用、成本最低的线索之一；据公开的逆向分析，Claude Code 还会专门读取系统时区。本页只在两者明显对不上时提醒（相差超过一小时、且出口国家在对照表里），邻近地区之间不报。完整的浏览器环境检查（时区、语言、字体、WebRTC 等十项）见本站的 Claude 检测。</dd>
     <dt>本站会记录这次检测的结果吗？</dt>
-    <dd>不会。所有请求都由你的浏览器直接发给各家服务，不带 Cookie、不带来源页面，结果只显示在当前页面上，一个字节都不会发回本站，也没有历史记录。本站在页面上印出的「本站看到的地址」是打开本页时那次 HTTP 连接的来源地址，这一页因此不会被任何缓存保存。</dd>
+    <dd>不会。所有请求都由你的浏览器直接发给各家服务，不带 Cookie、不带来源页面，结果一个字节都不会发回本站。页面下方的「检测历史」只存在你本机浏览器的 localStorage 里（出口地址、国家与结论，最多 20 条），点「清除」即删除。本站在页面上印出的「本站看到的地址」是打开本页时那次 HTTP 连接的来源地址，这一页因此不会被任何缓存保存。</dd>
   </dl>
 </article>
