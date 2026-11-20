@@ -1,0 +1,371 @@
+
+<section class="hero">
+  <h1 class="hero__title">Cloudflare edge check</h1>
+  <p class="hero__lede">Tests whether you pass Cloudflare's bot check automatically, and shows which Cloudflare node you hit.</p>
+</section>
+
+<div class="probe cf"
+     id="cloudflare"
+     data-visible-ip="__VISITOR_IP__"
+     data-iata="/assets/data/iata.json"
+     data-main="speed.cloudflare.com"
+     data-me="/geo/api?me=1"
+     data-ipv4="1.1.1.1">
+
+    <section class="group cf__ts" id="ts-test">
+    <h2 class="group__title">Turnstile bot check</h2>
+    <div class="tsgrid" data-ts data-ts-api="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" data-ts-endpoint="/cloudflare/turnstile">
+      <article class="rows tscard" data-ts-card="ni" data-sitekey="1x00000000000000000000AA" data-action="cf-test-ni" aria-labelledby="ts-ni-title">
+        <div class="tscard__head">
+          <div class="tscard__id">
+                        <h3 class="tscard__title" id="ts-ni-title">Turnstile non-interactive mode</h3>
+            <p class="tscard__mode"><span class="tag tag--global" lang="en">Non-interactive</span></p>
+            <p class="tscard__sub">Runs silently in the background, no clicks needed</p>
+          </div>
+          <button class="tsreset" type="button" data-ts-reset disabled>Reset</button>
+        </div>
+        <div class="tscard__widget">
+          <div class="tscard__mount" data-ts-mount><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Status</div>
+          <div class="row__value" data-ts-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Server verification</div>
+          <div class="row__value" data-ts-server><span class="dim">—</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Response time</div>
+          <div class="row__value" data-ts-time><span class="dim">—</span></div>
+        </div>
+        <div class="tscard__out" aria-live="polite">
+          <div class="verdict tsverdict" data-ts-verdict hidden>
+            <span class="verdict__dot" aria-hidden="true"></span>
+            <div class="verdict__body">
+              <p class="verdict__title" data-ts-verdict-title></p>
+              <p class="verdict__note" data-ts-verdict-note></p>
+            </div>
+          </div>
+          <p class="sr-only" data-ts-say></p>
+        </div>
+                <details class="tsmeta">
+          <summary class="tsmeta__summary">Response metadata</summary>
+          <div class="tsmeta__body" data-ts-meta><p class="tsmeta__empty">Not available yet.</p></div>
+        </details>
+      </article>
+      <article class="rows tscard" data-ts-card="mg" data-sitekey="1x00000000000000000000AA" data-action="cf-test-mg" aria-labelledby="ts-mg-title">
+        <div class="tscard__head">
+          <div class="tscard__id">
+                        <h3 class="tscard__title" id="ts-mg-title">Turnstile managed mode</h3>
+            <p class="tscard__mode"><span class="tag tag--global" lang="en">Managed</span></p>
+            <p class="tscard__sub">Cloudflare decides whether a click is needed</p>
+          </div>
+          <button class="tsreset" type="button" data-ts-reset disabled>Reset</button>
+        </div>
+        <div class="tscard__widget">
+          <div class="tscard__mount" data-ts-mount><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Status</div>
+          <div class="row__value" data-ts-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Server verification</div>
+          <div class="row__value" data-ts-server><span class="dim">—</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Response time</div>
+          <div class="row__value" data-ts-time><span class="dim">—</span></div>
+        </div>
+        <div class="tscard__out" aria-live="polite">
+          <div class="verdict tsverdict" data-ts-verdict hidden>
+            <span class="verdict__dot" aria-hidden="true"></span>
+            <div class="verdict__body">
+              <p class="verdict__title" data-ts-verdict-title></p>
+              <p class="verdict__note" data-ts-verdict-note></p>
+            </div>
+          </div>
+          <p class="sr-only" data-ts-say></p>
+        </div>
+                <details class="tsmeta">
+          <summary class="tsmeta__summary">Response metadata</summary>
+          <div class="tsmeta__body" data-ts-meta><p class="tsmeta__empty">Not available yet.</p></div>
+        </details>
+      </article>
+    </div>
+  </section>
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-cf-run>Start</button>
+    <span class="probe__hint" data-cf-progress>Starts when the page opens. Node checks go straight from your browser to Cloudflare and usually finish within a few seconds.</span>
+        <button class="mask cf__mask" type="button" data-cf-mask aria-pressed="false" aria-label="Hide IP addresses" title="Hide IP addresses">
+      <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
+        <circle cx="12" cy="12" r="2.9"></circle>
+      </svg>
+      <svg class="mask__icon mask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
+        <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
+        <path d="M4 4l16 16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="verdict" data-cf-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-cf-verdict-title></p>
+      <p class="verdict__note" data-cf-verdict-note></p>
+    </div>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">What Cloudflare sees</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">IP seen by this site</div>
+          <div class="row__value"><span class="mono" data-cf-visible>__VISITOR_IP__</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Exit IP</div>
+          <div class="row__value" data-cf="ip"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Country / region</div>
+          <div class="row__value" data-cf="loc"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Network (ASN)</div>
+          <div class="row__value" data-cf="asn"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Colo</div>
+          <div class="row__value" data-cf="colo"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">1.1.1.1 (DNS/WARP network, IPv4 only)</div>
+          <div class="row__value" data-cf="ipv4"><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">Connection details</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">HTTP protocol</div>
+          <div class="row__value" data-cf="http"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">TLS version</div>
+          <div class="row__value" data-cf="tls"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">SNI / ECH</div>
+          <div class="row__value" data-cf="sni"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Key exchange</div>
+          <div class="row__value" data-cf="kex"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">WARP</div>
+          <div class="row__value" data-cf="warp"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Zero Trust gateway</div>
+          <div class="row__value" data-cf="gateway"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Remote browser isolation</div>
+          <div class="row__value" data-cf="rbi"><span class="dim">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Edge time</div>
+          <div class="row__value" data-cf="ts"><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">Network tier comparison</h2>
+      <div class="rows">
+        <div class="cftier" data-cf-tier="cloudflare" data-host="www.cloudflare.com" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">Enterprise</span>
+              <span class="cftier__name">Cloudflare website</span>
+            </div>
+            <div class="cftier__host mono">www.cloudflare.com</div>
+            <div class="cftier__note">Cloudflare's own website, the baseline for the Enterprise network.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="claude" data-host="claude.ai" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">Enterprise</span>
+              <span class="cftier__name">Claude</span>
+            </div>
+            <div class="cftier__host mono">claude.ai</div>
+            <div class="cftier__note">Enterprise site: Anthropic's Claude web app.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="npm" data-host="registry.npmjs.org" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">Enterprise</span>
+              <span class="cftier__name">npm registry</span>
+            </div>
+            <div class="cftier__host mono">registry.npmjs.org</div>
+            <div class="cftier__note">Enterprise site: the official Node.js package registry.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="cn" data-host="www.cloudflare-cn.com" data-kind="cn">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--cn">China network</span>
+              <span class="cftier__name">Cloudflare China network</span>
+            </div>
+            <div class="cftier__host mono">www.cloudflare-cn.com</div>
+            <div class="cftier__note">Only visitors in mainland China hit nodes inside China; everyone else sees nodes outside China.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="dns" data-host="one.one.one.one" data-kind="dns">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">DNS / WARP</span>
+              <span class="cftier__name">1.1.1.1 public DNS</span>
+            </div>
+            <div class="cftier__host mono">one.one.one.one</div>
+            <div class="cftier__note">The network that hosts public DNS and WARP; its anycast routing differs from the CDN's.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="speed" data-host="speed.cloudflare.com" data-kind="speed">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">Speed test network</span>
+              <span class="cftier__name">Cloudflare speed test</span>
+            </div>
+            <div class="cftier__host mono">speed.cloudflare.com</div>
+            <div class="cftier__note">Cloudflare's official speed test site; this page's main trace also comes from here.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="cdnjs" data-host="cdnjs.cloudflare.com" data-kind="cdn">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">Static CDN</span>
+              <span class="cftier__name">cdnjs</span>
+            </div>
+            <div class="cftier__host mono">cdnjs.cloudflare.com</div>
+            <div class="cftier__note">A public CDN for open-source front-end libraries; many sites load scripts from it.</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">Pending</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier cftier--sum" data-cf-tier-sum>
+          <span class="dim">Each network gets 1 warm-up request, then 3 requests in a row; the fastest counts. The latency bar is scaled to the slowest network.</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+    <details class="cfraw">
+    <summary class="cfraw__summary">Raw trace (speed.cloudflare.com/cdn-cgi/trace)</summary>
+    <pre class="cfraw__pre mono" data-cf-raw>Not available yet.</pre>
+  </details>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Only Cloudflare's edge knows which node you hit, so the browser has to ask it directly. JavaScript is disabled, so this page can only show the check list and notes. You can also open <span class="mono">https://speed.cloudflare.com/cdn-cgi/trace</span> in your browser; the three letters after <span class="mono">colo=</span> are the data center you hit.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What a Cloudflare node is</h2>
+  <p>
+    Cloudflare runs data centers in more than three hundred cities, and every site on Cloudflare shares this network. When you visit such a site, your request does not go straight to the origin server; it lands in one of Cloudflare's edge data centers first, which handles the TLS handshake, caching and security filtering, then decides whether to contact the origin. That data center is the <strong>node</strong> (Cloudflare calls it a colo), named after the IATA code of a nearby airport: HKG is Hong Kong, NRT is Tokyo Narita, LAX is Los Angeles, FRA is Frankfurt.</p>
+  <p>
+    Cloudflare uses anycast to announce the same IP from every data center, so <strong>internet routing decides where you land</strong>. Ideally that is the nearest one, but your ISP's international links, its interconnection with Cloudflare and the target site's plan can all change the result, which is why one person can see latency differences of hundreds of milliseconds across sites.</p>
+  <p>
+    Every site on Cloudflare has a public diagnostic path, <span class="mono">/cdn-cgi/trace</span>, that reports in a few lines of plain text: the data center you hit (<span class="mono">colo</span>), the exit IP it sees (<span class="mono">ip</span>) and its country (<span class="mono">loc</span>), HTTP and TLS versions, whether SNI is encrypted, the key exchange algorithm, and whether WARP or a Zero Trust gateway is in use. Every conclusion on this page comes from those lines.</p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>Request <span class="mono">speed.cloudflare.com/cdn-cgi/trace</span> twice: the first only opens the connection, and the second result is shown. The local clock is read before and after the second request, and the midpoint is compared with the edge time to get the clock offset (edge time is only accurate to the second, so the offset is reported in whole seconds).</li>
+    <li>Ask this site for the details of "the IP this site sees": ISP (ASN), city and approximate coordinates, the same data as on the home page. The trace has no coordinates, so this location is only used to compute the distance to the node when it is the same exit Cloudflare saw in the previous step (same IPv4, or the same /64 for IPv6); otherwise distance is judged by country only.</li>
+    <li>Request <span class="mono">https://1.1.1.1/cdn-cgi/trace</span>: an IP literal can only use IPv4, so it shows your IPv4 exit and where you land on the 1.1.1.1 network.</li>
+    <li>For each of the 7 Cloudflare networks of different tiers in the table below, send 1 warm-up and 3 requests in a row, and use the fastest as the latency, recording the node and protocol hit. At most 4 networks are tested at once to avoid competing for bandwidth.</li>
+    <li>Load Cloudflare Turnstile from <span class="mono">challenges.cloudflare.com</span> and run one bot check each with the non-interactive and managed widgets; the token is passed to this site's server, which verifies it with Cloudflare once (see below).</li>
+  </ol>
+  <p>
+    Requests to Cloudflare (steps 1, 3 and 4) carry no cookies, no referrer and no custom headers (custom headers would trigger a CORS preflight, which the trace path does not answer). Results stay on this page and are not sent back to this site.
+    Step 2 is a request to this site itself and carries no check results; all this site learns from it is your IP, the same as when you opened the page.
+    The Turnstile token only counts once the server verifies it. This site's server discards the token and result after verifying, and only keeps a verification count per IP that expires after 1 hour, for rate limiting.</p>
+
+  <h2>Reading the results</h2>
+  <ul>
+        <li><strong>Node and distance</strong>: within 1000 km, or a node near your exit (for visitors in mainland China: Hong Kong, Taipei, Tokyo, Osaka, Seoul, Singapore, the closest landing points available outside China), or in the same country/region as the exit and within 3000 km, counts as <strong>nearby</strong>. Anything else within 3000 km, or in the same country/region as the exit (in large countries such as the US, Russia or Brazil, thousands of kilometers inside the country is not another region), counts as <strong>in region</strong>. The rest is <strong>cross-region</strong>, with noticeably higher latency. Without your coordinates, nodes in the same country or nearby still count as nearby, and the rest are only marked a neutral "identified". Distance is estimated from the approximate coordinates of the exit IP this site looked up and is only an order-of-magnitude reference; if Cloudflare's exit differs from the one this site sees, those coordinates do not apply and no distance is estimated.</li>
+    <li><strong>Exit IP</strong>: if it matches the same-family address this site sees, Cloudflare and this site are reached through the same exit; same family but different means split routing or a multi-exit proxy; one IPv4 and one IPv6 is just a dual-stack network using different paths, which is normal.</li>
+    <li><strong>HTTP/3</strong>: the first visit is usually HTTP/2; the browser switches to QUIC only after it learns the site supports HTTP/3, so refresh and test again. HTTP/1.1 often means a proxy in the middle that does not support newer protocols.</li>
+    <li><strong>TLS, ECH and post-quantum</strong>: TLS 1.3 is the current standard. SNI shown as "encrypted (ECH)" means even network devices along the way cannot see the domain you visit. <span class="mono">MLKEM</span> or <span class="mono">Kyber</span> in the key exchange means the connection uses a hybrid post-quantum key exchange.</li>
+    <li><strong>WARP / Zero Trust gateway / remote browser isolation</strong>: if any is on, Cloudflare no longer sees your direct exit, so read the node and exit IP as those of WARP or your company gateway.</li>
+    <li><strong>Clock offset</strong>: the edge time in the trace is only accurate to the second, so the offset is estimated in whole seconds; an estimate of 3 seconds or more (a real offset of at least about 2 seconds) is flagged. A wrong clock can break TLS certificate checks, two-factor codes and more.</li>
+  </ul>
+
+  <h2>Why different networks hit different nodes</h2>
+  <p>
+    A site's Cloudflare plan decides which data centers and routes it can use. <strong>Enterprise</strong> sites can use every node and better routing; the <strong>China network</strong> (in partnership with JD Cloud) only routes to nodes inside China for visitors in mainland China; <strong>1.1.1.1</strong> DNS and WARP use a separate anycast range; the <strong>speed test site</strong> and <strong>cdnjs</strong> each have their own routing. So it is common for rows in the comparison to hit different nodes. If they all land on the same nearby node, your network's route to Cloudflare is excellent.</p>
+  <p>
+    There is no "Free" row in the comparison: this site is not on Cloudflare, and there is no third-party site that can be relied on to stay on the Free plan. If you have a Free-plan site yourself, open its <span class="mono">/cdn-cgi/trace</span> in your browser and compare the <span class="mono">colo=</span> line.</p>
+
+  <h2>What the Turnstile check tests</h2>
+  <p>
+    Turnstile is Cloudflare's replacement for traditional CAPTCHAs. It reads the browser environment in the background, runs a short challenge, and combines that with what Cloudflare knows about the IP and network to decide whether the visitor is human. More and more sites use it to keep bots away from sign-in, sign-up, comments and downloads. If your browser keeps failing it or always has to click, those sites become tedious to use.</p>
+  <p>
+    This page runs one check with each of two widget modes to see whether your browser <strong>passes automatically without doing anything</strong>:</p>
+  <ul>
+    <li><strong>Non-interactive mode</strong>: the widget only shows progress and never offers a checkbox. If Cloudflare is satisfied it issues a token, otherwise it fails, so it answers most directly whether you pass invisibly.</li>
+    <li><strong>Managed mode</strong>: Cloudflare decides whether to ask you to click. Most normal browsers pass automatically; when signals are not clean enough, a "Verify you are human" checkbox appears and you have to click it. The manual IP lookup on this site's home page uses this mode.</li>
+  </ul>
+  <p>
+    "Response time" on the card is the time from the start of verification to receiving the token, including any wait before you click. The page then passes the token to this site's server, which verifies it together with your IP against Cloudflare's siteverify endpoint: whether the token is valid, used for the first time, and issued for this card on this site (hostname and action must match). Only <strong>a token received in the page and confirmed by the server</strong> counts as a pass. "Response metadata" lists the fields Cloudflare returned during verification (filtered and length-limited by this site); cData is compared by the page with a random value generated for this render, and only marked as matching or not for you to check, not counted in the verdict.</p>
+  <h3>Managed mode passed without asking you to click</h3>
+  <p>
+    To Cloudflare, this browser and network look like an ordinary visitor: the exit IP has a normal reputation, the browser's characteristics are consistent, and there are no obvious signs of automation. This is the best outcome; you probably won't see a challenge on other sites that use Turnstile either.</p>
+  <h3>Asked to click, or non-interactive mode failed</h3>
+  <p>
+    This only means Cloudflare could not decide automatically that you are human; it is not a block. Common causes: the exit is a data center, VPN or proxy address (lots of automated traffic on the same exit lowers its reputation); privacy extensions or anti-fingerprinting browsers alter or block browser characteristics; the browser shows automation traits (for example controlled by Selenium or Playwright); the local clock is far off; or the network is too slow for the challenge to finish in time. Switch exits or temporarily disable the relevant extensions, click "Reset" and test again to find out which one it is. Cloudflare decides only from the signals it can see; this page reports the result as is but cannot tell you which signal mattered.</p>
+  <p>
+    If the card shows "script failed to load", the browser could not load Turnstile from challenges.cloudflare.com: your network blocks the domain, or an extension or proxy rule blocked it. In that case every site that uses Turnstile will get stuck at verification. "Not loaded after a long time" means the script was not ready within 15 seconds: it may be blocked, or the network to challenges.cloudflare.com may just be slow; if the script arrives later, the card starts automatically. Errors marked on the card as a deployment issue on this site (for example 110200: the current domain is not in the widget's allowed list) are caused by this site's configuration, not your browser.</p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>I am in China or elsewhere in Asia. Why do I hit a US node?</dt>
+    <dd>Cloudflare routes by network, not by map: the data center you land in depends on your ISP's international links, Cloudflare's interconnection with that ISP, and the target site's plan. Visitors in mainland China reaching sites not on the China network are often routed to US West Coast data centers such as Los Angeles (LAX) or San Jose (SJC), while Enterprise sites more often land in Hong Kong, Tokyo or Singapore. This is routing policy, not a fault in your network.</dd>
+    <dt>Why is the exit IP Cloudflare sees different from the one this site sees?</dt>
+    <dd>First check whether both addresses are the same family. One IPv4 and one IPv6 is normal: on a dual-stack network the browser may pick different families for this site and for Cloudflare, and both are your own exits. If both are IPv4 (or both IPv6) and still differ, traffic to Cloudflare uses a different exit, which is common with per-domain proxy rules or proxy services with multiple exits.</dd>
+    <dt>Why HTTP/2 instead of HTTP/3?</dt>
+    <dd>The browser has to receive an Alt-Svc header over an HTTP/2 connection first to learn that the site supports HTTP/3; only new connections after that use QUIC. So the first visit is usually HTTP/2, and switching to HTTP/3 after a few refreshes is normal. If it stays on HTTP/2, your network probably blocks UDP 443, or your proxy does not forward QUIC. This does not affect normal browsing.</dd>
+    <dt>What are WARP, Zero Trust gateway and remote browser isolation?</dt>
+    <dd>WARP is Cloudflare's client for faster, encrypted connections; with it on, sites see WARP's exit, and plus means WARP+ (the paid Argo route). Zero Trust gateway means your traffic passes through a Cloudflare security gateway configured by some organization, common on company devices. Remote browser isolation (RBI) means the page actually runs in a Cloudflare remote browser and you only see the rendered result. If all three show off, you connect to Cloudflare directly.</dd>
+    <dt>The Turnstile test asked me to click. Is something wrong with my network?</dt>
+    <dd>Not necessarily. Managed mode lets Cloudflare decide from browser and network signals whether to ask for a click. Most normal browsers pass directly, but the chance of being asked rises clearly with a data center, VPN or proxy exit, privacy extensions that alter browser characteristics, automation traits, or a wrong local clock. Passing after one click only means you did not pass invisibly; it is not a block. Non-interactive mode never shows a checkbox and simply fails when Cloudflare is not satisfied, so it is the better indicator of whether you pass automatically.</dd>
+    <dt>Does this site record the results?</dt>
+    <dd>No. Node check requests go straight from your browser to Cloudflare's sites, without cookies or a referrer; the trace content and node results are shown only on this page, never sent back to this site, and disappear when you close the page. The approximate location used for node distance comes from asking this site for "the IP this site sees", the same lookup as on the home page, and the request carries no check results. The one-time Turnstile token is passed to this site's server, verified once with Cloudflare together with your IP, then discarded; this site only keeps a per-IP verification count that expires automatically after 1 hour, for rate limiting.</dd>
+  </dl>
+</article>

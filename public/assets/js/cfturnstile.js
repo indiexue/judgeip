@@ -17,6 +17,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.querySelector('[data-ts]');
   if (!root) return;
 
@@ -33,8 +35,8 @@
   var TOKEN_PREFIX = 12;
 
   /* 常见的「没能自动通过」的原因。两处结论都要说，措辞放在一处 */
-  var CAUSES = '常见原因：出口是数据中心、VPN 或代理的地址，隐私类扩展或防指纹浏览器改动了浏览器特征，'
-    + '浏览器带有自动化特征，或者本机时钟不准。这不代表被封锁，只是没能「无感」通过。';
+  var CAUSES = T('常见原因：出口是数据中心、VPN 或代理的地址，隐私类扩展或防指纹浏览器改动了浏览器特征，', ' Common causes: the exit is a data center, VPN or proxy address; privacy extensions or anti-fingerprinting browsers altered browser characteristics;')
+    + T('浏览器带有自动化特征，或者本机时钟不准。这不代表被封锁，只是没能「无感」通过。', ' the browser shows automation traits; or the local clock is wrong. This is not a block; you just did not pass invisibly.');
 
   var cards = [];
   Array.prototype.forEach.call(root.querySelectorAll('[data-ts-card]'), function (node) {
@@ -77,7 +79,7 @@
   /* probe.js 没加载上，或者浏览器老到没有 fetch / Promise：说清楚，别留两张「待检测」 */
   if (!P || !window.fetch || !window.Promise) {
     cards.forEach(function (card) {
-      if (card.state) card.state.textContent = !P ? '检测脚本加载失败，请刷新页面重试。' : '当前浏览器太旧，无法运行这项检测。';
+      if (card.state) card.state.textContent = !P ? T('检测脚本加载失败，请刷新页面重试。', 'Failed to load the check script. Reload the page and try again.') : T('当前浏览器太旧，无法运行这项检测。', 'This browser is too old to run this check.');
     });
     return;
   }
@@ -157,12 +159,12 @@
 
   function paintTime(card) {
     if (card.ms === null) {
-      fill(card.time, [dim('—'), card.token && !card.t0 ? note('这一轮是在组件里点「刷新」后重跑的，没有计时起点。') : null]);
+      fill(card.time, [dim('—'), card.token && !card.t0 ? note(T('这一轮是在组件里点「刷新」后重跑的，没有计时起点。', 'This run was restarted with "Refresh" inside the widget, so there is no start time.')) : null]);
       return;
     }
     fill(card.time, [
       line([P.el('span', 'mono', card.ms + ' ms')]),
-      card.interactive ? note('从开始验证算起，包括等你点击的时间。') : null
+      card.interactive ? note(T('从开始验证算起，包括等你点击的时间。', 'Measured from the start of verification, including time waiting for your click.')) : null
     ]);
   }
 
@@ -173,26 +175,26 @@
     var d = card.result && card.result.data;
 
     if (card.token) {
-      rows.push(['token', card.token.slice(0, TOKEN_PREFIX) + '…（共 ' + card.token.length + ' 个字符，只显示开头）']);
+      rows.push(['token', card.token.slice(0, TOKEN_PREFIX) + T('…（共 ', '… (') + card.token.length + T(' 个字符，只显示开头）', ' characters, start shown)')]);
     }
-    if (card.code) rows.push(['前端错误码', card.code]);
+    if (card.code) rows.push([T('前端错误码', 'Client error code'), card.code]);
 
     if (d && d.ok === true) {
-      rows.push(['hostname', show(d.hostname) + (d.hostname_ok === true ? '（与本站一致）'
-        : d.hostname_ok === false ? '（应为 ' + show(d.hostname_expected) + '）' : '')]);
+      rows.push(['hostname', show(d.hostname) + (d.hostname_ok === true ? T('（与本站一致）', ' (matches this site)')
+        : d.hostname_ok === false ? T('（应为 ', ' (expected ') + show(d.hostname_expected) + T('）', ')') : '')]);
       rows.push(['challenge_ts', show(d.challenge_ts)]);
-      rows.push(['action', show(d.action) + (d.action_ok === true ? '（与本卡片一致）'
-        : d.action_ok === false ? '（应为 ' + show(d.action_expected) + '）' : '')]);
-      rows.push(['cdata', show(d.cdata) + (d.cdata ? (d.cdata === card.cdata ? '（与本次渲染一致）' : '（与本次渲染的不一致）') : '')]);
-      rows.push(['error-codes', d.error_codes && d.error_codes.length ? d.error_codes.join(', ') : '无']);
+      rows.push(['action', show(d.action) + (d.action_ok === true ? T('（与本卡片一致）', ' (matches this card)')
+        : d.action_ok === false ? T('（应为 ', ' (expected ') + show(d.action_expected) + T('）', ')') : '')]);
+      rows.push(['cdata', show(d.cdata) + (d.cdata ? (d.cdata === card.cdata ? T('（与本次渲染一致）', ' (matches this render)') : T('（与本次渲染的不一致）', ' (does not match this render)')) : '')]);
+      rows.push(['error-codes', d.error_codes && d.error_codes.length ? d.error_codes.join(', ') : T('无', 'none')]);
       rows.push(['metadata', metaText(d.metadata)]);
     } else if (card.result) {
-      rows.push(['服务端', (d && d.error ? d.error + '：' : '') + (d && d.message ? d.message : (card.result.status ? 'HTTP ' + card.result.status : '没有回应'))]);
+      rows.push([T('服务端', 'Server'), (d && d.error ? d.error + T('：', ': ') : '') + (d && d.message ? d.message : (card.result.status ? 'HTTP ' + card.result.status : T('没有回应', 'No response')))]);
     }
 
     fill(card.meta, []);
     if (!rows.length) {
-      card.meta.appendChild(P.el('p', 'tsmeta__empty', '尚未取得。'));
+      card.meta.appendChild(P.el('p', 'tsmeta__empty', T('尚未取得。', 'Not available yet.')));
       return;
     }
 
@@ -205,12 +207,12 @@
   }
 
   function metaText(meta) {
-    if (!meta || typeof meta !== 'object') return '无';
+    if (!meta || typeof meta !== 'object') return T('无', 'none');
     var lines = [];
     for (var key in meta) {
       if (Object.prototype.hasOwnProperty.call(meta, key)) lines.push(key + ' = ' + String(meta[key]));
     }
-    return lines.length ? lines.join('\n') : '无';
+    return lines.length ? lines.join('\n') : T('无', 'none');
   }
 
   /* ---------------------------------------------------------------- 错误码
@@ -222,29 +224,29 @@
   function explain(code) {
     var c = String(code || '');
     var hit = function (text, kind, state, tone) {
-      return { text: text + '（错误码 ' + c + '）', kind: kind, state: state || '失败', tone: tone || 'leak' };
+      return { text: text + T('（错误码 ', ' (error ') + c + T('）', ')'), kind: kind, state: state || T('失败', 'Failed'), tone: tone || 'leak' };
     };
 
-    if (c === '110100' || c === '110110') return hit('sitekey 无效，这是本站的部署配置问题', 'deploy');
-    if (c === '110200') return hit('当前域名不在这个 Widget 的允许列表里，这是本站的部署配置问题', 'deploy');
-    if (c === '110420' || c === '110430') return hit('action 或 cData 参数无效，这是本站的部署问题', 'deploy');
-    if (c === '110500') return hit('Turnstile 不支持当前浏览器', 'browser', '浏览器不受支持');
-    if (c === '110510') return hit('浏览器前后报出的 User-Agent 不一致，常见于修改 UA 的浏览器扩展', 'env');
-    if (/^11060\d$/.test(c)) return hit('质询超时，多见于本机时钟不准或网络很慢', 'env');
-    if (/^11062\d$/.test(c)) return hit('交互超时：没有在时限内完成点击', 'timeout', '交互超时', 'warn');
-    if (/^120\d{3}$/.test(c)) return hit('Cloudflare 内部错误，与你的浏览器无关', 'cf');
-    if (c === '200010') return hit('浏览器缓存了不该缓存的 Turnstile 资源，清除缓存后重试', 'env');
-    if (c === '200100') return hit('本机时钟与真实时间相差太大', 'env');
+    if (c === '110100' || c === '110110') return hit(T('sitekey 无效，这是本站的部署配置问题', 'Invalid sitekey; this is a deployment configuration issue on this site'), 'deploy');
+    if (c === '110200') return hit(T('当前域名不在这个 Widget 的允许列表里，这是本站的部署配置问题', 'The current domain is not in this widget\'s allowed list; this is a deployment configuration issue on this site'), 'deploy');
+    if (c === '110420' || c === '110430') return hit(T('action 或 cData 参数无效，这是本站的部署问题', 'Invalid action or cData parameter; this is a deployment issue on this site'), 'deploy');
+    if (c === '110500') return hit(T('Turnstile 不支持当前浏览器', 'Turnstile does not support this browser'), 'browser', T('浏览器不受支持', 'Browser not supported'));
+    if (c === '110510') return hit(T('浏览器前后报出的 User-Agent 不一致，常见于修改 UA 的浏览器扩展', 'The browser reported inconsistent User-Agent values, common with UA-changing extensions'), 'env');
+    if (/^11060\d$/.test(c)) return hit(T('质询超时，多见于本机时钟不准或网络很慢', 'Challenge timed out, usually because of a wrong local clock or a slow network'), 'env');
+    if (/^11062\d$/.test(c)) return hit(T('交互超时：没有在时限内完成点击', 'Interaction timed out: the click was not completed in time'), 'timeout', T('交互超时', 'Interaction timed out'), 'warn');
+    if (/^120\d{3}$/.test(c)) return hit(T('Cloudflare 内部错误，与你的浏览器无关', 'Cloudflare internal error, unrelated to your browser'), 'cf');
+    if (c === '200010') return hit(T('浏览器缓存了不该缓存的 Turnstile 资源，清除缓存后重试', 'The browser cached Turnstile resources that should not be cached; clear the cache and try again'), 'env');
+    if (c === '200100') return hit(T('本机时钟与真实时间相差太大', 'The local clock is too far from the real time'), 'env');
     /* 和 api.js 被拦是同一类处境，只是晚了一步：脚本到了，它要嵌的那个 iframe 没到 */
-    if (c === '200500') return hit('Turnstile 的验证框（challenges.cloudflare.com 的 iframe）没能加载，多见于网络连不上 Cloudflare，或扩展、代理规则拦下了它', 'load', '加载失败', 'warn');
-    if (/^300\d{3}$/.test(c)) return hit('浏览器执行质询时出错，可能是扩展干扰或浏览器环境异常', 'env');
-    if (/^600\d{3}$/.test(c)) return hit('质询未通过：Cloudflare 认为当前环境可疑，例如自动化、指纹异常或数据中心 IP', 'fail');
+    if (c === '200500') return hit(T('Turnstile 的验证框（challenges.cloudflare.com 的 iframe）没能加载，多见于网络连不上 Cloudflare，或扩展、代理规则拦下了它', 'The Turnstile frame (an iframe from challenges.cloudflare.com) failed to load, usually because the network cannot reach Cloudflare or an extension or proxy rule blocked it'), 'load', T('加载失败', 'Failed to load'), 'warn');
+    if (/^300\d{3}$/.test(c)) return hit(T('浏览器执行质询时出错，可能是扩展干扰或浏览器环境异常', 'The browser hit an error while running the challenge, possibly extension interference or an unusual browser environment'), 'env');
+    if (/^600\d{3}$/.test(c)) return hit(T('质询未通过：Cloudflare 认为当前环境可疑，例如自动化、指纹异常或数据中心 IP', 'Challenge failed: Cloudflare considers this environment suspicious, for example automation, unusual fingerprints or a data center IP'), 'fail');
     /* 文档把 102 / 103 / 104 / 106 归成一族「参数无效」，说的是质询过程中发出的参数，建议重试——
        不一定是本站配错了，所以不套「多半是本站的部署问题」那句 */
-    if (/^10[2346]\d{3}$/.test(c)) return hit('Turnstile 收到了无效的参数，多见于扩展或代理改动了质询请求，也可能是本站的部署问题', 'param', '出错', 'warn');
-    if (/^105\d{3}$/.test(c)) return hit('Turnstile 被以已弃用或无效的方式调用，多半是本站的部署问题', 'deploy');
-    if (/^(400|100)\d{3}$/.test(c)) return hit('组件参数或初始化出错，多半是本站的部署问题', 'deploy');
-    return { text: c ? 'Turnstile 报告了错误码 ' + c : 'Turnstile 报告了错误，但没有给出错误码', kind: 'unknown', state: '出错', tone: 'warn' };
+    if (/^10[2346]\d{3}$/.test(c)) return hit(T('Turnstile 收到了无效的参数，多见于扩展或代理改动了质询请求，也可能是本站的部署问题', 'Turnstile received invalid parameters, usually because an extension or proxy altered the challenge request; it may also be a deployment issue on this site'), 'param', T('出错', 'Error'), 'warn');
+    if (/^105\d{3}$/.test(c)) return hit(T('Turnstile 被以已弃用或无效的方式调用，多半是本站的部署问题', 'Turnstile was called in a deprecated or invalid way, most likely a deployment issue on this site'), 'deploy');
+    if (/^(400|100)\d{3}$/.test(c)) return hit(T('组件参数或初始化出错，多半是本站的部署问题', 'Widget parameter or initialization error, most likely a deployment issue on this site'), 'deploy');
+    return { text: c ? T('Turnstile 报告了错误码 ', 'Turnstile reported error code ') + c : T('Turnstile 报告了错误，但没有给出错误码', 'Turnstile reported an error without an error code'), kind: 'unknown', state: T('出错', 'Error'), tone: 'warn' };
   }
 
   /* ---------------------------------------------------------------- 加载 api.js
@@ -338,9 +340,9 @@
     card.stall = window.setTimeout(function () {
       if (run !== card.run || card.phase !== 'checking') return;
       card.phase = 'stalled';
-      setState(card, '没有结果', 'warn', 'Turnstile 在 ' + STALL_LIMIT / 1000 + ' 秒内既没有放行，也没有报错。');
-      fill(card.server, [dim('未进行')]);
-      setVerdict(card, 'is-warn', '没有得到结果', '组件迟迟没有给出结论，常见于网络很慢、或连接被代理与扩展中途拦下。点「重置」再试一次。');
+      setState(card, T('没有结果', 'No result'), 'warn', T('Turnstile 在 ', 'Turnstile neither passed nor reported an error within ') + STALL_LIMIT / 1000 + T(' 秒内既没有放行，也没有报错。', ' s.'));
+      fill(card.server, [dim(T('未进行', 'Not run'))]);
+      setVerdict(card, 'is-warn', T('没有得到结果', 'No result'), T('组件迟迟没有给出结论，常见于网络很慢、或连接被代理与扩展中途拦下。点「重置」再试一次。', 'The widget gave no verdict for a long time, usually because of a slow network or a proxy or extension cutting the connection. Click "Reset" to try again.'));
     }, STALL_LIMIT);
   }
 
@@ -368,7 +370,7 @@
       /* 组件的配色在渲染那一刻就定死了，没有事后改的接口（Turnstile 自带的 auto 主题跟的是系统偏好，不是本站的切换按钮）。
          所以访客换主题之后要整个重新渲染一遍，见 start() 与文件末尾的主题监听 */
       theme: pageTheme(),
-      language: 'zh-cn',
+      language: window.I18N && I18N.lang === 'en' ? 'en' : 'zh-cn',
       size: width && width < 300 ? 'compact' : 'flexible',
       appearance: 'always',
       execution: 'render',
@@ -411,11 +413,11 @@
     card.result = null;
     if (card.reset && !ready) card.reset.disabled = true;
     clearVerdict(card);
-    fill(card.server, [dim('待校验')]);
+    fill(card.server, [dim(T('待校验', 'Waiting'))]);
     fill(card.time, [dim('—')]);
     paintMeta(card);
-    setState(card, ready ? '校验中' : '加载 Turnstile…', 'muted');
-    if (card.widget === null) fill(card.mount, [dim('正在加载 Turnstile…')]);
+    setState(card, ready ? T('校验中', 'Verifying') : T('加载 Turnstile…', 'Loading Turnstile…'), 'muted');
+    if (card.widget === null) fill(card.mount, [dim(T('正在加载 Turnstile…', 'Loading Turnstile…'))]);
 
     withApi(function (ok, why) {
       if (run !== card.run) return;
@@ -430,7 +432,7 @@
       }
 
       card.phase = 'checking';
-      setState(card, '校验中', 'muted', '正在后台执行 Cloudflare 的质询…');
+      setState(card, T('校验中', 'Verifying'), 'muted', T('正在后台执行 Cloudflare 的质询…', 'Running Cloudflare\'s challenge in the background…'));
       armStall(card, run);
       card.t0 = P.now();
 
@@ -457,9 +459,9 @@
       } catch (e) {
         stopStall(card);
         card.phase = 'error';
-        setState(card, '失败', 'leak', '组件没能启动：' + (e && e.message ? e.message : '未知原因') + '。');
-        fill(card.server, [dim('未进行')]);
-        setVerdict(card, 'is-warn', '无法完成检测', 'Turnstile 组件没能启动，多半是本站的配置问题，不代表你的浏览器没通过。点「重置」再试一次。');
+        setState(card, T('失败', 'Failed'), 'leak', T('组件没能启动：', 'The widget failed to start: ') + (e && e.message ? e.message : T('未知原因', 'unknown reason')) + T('。', '.'));
+        fill(card.server, [dim(T('未进行', 'Not run'))]);
+        setVerdict(card, 'is-warn', T('无法完成检测', 'Could not complete the check'), T('Turnstile 组件没能启动，多半是本站的配置问题，不代表你的浏览器没通过。点「重置」再试一次。', 'The Turnstile widget failed to start, most likely a configuration issue on this site; it does not mean your browser failed. Click "Reset" to try again.'));
       }
     });
   }
@@ -468,22 +470,22 @@
   function scriptFailed(card, why) {
     card.phase = 'nolib';
     card.why = why;
-    fill(card.server, [dim('未进行')]);
+    fill(card.server, [dim(T('未进行', 'Not run'))]);
 
     if (why === 'timeout') {
-      setState(card, '长时间未加载', 'warn', LOAD_LIMIT / 1000 + ' 秒内没能从 challenges.cloudflare.com 加载 Turnstile（可能被拦截或网络很慢）。');
-      fill(card.mount, [dim('Turnstile 还没有加载完成')]);
-      setVerdict(card, 'is-warn', 'Turnstile 长时间未加载',
-        '可能被拦截或网络很慢：所在网络屏蔽了 challenges.cloudflare.com、广告拦截或代理规则拦下了它，或者只是到那里的链路很慢。'
-        + '脚本晚些到达时，这里会自动开始检测；也可以点「重置」再等 ' + LOAD_LIMIT / 1000 + ' 秒。');
+      setState(card, T('长时间未加载', 'Not loaded after a long time'), 'warn', LOAD_LIMIT / 1000 + T(' 秒内没能从 challenges.cloudflare.com 加载 Turnstile（可能被拦截或网络很慢）。', ' s passed without Turnstile loading from challenges.cloudflare.com (possibly blocked, or a slow network).'));
+      fill(card.mount, [dim(T('Turnstile 还没有加载完成', 'Turnstile has not finished loading'))]);
+      setVerdict(card, 'is-warn', T('Turnstile 长时间未加载', 'Turnstile not loaded after a long time'),
+        T('可能被拦截或网络很慢：所在网络屏蔽了 challenges.cloudflare.com、广告拦截或代理规则拦下了它，或者只是到那里的链路很慢。', 'It may be blocked or the network may be slow: your network blocks challenges.cloudflare.com, an ad blocker or proxy rule blocked it, or the link to it is just slow.')
+        + T('脚本晚些到达时，这里会自动开始检测；也可以点「重置」再等 ', ' If the script arrives later, the check starts here automatically; you can also click "Reset" and wait another ') + LOAD_LIMIT / 1000 + T(' 秒。', ' s.'));
       return;
     }
 
-    setState(card, '脚本加载失败', 'warn', '没能从 challenges.cloudflare.com 加载 Turnstile：请求被拦下，或者拿回来的不是 Turnstile。');
-    fill(card.mount, [dim('没能加载 Turnstile')]);
-    setVerdict(card, 'is-warn', '无法加载 Turnstile',
-      '浏览器没能加载 Cloudflare 的验证组件：所在网络连不上或屏蔽了 challenges.cloudflare.com，或者广告拦截、隐私扩展、代理规则拦下了它。'
-      + '这时任何使用 Turnstile 的网站都会卡在验证这一步。点「重置」重新加载。');
+    setState(card, T('脚本加载失败', 'Script failed to load'), 'warn', T('没能从 challenges.cloudflare.com 加载 Turnstile：请求被拦下，或者拿回来的不是 Turnstile。', 'Could not load Turnstile from challenges.cloudflare.com: the request was blocked, or the response was not Turnstile.'));
+    fill(card.mount, [dim(T('没能加载 Turnstile', 'Could not load Turnstile'))]);
+    setVerdict(card, 'is-warn', T('无法加载 Turnstile', 'Cannot load Turnstile'),
+      T('浏览器没能加载 Cloudflare 的验证组件：所在网络连不上或屏蔽了 challenges.cloudflare.com，或者广告拦截、隐私扩展、代理规则拦下了它。', 'The browser could not load Cloudflare\'s verification widget: your network cannot reach or blocks challenges.cloudflare.com, or an ad blocker, privacy extension or proxy rule blocked it.')
+      + T('这时任何使用 Turnstile 的网站都会卡在验证这一步。点「重置」重新加载。', ' In that case every site that uses Turnstile will get stuck at verification. Click "Reset" to reload.'));
   }
 
   /* 非交互卡片却请你点击：这个 sitekey 在控制台里配成了别的模式。这一轮测的其实是托管模式，
@@ -493,8 +495,8 @@
   }
 
   function niMisconfig(card, what) {
-    setVerdict(card, 'is-warn', '本站的非交互 Widget 配置有误',
-      '非交互模式本不该出现点击框，这个 sitekey 在 Cloudflare 控制台里多半设成了 Managed。' + what + '这一轮测不出非交互模式能否自动通过。');
+    setVerdict(card, 'is-warn', T('本站的非交互 Widget 配置有误', 'This site\'s non-interactive widget is misconfigured'),
+      T('非交互模式本不该出现点击框，这个 sitekey 在 Cloudflare 控制台里多半设成了 Managed。', 'Non-interactive mode should never show a checkbox; this sitekey is probably set to Managed in the Cloudflare dashboard. ') + what + T('这一轮测不出非交互模式能否自动通过。', ' This run cannot tell whether non-interactive mode passes automatically.'));
   }
 
   function onInteractive(card) {
@@ -504,14 +506,14 @@
     /* 访客正在操作：时限交给 Turnstile 自己的 timeout-callback，这里的兜底先撤掉 */
     stopStall(card);
     clearVerdict(card);
-    if (wasStalled) fill(card.server, [dim('待校验')]);
+    if (wasStalled) fill(card.server, [dim(T('待校验', 'Waiting'))]);
     card.interactive = true;
     card.phase = 'interactive';
     var hint = card.mode === 'ni'
-      ? '非交互模式本不该出现点击框——这个 sitekey 在控制台里多半不是 Non-interactive。点击上方组件里的复选框可以继续。'
-      : 'Cloudflare 没能自动判定，请点击上方组件里的复选框完成验证。';
-    setState(card, '需要点击确认', 'warn', hint);
-    say(card, '需要点击确认。' + hint);
+      ? T('非交互模式本不该出现点击框，这个 sitekey 在控制台里多半不是 Non-interactive。点击上方组件里的复选框可以继续。', 'Non-interactive mode should never show a checkbox; this sitekey is probably not set to Non-interactive in the dashboard. Click the checkbox in the widget above to continue.')
+      : T('Cloudflare 没能自动判定，请点击上方组件里的复选框完成验证。', 'Cloudflare could not decide automatically. Click the checkbox in the widget above to complete verification.');
+    setState(card, T('需要点击确认', 'Click needed'), 'warn', hint);
+    say(card, T('需要点击确认。', 'Click needed. ') + hint);
   }
 
   function onAfterInteractive(card) {
@@ -520,7 +522,7 @@
     card.phase = 'checking';
     armStall(card, card.run);
     say(card, '');
-    setState(card, '校验中', 'muted', '已收到你的确认，正在完成验证…');
+    setState(card, T('校验中', 'Verifying'), 'muted', T('已收到你的确认，正在完成验证…', 'Got your confirmation, finishing verification…'));
   }
 
   function onToken(card, token) {
@@ -531,10 +533,10 @@
     card.token = String(token || '');
     card.phase = 'verifying';
     clearVerdict(card);
-    setState(card, '校验成功', 'ok', !card.interactive ? '没有要求任何交互，后台静默完成。'
-      : niMisconfigured(card) ? '你点击确认之后才拿到 token；非交互模式本不该出现点击框。' : '你点击确认之后才拿到 token。');
+    setState(card, T('校验成功', 'Verified'), 'ok', !card.interactive ? T('没有要求任何交互，后台静默完成。', 'No interaction required; completed silently in the background.')
+      : niMisconfigured(card) ? T('你点击确认之后才拿到 token；非交互模式本不该出现点击框。', 'You only got the token after clicking; non-interactive mode should never show a checkbox.') : T('你点击确认之后才拿到 token。', 'You only got the token after clicking.'));
     paintTime(card);
-    fill(card.server, [dim('复核中…')]);
+    fill(card.server, [dim(T('复核中…', 'Verifying on server…'))]);
     paintMeta(card);
     verify(card, run);
   }
@@ -548,64 +550,65 @@
     if (info.kind === 'timeout') card.interactive = true;
     card.phase = 'error';
     card.code = String(code || '');
-    setState(card, info.state, info.tone, info.text + '。');
-    fill(card.server, [dim('未进行')]);
-    fill(card.time, [elapsed !== null ? dim(elapsed + ' ms 后失败') : dim('—')]);
+    setState(card, info.state, info.tone, info.text + T('。', '.'));
+    fill(card.server, [dim(T('未进行', 'Not run'))]);
+    fill(card.time, [elapsed !== null ? dim(elapsed + T(' ms 后失败', ' ms, then failed')) : dim('—')]);
     paintMeta(card);
 
     if (info.kind === 'deploy' || info.kind === 'cf') {
-      setVerdict(card, 'is-warn', '无法完成检测', info.text + '。' + (info.kind === 'cf' ? '稍后点「重置」再试。' : '这不代表你的浏览器没通过。'));
+      setVerdict(card, 'is-warn', T('无法完成检测', 'Could not complete the check'), info.text + T('。', '.') + (info.kind === 'cf' ? T('稍后点「重置」再试。', ' Click "Reset" later to try again.') : T('这不代表你的浏览器没通过。', ' This does not mean your browser failed.')));
     } else if (info.kind === 'browser') {
-      setVerdict(card, 'is-bad', '浏览器不受支持', info.text + '。使用 Turnstile 的网站在这个浏览器上都会卡在验证这一步，换用较新的 Chrome、Edge、Firefox 或 Safari 即可。');
+      setVerdict(card, 'is-bad', T('浏览器不受支持', 'Browser not supported'), info.text + T('。使用 Turnstile 的网站在这个浏览器上都会卡在验证这一步，换用较新的 Chrome、Edge、Firefox 或 Safari 即可。', '. Every site that uses Turnstile will get stuck at verification in this browser; use a recent Chrome, Edge, Firefox or Safari.'));
     } else if (info.kind === 'load') {
-      setVerdict(card, 'is-warn', '无法加载 Turnstile', info.text + '。质询没能开始，这不代表 Cloudflare 判你没通过。点「重置」再试一次。');
+      setVerdict(card, 'is-warn', T('无法加载 Turnstile', 'Cannot load Turnstile'), info.text + T('。质询没能开始，这不代表 Cloudflare 判你没通过。点「重置」再试一次。', '. The challenge could not start; this does not mean Cloudflare failed you. Click "Reset" to try again.'));
     } else if (info.kind === 'param') {
-      setVerdict(card, 'is-warn', '无法完成检测', info.text + '。点「重置」再试一次。');
+      setVerdict(card, 'is-warn', T('无法完成检测', 'Could not complete the check'), info.text + T('。点「重置」再试一次。', '. Click "Reset" to try again.'));
     } else if (info.kind === 'unknown') {
-      setVerdict(card, 'is-warn', '无法完成检测', info.text + '。本页认不出这个错误码，不能据此判断你的浏览器是否通过。点「重置」再试一次。');
+      setVerdict(card, 'is-warn', T('无法完成检测', 'Could not complete the check'), info.text + T('。本页认不出这个错误码，不能据此判断你的浏览器是否通过。点「重置」再试一次。', '. This page does not recognize this error code, so it cannot tell whether your browser passed. Click "Reset" to try again.'));
     } else if (niMisconfigured(card)) {
-      niMisconfig(card, info.text + '。');
+      niMisconfig(card, info.text + T('。', '.'));
     } else if (info.kind === 'timeout') {
-      setVerdict(card, 'is-warn', '需要手动确认', 'Cloudflare 没能自动判定、请你点击确认，但这一轮没有在时限内完成。' + CAUSES);
+      setVerdict(card, 'is-warn', T('需要手动确认', 'Manual confirmation needed'), T('Cloudflare 没能自动判定、请你点击确认，但这一轮没有在时限内完成。', 'Cloudflare could not decide automatically and asked you to click, but this run did not finish in time.') + CAUSES);
     } else if (info.kind === 'fail') {
       /* 只有 600xxx 是 Cloudflare 作出的判定；时钟、缓存、超时这些 env 错误轮不到它「满不满意」 */
-      setVerdict(card, 'is-bad', '未能通过验证', info.text + '。'
-        + (card.mode === 'ni' ? '非交互模式不会给出点击框，Cloudflare 不满意就直接判失败。' : '')
-        + '这是 Cloudflare 基于它能看到的信号作出的判断，不一定准确。' + CAUSES);
+      setVerdict(card, 'is-bad', T('未能通过验证', 'Verification failed'), info.text + T('。', '.')
+        + (card.mode === 'ni' ? T('非交互模式不会给出点击框，Cloudflare 不满意就直接判失败。', ' Non-interactive mode never shows a checkbox; if Cloudflare is not satisfied it simply fails.') : '')
+        + T('这是 Cloudflare 基于它能看到的信号作出的判断，不一定准确。', ' This is Cloudflare\'s judgment based on the signals it can see, and may not be accurate.') + CAUSES);
     } else {
-      setVerdict(card, 'is-bad', '未能通过验证', info.text + '。点「重置」再试一次。');
+      setVerdict(card, 'is-bad', T('未能通过验证', 'Verification failed'), info.text + T('。点「重置」再试一次。', '. Click "Reset" to try again.'));
     }
   }
 
   function onTimeout(card) {
     stopStall(card);
     card.phase = 'timeout';
-    setState(card, '交互超时', 'warn', 'Cloudflare 请你点击确认，但没有在时限内完成。点「重置」重新检测。');
-    fill(card.server, [dim('未进行')]);
+    setState(card, T('交互超时', 'Interaction timed out'), 'warn', T('Cloudflare 请你点击确认，但没有在时限内完成。点「重置」重新检测。', 'Cloudflare asked you to click, but it was not completed in time. Click "Reset" to check again.'));
+    fill(card.server, [dim(T('未进行', 'Not run'))]);
     fill(card.time, [dim('—')]);
-    if (niMisconfigured(card)) niMisconfig(card, '请你点击确认之后，这一轮没有在时限内完成。');
-    else setVerdict(card, 'is-warn', '需要手动确认', 'Cloudflare 没能自动判定、请你点击确认，但这一轮没有在时限内完成。' + CAUSES);
+    if (niMisconfigured(card)) niMisconfig(card, T('请你点击确认之后，这一轮没有在时限内完成。', 'After you were asked to click, this run did not finish in time.'));
+    else setVerdict(card, 'is-warn', T('需要手动确认', 'Manual confirmation needed'), T('Cloudflare 没能自动判定、请你点击确认，但这一轮没有在时限内完成。', 'Cloudflare could not decide automatically and asked you to click, but this run did not finish in time.') + CAUSES);
   }
 
   function onUnsupported(card) {
     stopStall(card);
     card.phase = 'unsupported';
-    setState(card, '浏览器不受支持', 'leak', 'Turnstile 不支持当前浏览器。');
-    fill(card.server, [dim('未进行')]);
-    setVerdict(card, 'is-bad', '浏览器不受支持', '使用 Turnstile 的网站在这个浏览器上都会卡在验证这一步，换用较新的 Chrome、Edge、Firefox 或 Safari 即可。');
+    setState(card, T('浏览器不受支持', 'Browser not supported'), 'leak', T('Turnstile 不支持当前浏览器。', 'Turnstile does not support this browser.'));
+    fill(card.server, [dim(T('未进行', 'Not run'))]);
+    setVerdict(card, 'is-bad', T('浏览器不受支持', 'Browser not supported'), T('使用 Turnstile 的网站在这个浏览器上都会卡在验证这一步，换用较新的 Chrome、Edge、Firefox 或 Safari 即可。', 'Every site that uses Turnstile will get stuck at verification in this browser; use a recent Chrome, Edge, Firefox or Safari.'));
   }
 
   /* token 过期（300 秒）：这一轮的结论早已得出，不动它，只把状态标出来 */
   function onExpired(card) {
     if (card.phase !== 'done' && card.phase !== 'verifying') return;
     card.phase = 'expired';
-    setState(card, 'token 已过期', 'muted', 'token 的有效期是 300 秒，上面的结论不受影响；点「重置」重新检测。');
+    setState(card, T('token 已过期', 'Token expired'), 'muted', T('token 的有效期是 300 秒，上面的结论不受影响；点「重置」重新检测。', 'Tokens are valid for 300 seconds. The result above is unaffected; click "Reset" to check again.'));
   }
 
   /* ---------------------------------------------------------------- 服务端复核 */
 
   function verify(card, run) {
-    var body = 'mode=' + encodeURIComponent(card.mode) + '&token=' + encodeURIComponent(card.token);
+    var body = 'mode=' + encodeURIComponent(card.mode) + '&token=' + encodeURIComponent(card.token)
+      + '&action=' + encodeURIComponent(card.action || '') + (window.I18N && I18N.lang === 'en' ? '&lang=en' : '');
 
     /* 凭据与来源页沿用 probe.js 的默认（不带 Cookie、no-referrer）：这个接口不看 Cookie，也用不着 Referer。
        同源检查（TurnstileProbe::sameOrigin）看的是 Origin——fetch 默认是 cors 模式，POST 照样带着本站的 Origin。
@@ -644,11 +647,11 @@
     if (d && d.message) {
       why = String(d.message);
     } else if (answer.status === 0) {
-      why = answer.kind === 'timeout' ? '本站服务器 ' + VERIFY_TIMEOUT / 1000 + ' 秒内没有回应。' : '没能连上本站服务器。';
+      why = answer.kind === 'timeout' ? T('本站服务器 ', 'This site\'s server did not respond within ') + VERIFY_TIMEOUT / 1000 + T(' 秒内没有回应。', ' s.') : T('没能连上本站服务器。', 'Could not reach this site\'s server.');
     } else {
-      why = '本站服务器返回了 HTTP ' + answer.status + '。';
+      why = T('本站服务器返回了 HTTP ', 'This site\'s server returned HTTP ') + answer.status + T('。', '.');
     }
-    fill(card.server, [line([tag('未完成', 'warn')]), note(why)]);
+    fill(card.server, [line([tag(T('未完成', 'Incomplete'), 'warn')]), note(why)]);
   }
 
   function conclude(card) {
@@ -656,19 +659,19 @@
     var checked = !!(d && d.ok === true);
 
     if (checked && !d.pass) {
-      setVerdict(card, 'is-bad', '服务端复核未通过', '前端拿到了 token，但复核没有通过：' + show(d.message));
+      setVerdict(card, 'is-bad', T('服务端复核未通过', 'Server verification failed'), T('前端拿到了 token，但复核没有通过：', 'The page received a token, but verification failed: ') + show(d.message));
     } else if (niMisconfigured(card)) {
-      niMisconfig(card, '你点击确认之后才拿到 token' + (checked ? '，服务端复核也通过了' : '，本站这一次没能向 Cloudflare 复核它') + '。');
+      niMisconfig(card, T('你点击确认之后才拿到 token', 'You only got the token after clicking') + (checked ? T('，服务端复核也通过了', ', and server verification also passed') : T('，本站这一次没能向 Cloudflare 复核它', ', and this site could not verify it with Cloudflare this time')) + T('。', '.'));
     } else if (card.interactive) {
-      setVerdict(card, 'is-warn', '需要手动确认', 'Cloudflare 没能自动判定，请你点击确认后才放行'
-        + (checked ? '（服务端复核通过）' : '') + '。' + CAUSES);
+      setVerdict(card, 'is-warn', T('需要手动确认', 'Manual confirmation needed'), T('Cloudflare 没能自动判定，请你点击确认后才放行', 'Cloudflare could not decide automatically and only let you through after you clicked')
+        + (checked ? T('（服务端复核通过）', ' (server verification passed)') : '') + T('。', '.') + CAUSES);
     } else if (!checked) {
-      setVerdict(card, 'is-warn', '前端已无感通过，服务端未能复核',
-        '浏览器没有被要求任何交互就拿到了 token，但本站这一次没能向 Cloudflare 复核它（见「服务端验证」），结论仅供参考。点「重置」可以再测一次。');
+      setVerdict(card, 'is-warn', T('前端已无感通过，服务端未能复核', 'Passed invisibly in the page, server could not verify'),
+        T('浏览器没有被要求任何交互就拿到了 token，但本站这一次没能向 Cloudflare 复核它（见「服务端验证」），结论仅供参考。点「重置」可以再测一次。', 'The browser got a token without being asked to interact, but this site could not verify it with Cloudflare this time (see "Server verification"), so treat the result as indicative. Click "Reset" to test again.'));
     } else {
-      setVerdict(card, 'is-good', '智能无感通过！', card.mode === 'mg'
-        ? 'Managed 模式表现极佳：Cloudflare 自动判定安全，免除了用户点击，服务端复核也已通过。'
-        : '无需任何用户交互，后台静默校验成功，服务端复核也已通过。');
+      setVerdict(card, 'is-good', T('自动通过', 'Passed automatically'), card.mode === 'mg'
+        ? T('托管模式下 Cloudflare 自动判定为真人，没有要求点击，服务端复核也已通过。', 'In managed mode Cloudflare decided automatically that you are human, did not ask for a click, and server verification also passed.')
+        : T('没有要求任何交互，后台静默校验成功，服务端复核也已通过。', 'No interaction required; verification completed silently in the background, and server verification also passed.'));
     }
   }
 

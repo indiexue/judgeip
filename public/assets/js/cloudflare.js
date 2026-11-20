@@ -15,6 +15,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('cloudflare');
   if (!root) return;
 
@@ -65,13 +67,13 @@
      进度那一行原本写着「打开页面即自动开始」，也一并改掉，免得和结论自相矛盾 */
   if (!P || !window.fetch || !window.Promise) {
     if (!P) {
-      setVerdict('is-warn', '检测脚本加载失败',
-        '本站的检测脚本（probe.js）没能加载：可能是网络中断，也可能被浏览器扩展拦截了。请刷新页面重试；仍然不行，检查是否有扩展拦截了本站脚本。');
+      setVerdict('is-warn', T('检测脚本加载失败', 'Check script failed to load'),
+        T('本站的检测脚本（probe.js）没能加载：可能是网络中断，也可能被浏览器扩展拦截了。请刷新页面重试；仍然不行，检查是否有扩展拦截了本站脚本。', 'This site\'s check script (probe.js) did not load. The network may have dropped, or a browser extension blocked it. Reload the page; if that doesn\'t help, check whether an extension is blocking this site\'s scripts.'));
     } else {
-      setVerdict('is-warn', '当前浏览器无法运行检测',
-        '检测需要浏览器支持 fetch 与 Promise，当前浏览器太旧，请换用较新的浏览器。');
+      setVerdict('is-warn', T('当前浏览器无法运行检测', 'This browser cannot run the check'),
+        T('检测需要浏览器支持 fetch 与 Promise，当前浏览器太旧，请换用较新的浏览器。', 'The check needs fetch and Promise support. This browser is too old; use a newer one.'));
     }
-    if (progress) progress.textContent = !P ? '检测脚本加载失败，请刷新页面重试。' : '当前浏览器不支持本页的检测。';
+    if (progress) progress.textContent = !P ? T('检测脚本加载失败，请刷新页面重试。', 'Failed to load the check script. Reload the page and try again.') : T('当前浏览器不支持本页的检测。', 'This browser does not support the checks on this page.');
     if (runButton) runButton.disabled = true;
     return;
   }
@@ -125,7 +127,7 @@
   }
 
   function kmText(km) {
-    return '约 ' + thousands(km) + ' 公里';
+    return T('约 ' + thousands(km) + ' 公里', 'about ' + thousands(km) + ' km');
   }
 
   function num(value) {
@@ -163,7 +165,7 @@
   function paintRaw() {
     if (!rawPre) return;
     if (!rawText) {
-      rawPre.textContent = '尚未取得。';
+      rawPre.textContent = T('尚未取得。', 'Not available yet.');
       return;
     }
     rawPre.textContent = masked
@@ -174,7 +176,7 @@
   if (maskButton) {
     maskButton.addEventListener('click', function () {
       masked = !masked;
-      var label = masked ? '显示 IP 地址' : '隐藏 IP 地址';
+      var label = masked ? T('显示 IP 地址', 'Show IP addresses') : T('隐藏 IP 地址', 'Hide IP addresses');
       maskButton.setAttribute('aria-pressed', masked ? 'true' : 'false');
       maskButton.setAttribute('aria-label', label);
       maskButton.setAttribute('title', label);
@@ -187,8 +189,8 @@
 
   /* 「🇭🇰 香港」+「HKG」。查不到的代码原样显示，不猜 */
   function coloNodes(info) {
-    if (!info.code) return [dim('未知')];
-    if (!info.known) return [P.el('span', 'mono', info.code), dim('（未收录的节点代码）')];
+    if (!info.code) return [dim(T('未知', 'Unknown'))];
+    if (!info.known) return [P.el('span', 'mono', info.code), dim(T('（未收录的节点代码）', ' (colo code not in our list)'))];
     var flag = P.flag(info.cc);
     return [
       P.el('span', 'cfcity', (flag ? flag + ' ' : '') + info.city),
@@ -197,16 +199,16 @@
   }
 
   function coloTitle(info) {
-    if (!info.code) return '未知';
+    if (!info.code) return T('未知', 'Unknown');
     if (!info.known) return info.code;
     var flag = P.flag(info.cc);
-    return (flag ? flag + ' ' : '') + info.city + '（' + info.code + '）';
+    return (flag ? flag + ' ' : '') + info.city + T('（' + info.code + '）', ' (' + info.code + ')');
   }
 
   /* loc：两位国家代码；T1 是 Cloudflare 给 Tor 出口的专用代码，XX 是查不到 */
   function countryText(loc) {
     var code = String(loc || '').toUpperCase();
-    if (code === 'T1') return 'Tor 网络';
+    if (code === 'T1') return T('Tor 网络', 'Tor network');
     if (!code || code === 'XX') return '';
     return P.country(code) || code;
   }
@@ -214,20 +216,20 @@
   /* trace 里的 http 是 http/1.1 | http/2 | http/3 */
   function httpInfo(value) {
     var h = String(value || '').toLowerCase();
-    if (h === 'http/3') return { label: 'HTTP/3（QUIC）', short: 'HTTP/3', tone: 'ok' };
+    if (h === 'http/3') return { label: T('HTTP/3（QUIC）', 'HTTP/3 (QUIC)'), short: 'HTTP/3', tone: 'ok' };
     if (h === 'http/2') return { label: 'HTTP/2', short: 'HTTP/2', tone: 'muted' };
     if (h.indexOf('http/1') === 0) return { label: h.toUpperCase(), short: h.toUpperCase(), tone: 'warn' };
-    return { label: h ? h.toUpperCase() : '未知', short: h ? h.toUpperCase() : '—', tone: 'muted' };
+    return { label: h ? h.toUpperCase() : T('未知', 'Unknown'), short: h ? h.toUpperCase() : '—', tone: 'muted' };
   }
 
   function tlsLabel(value) {
-    return String(value || '').replace(/^TLSv/i, 'TLS ') || '未知';
+    return String(value || '').replace(/^TLSv/i, 'TLS ') || T('未知', 'Unknown');
   }
 
   function warpLabel(value) {
     var w = String(value || 'off').toLowerCase();
-    if (w === 'plus') return 'WARP+ 已开启';
-    if (w === 'on') return 'WARP 已开启';
+    if (w === 'plus') return T('WARP+ 已开启', 'WARP+ on');
+    if (w === 'on') return T('WARP 已开启', 'WARP on');
     return '';
   }
 
@@ -303,17 +305,17 @@
     if (visibleIp) {
       var sameFamily = P.isIPv6(ip) === P.isIPv6(visibleIp);
       if (sameFamily && P.sameIp(ip, visibleIp)) {
-        nodes.push(tag('与本站看到的一致', 'ok'));
+        nodes.push(tag(T('与本站看到的一致', 'Same as seen by this site'), 'ok'));
       } else if (sameFamily && samePrefix64(ip, visibleIp)) {
-        nodes.push(tag('与本站同一 /64 网段', 'ok'));
-        text = 'IPv6 隐私地址会定期更换后 64 位，前 64 位相同就是同一条线路、同一个出口。';
+        nodes.push(tag(T('与本站同一 /64 网段', 'Same /64 as seen by this site'), 'ok'));
+        text = T('IPv6 隐私地址会定期更换后 64 位，前 64 位相同就是同一条线路、同一个出口。', 'IPv6 privacy addresses change the last 64 bits regularly; the same first 64 bits means the same line and the same exit.');
       } else if (sameFamily) {
-        nodes.push(tag('与本站看到的不同', 'warn'));
-        text = '访问 Cloudflare 的流量走了另一个出口：常见于按域名分流的代理规则，或带多个出口的代理服务。';
+        nodes.push(tag(T('与本站看到的不同', 'Differs from what this site sees'), 'warn'));
+        text = T('访问 Cloudflare 的流量走了另一个出口：常见于按域名分流的代理规则，或带多个出口的代理服务。', 'Traffic to Cloudflare uses a different exit, common with per-domain proxy rules or proxy services with multiple exits.');
       } else {
         /* 跨地址族没法比：两条都可能是你自己的出口，不报警 */
-        text = '本站经 ' + family(visibleIp) + ' 看到你，Cloudflare 经 ' + family(ip)
-          + ' 看到你——双栈网络下两边各选了一个地址族，这是正常现象，不是分流。';
+        text = T('本站经 ', 'This site sees you over ') + family(visibleIp) + T(' 看到你，Cloudflare 经 ', ' and Cloudflare over ') + family(ip)
+          + T('看到你。双栈网络下两边各选了一个地址族，这是正常现象，不是分流。', '. On a dual-stack network each side picked an address family; this is normal, not split routing.');
       }
     }
 
@@ -324,9 +326,9 @@
     var info = httpInfo(value);
     var text = '';
     if (info.short === 'HTTP/2') {
-      text = '首次访问通常为 HTTP/2：浏览器记住这个站点支持 HTTP/3 之后，新连接才会改走 QUIC，刷新后再测即可。';
+      text = T('首次访问通常为 HTTP/2：浏览器记住这个站点支持 HTTP/3 之后，新连接才会改走 QUIC，刷新后再测即可。', 'The first visit is usually HTTP/2. New connections switch to QUIC once the browser remembers the site supports HTTP/3; refresh and test again.');
     } else if (info.tone === 'warn') {
-      text = '只协商到了 HTTP/1.x，通常说明中间有一层不支持新协议的代理或安全软件。';
+      text = T('只协商到了 HTTP/1.x，通常说明中间有一层不支持新协议的代理或安全软件。', 'Only HTTP/1.x was negotiated, which usually means a proxy or security software in the middle that does not support newer protocols.');
     }
     fill(cells.http, [line([tag(info.label, info.tone)]), text ? note(text) : null]);
   }
@@ -334,33 +336,33 @@
   function renderTls(value) {
     var label = tlsLabel(value);
     var tone = /1\.3/.test(label) ? 'ok' : 'muted';
-    var text = /1\.[0-2]$/.test(label) ? '能用，但不是当前的 TLS 1.3，可能经过了做 TLS 解密的代理或安全软件。' : '';
+    var text = /1\.[0-2]$/.test(label) ? T('能用，但不是当前的 TLS 1.3，可能经过了做 TLS 解密的代理或安全软件。', 'Works, but not the current TLS 1.3; the connection may pass through a TLS-intercepting proxy or security software.') : '';
     fill(cells.tls, [line([tag(label, tone)]), text ? note(text) : null]);
   }
 
   function renderSni(value) {
     var s = String(value || '').toLowerCase();
     if (s === 'encrypted') {
-      fill(cells.sni, [line([tag('加密 SNI（ECH）', 'ok')]), note('连沿途的网络设备也看不到你访问的是哪个域名。')]);
+      fill(cells.sni, [line([tag(T('加密 SNI（ECH）', 'Encrypted SNI (ECH)'), 'ok')]), note(T('连沿途的网络设备也看不到你访问的是哪个域名。', 'Even network devices along the way cannot see which domain you visit.'))]);
     } else if (s === 'plaintext') {
-      fill(cells.sni, [line([tag('明文 SNI', 'muted')]),
-        note('目前绝大多数连接都是如此：浏览器开启安全 DNS、且站点支持 ECH 时才会加密。')]);
+      fill(cells.sni, [line([tag(T('明文 SNI', 'Plaintext SNI'), 'muted')]),
+        note(T('目前绝大多数连接都是如此：浏览器开启安全 DNS、且站点支持 ECH 时才会加密。', 'This is the case for almost all connections today; SNI is only encrypted when the browser uses secure DNS and the site supports ECH.'))]);
     } else if (s === 'off') {
-      fill(cells.sni, [line([tag('未发送 SNI', 'muted')])]);
+      fill(cells.sni, [line([tag(T('未发送 SNI', 'No SNI sent'), 'muted')])]);
     } else {
-      fill(cells.sni, [line([P.el('span', 'mono', s || '未知')])]);
+      fill(cells.sni, [line([P.el('span', 'mono', s || T('未知', 'Unknown'))])]);
     }
   }
 
   function renderKex(value) {
     if (!value) {
-      fill(cells.kex, [dim('未知')]);
+      fill(cells.kex, [dim(T('未知', 'Unknown'))]);
       return;
     }
     var pq = /mlkem|kyber/i.test(value);
     fill(cells.kex, [
-      line([P.el('span', 'mono', value), pq ? tag('后量子', 'ok') : tag('非后量子', 'muted')]),
-      pq ? note('混合了 ML-KEM 的密钥交换：即使将来出现量子计算机，今天截获的流量也难以被解密。') : null
+      line([P.el('span', 'mono', value), pq ? tag(T('后量子', 'Post-quantum'), 'ok') : tag(T('非后量子', 'Not post-quantum'), 'muted')]),
+      pq ? note(T('混合了 ML-KEM 的密钥交换：即使将来出现量子计算机，今天截获的流量也难以被解密。', 'Hybrid key exchange with ML-KEM: traffic captured today stays hard to decrypt even if quantum computers arrive.')) : null
     ]);
   }
 
@@ -369,9 +371,9 @@
     if (v === 'on') {
       fill(cell, [line([tag(onText, 'warn')]), note(onNote)]);
     } else if (v === 'off') {
-      fill(cell, [line([tag('未启用', 'muted')])]);
+      fill(cell, [line([tag(T('未启用', 'Off'), 'muted')])]);
     } else {
-      fill(cell, [line([P.el('span', 'mono', v || '未知')])]);
+      fill(cell, [line([P.el('span', 'mono', v || T('未知', 'Unknown'))])]);
     }
   }
 
@@ -379,7 +381,7 @@
     var label = warpLabel(value);
     if (label) {
       fill(cells.warp, [line([tag(label, 'warn')]),
-        note('Cloudflare 看到的是 WARP 的出口，命中节点也按 WARP 出口调度。')]);
+        note(T('Cloudflare 看到的是 WARP 的出口，命中节点也按 WARP 出口调度。', 'Cloudflare sees WARP\'s exit, and the node is chosen based on the WARP exit.'))]);
     } else {
       renderSwitch(cells.warp, value, '', '');
     }
@@ -388,7 +390,7 @@
   function renderTime(data, t0, t1) {
     var edge = num(data.ts);
     if (edge === null) {
-      fill(cells.ts, [dim('未知')]);
+      fill(cells.ts, [dim(T('未知', 'Unknown'))]);
       return;
     }
 
@@ -414,16 +416,16 @@
       var coarse = Math.floor(edge) === edge;
       var skew = (t0 + t1) / 2 - (coarse ? edgeMs + 500 : edgeMs);
       var amount = coarse ? Math.round(Math.abs(skew) / 1000) : Math.round(Math.abs(skew) / 100) / 10;
-      var shown = (coarse ? String(amount) : amount.toFixed(1)) + ' 秒';
+      var shown = (coarse ? String(amount) : amount.toFixed(1)) + T(' 秒', ' s');
       if (amount <= SKEW_WARN_S) {
-        nodes.push(tag('本机时钟准确', 'ok'));
+        nodes.push(tag(T('本机时钟准确', 'Local clock is accurate'), 'ok'));
         if (amount > 0) {
-          nodes.push(dim('偏差约 ' + (skew > 0 ? '+' : '−') + shown));
+          nodes.push(dim(T('偏差约 ', 'Offset about ') + (skew > 0 ? '+' : '−') + shown));
         } else {
-          nodes.push(dim(coarse ? '在 1 秒的测量精度内与边缘时间一致' : '偏差不到 0.1 秒'));
+          nodes.push(dim(coarse ? T('在 1 秒的测量精度内与边缘时间一致', 'Matches edge time within the 1-second measurement precision') : T('偏差不到 0.1 秒', 'Offset under 0.1 s')));
         }
       } else {
-        nodes.push(tag((skew > 0 ? '本机时钟快约 ' : '本机时钟慢约 ') + shown, 'warn'));
+        nodes.push(tag((skew > 0 ? T('本机时钟快约 ', 'Local clock ahead by about ') : T('本机时钟慢约 ', 'Local clock behind by about ')) + shown, 'warn'));
       }
     }
 
@@ -438,32 +440,32 @@
     renderSni(data.sni);
     renderKex(data.kex);
     renderWarp(data.warp);
-    renderSwitch(cells.gateway, data.gateway, '已启用', '流量正经过某个组织配置的 Cloudflare Gateway（多见于公司设备）。');
-    renderSwitch(cells.rbi, data.rbi, '已启用', '网页其实运行在 Cloudflare 的远程浏览器里，你看到的只是渲染结果。');
+    renderSwitch(cells.gateway, data.gateway, T('已启用', 'On'), T('流量正经过某个组织配置的 Cloudflare Gateway（多见于公司设备）。', 'Traffic passes through a Cloudflare Gateway configured by some organization (common on company devices).'));
+    renderSwitch(cells.rbi, data.rbi, T('已启用', 'On'), T('网页其实运行在 Cloudflare 的远程浏览器里，你看到的只是渲染结果。', 'The page actually runs in a Cloudflare remote browser; you only see the rendered result.'));
     renderTime(data, main.t0, main.t1);
 
     /* 国家与节点先按 trace 摆出来，本站的位置记录回来后再补上省市、ASN 与距离 */
     var country = countryText(data.loc);
-    fill(cells.loc, [line([country ? P.el('span', '', country) : dim('未知')])]);
-    fill(cells.asn, [dim('查询中…')]);
+    fill(cells.loc, [line([country ? P.el('span', '', country) : dim(T('未知', 'Unknown'))])]);
+    fill(cells.asn, [dim(T('查询中…', 'Looking up…'))]);
     fill(cells.colo, [line(coloNodes(P.colo(colos, data.colo)))]);
   }
 
   function renderMainFailure(failure) {
     var kind = failure && failure.kind;
     ['ip', 'loc', 'asn', 'colo', 'http', 'tls', 'sni', 'kex', 'warp', 'gateway', 'rbi', 'ts'].forEach(function (key) {
-      fill(cells[key], [tag('未取到', 'muted')]);
+      fill(cells[key], [tag(T('未取到', 'Not available'), 'muted')]);
     });
 
     var why = kind === 'csp'
-      ? '本页的内容安全策略（CSP）没有放行 ' + mainHost + '——这是本站的部署问题，不是你的网络问题。'
+      ? T('本页的内容安全策略（CSP）没有放行 ', 'This page\'s Content Security Policy (CSP) does not allow ') + mainHost + T('。这是本站的部署问题，不是你的网络问题。', '. This is a deployment issue on this site, not your network.')
       : (kind === 'timeout'
-        ? '请求 ' + mainHost + '/cdn-cgi/trace 超时（' + TIMEOUT / 1000 + ' 秒）。'
-        : '请求 ' + mainHost + '/cdn-cgi/trace 失败，或者返回的不是 trace 文本。');
+        ? T('请求 ', 'Request to ') + mainHost + T('/cdn-cgi/trace 超时（', '/cdn-cgi/trace timed out (') + TIMEOUT / 1000 + T(' 秒）。', ' s).')
+        : T('请求 ', 'Request to ') + mainHost + T('/cdn-cgi/trace 失败，或者返回的不是 trace 文本。', '/cdn-cgi/trace failed, or did not return trace text.'));
 
-    setVerdict('is-bad', 'Cloudflare 接口不可达',
-      why + (kind === 'csp' ? '' : '最常见的原因是浏览器扩展（广告拦截、隐私保护类）或代理规则拦下了 cdn-cgi/trace，'
-        + '公司网络的过滤网关也会这样做。') + '下方的 1.1.1.1 与节点等级对比仍会逐个尝试。');
+    setVerdict('is-bad', T('Cloudflare 接口不可达', 'Cloudflare endpoint unreachable'),
+      why + (kind === 'csp' ? '' : T('最常见的原因是浏览器扩展（广告拦截、隐私保护类）或代理规则拦下了 cdn-cgi/trace，', ' The most common cause is a browser extension (ad blocking, privacy) or a proxy rule blocking cdn-cgi/trace;')
+        + T('公司网络的过滤网关也会这样做。', ' corporate filtering gateways do this too.')) + T('下方的 1.1.1.1 与节点等级对比仍会逐个尝试。', ' The 1.1.1.1 and network tier checks below will still be tried one by one.'));
   }
 
   /* 本站的位置记录回来之后：国家行补省市，ASN 行，节点行补距离与远近，最后给出结论。
@@ -487,24 +489,24 @@
       if (me.city && me.city !== me.region) place.push(me.city);
     }
     fill(cells.loc, [line([
-      country ? P.el('span', '', country) : dim('未知'),
-      place.length ? dim(place.join(' · ') + '（本站数据）') : null
+      country ? P.el('span', '', country) : dim(T('未知', 'Unknown')),
+      place.length ? dim(place.join(' · ') + T('（本站数据）', ' (this site\'s data)')) : null
     ])]);
 
     if (same && me.asn !== null) {
       fill(cells.asn, [line([P.el('span', 'mono', 'AS' + me.asn), me.org ? P.el('span', '', me.org) : null])]);
     } else if (same) {
-      fill(cells.asn, [dim('本站没有查到这条地址的 ASN')]);
+      fill(cells.asn, [dim(T('本站没有查到这条地址的 ASN', 'This site found no ASN for this address'))]);
     } else if (other) {
       fill(cells.asn, [
-        line([dim('未取到')]),
+        line([dim(T('未取到', 'Not available'))]),
         note((P.isIPv6(me.ip) !== P.isIPv6(data.ip)
-          ? '本站经 ' + family(me.ip) + '、Cloudflare 经 ' + family(data.ip) + ' 看到你，是两条不同的地址'
-          : 'Cloudflare 看到的出口与本站看到的不是同一个地址')
-          + '；本站只查得到它自己看到的那一条。')
+          ? T('本站经 ' + family(me.ip) + '、Cloudflare 经 ' + family(data.ip) + ' 看到你，是两条不同的地址', 'This site sees you over ' + family(me.ip) + ' and Cloudflare over ' + family(data.ip) + ', two different addresses')
+          : T('Cloudflare 看到的出口与本站看到的不是同一个地址', 'The exit Cloudflare sees is not the address this site sees'))
+          + T('；本站只查得到它自己看到的那一条。', '; this site can only look up the one it sees.'))
       ]);
     } else {
-      fill(cells.asn, [dim('未取到（本站的归属查询暂时不可用）')]);
+      fill(cells.asn, [dim(T('未取到（本站的归属查询暂时不可用）', 'Not available (this site\'s lookup is temporarily unavailable)'))]);
     }
 
     var lat = same ? me.lat : null;
@@ -522,11 +524,11 @@
 
     var coloNote = '';
     if (cls === 'far' && loc === 'CN') {
-      coloNote = '中国大陆访客访问没有接入中国网络的站点时，常被调度到美国西海岸等远处机房，这是 Cloudflare 的调度策略，不是你的网络故障。';
+      coloNote = T('中国大陆访客访问没有接入中国网络的站点时，常被调度到美国西海岸等远处机房，这是 Cloudflare 的调度策略，不是你的网络故障。', 'Visitors in mainland China reaching sites not on the China network are often routed to distant data centers such as the US West Coast. That is Cloudflare\'s routing policy, not a fault in your network.');
     } else if (other) {
-      coloNote = '本站查到的坐标属于另一条地址，不能用来估算这里的距离，只按国家判断远近。';
+      coloNote = T('本站查到的坐标属于另一条地址，不能用来估算这里的距离，只按国家判断远近。', 'The coordinates this site found belong to a different address, so they cannot be used to estimate distance here; nearness is judged by country only.');
     } else if (lat === null || lon === null) {
-      coloNote = '没有取到你的大致坐标，无法估算距离。';
+      coloNote = T('没有取到你的大致坐标，无法估算距离。', 'Your approximate coordinates are not available, so distance cannot be estimated.');
     }
     fill(cells.colo, [line(coloLine), coloNote ? note(coloNote) : null]);
 
@@ -538,41 +540,41 @@
     var tone = cls === 'near' ? 'is-good' : cls === 'far' ? 'is-warn' : 'is-info';
     var name = coloTitle(info);
     /* 「马德里（MAD）节点」括号后不再空格；裸代码「XYZ 节点」要空一格 */
-    var title = '命中 Cloudflare ' + name + (/）$/.test(name) ? '节点' : ' 节点');
+    var title = T('命中 Cloudflare ' + name + (/）$/.test(name) ? '节点' : ' 节点'), 'Cloudflare node: ' + name);
     var parts = [];
-    var where = km !== null ? '节点距你' + kmText(km) + '，' : '';
+    var where = km !== null ? T('节点距你' + kmText(km) + '，', 'The node is ' + kmText(km) + ' away: ') : '';
     var sameCountry = !!info.cc && info.cc === String(data.loc || '').toUpperCase();
 
     /* 超出距离档、却因为同国或周边表升了档的，把理由说出来：
        「约 1,243 公里，属于就近接入」不解释的话，读的人会以为本页的 1000 公里是随口说的 */
     if (cls === 'near' && km !== null && km > P.NEAR_KM) {
       parts.push(where + (sameCountry
-        ? '与你的出口在同一个国家/地区，属于就近接入，这是理想状态。'
-        : '是你所在地区的周边节点，属于就近接入——这已经是能给到的最近落点。'));
+        ? T('与你的出口在同一个国家/地区，属于就近接入，这是理想状态。', 'in the same country/region as your exit, so it counts as nearby. This is ideal.')
+        : T('是你所在地区的周边节点，属于就近接入，这已经是能给到的最近落点。', 'a node near your region, so it counts as nearby. This is the closest landing point available.')));
     } else if (cls === 'near') {
-      parts.push(where + '属于就近接入，这是理想状态。');
+      parts.push(where + T('属于就近接入，这是理想状态。', 'nearby. This is ideal.'));
     } else if (cls === 'region' && km !== null && km > P.REGION_KM) {
-      parts.push(where + '但与你的出口在同一个国家/地区，属于区域内，延迟通常可以接受。');
+      parts.push(where + T('但与你的出口在同一个国家/地区，属于区域内，延迟通常可以接受。', 'but in the same country/region as your exit, so in region. Latency is usually acceptable.'));
     } else if (cls === 'region') {
-      parts.push(where + '在同一区域内，延迟通常可以接受。');
+      parts.push(where + T('在同一区域内，延迟通常可以接受。', 'in the same region. Latency is usually acceptable.'));
     } else if (cls === 'far') {
-      parts.push(where + '属于跨区接入：请求绕到了较远的机房，延迟会明显偏高。');
+      parts.push(where + T('属于跨区接入：请求绕到了较远的机房，延迟会明显偏高。', 'cross-region. Requests go to a distant data center, and latency will be noticeably higher.'));
     } else if (!info.known) {
-      parts.push('这个节点代码不在本站的对照表里，无法判断它在哪里。');
+      parts.push(T('这个节点代码不在本站的对照表里，无法判断它在哪里。', 'This colo code is not in our lookup table, so its location is unknown.'));
     } else if (other) {
-      parts.push('本站查到的位置属于另一条地址，无法估算节点有多远。');
+      parts.push(T('本站查到的位置属于另一条地址，无法估算节点有多远。', 'The location this site found belongs to a different address, so the node\'s distance cannot be estimated.'));
     } else {
-      parts.push('没有取到你的大致坐标，无法估算节点有多远。');
+      parts.push(T('没有取到你的大致坐标，无法估算节点有多远。', 'Your approximate coordinates are not available, so the node\'s distance cannot be estimated.'));
     }
 
     if (warpLabel(data.warp)) {
-      parts.push('当前经 WARP 访问，Cloudflare 看到的是 WARP 的出口，节点也按 WARP 出口调度。');
+      parts.push(T('当前经 WARP 访问，Cloudflare 看到的是 WARP 的出口，节点也按 WARP 出口调度。', 'You are connected through WARP: Cloudflare sees WARP\'s exit, and the node is chosen based on the WARP exit.'));
     }
     if (String(data.gateway).toLowerCase() === 'on') {
-      parts.push('流量正经过 Zero Trust 网关。');
+      parts.push(T('流量正经过 Zero Trust 网关。', 'Traffic passes through a Zero Trust gateway.'));
     }
     if (visibleIp && P.isIPv6(visibleIp) === P.isIPv6(data.ip) && !sameExit(visibleIp, data.ip)) {
-      parts.push('另外，Cloudflare 看到的出口与本站看到的不同，访问 Cloudflare 的流量走了另一个出口。');
+      parts.push(T('另外，Cloudflare 看到的出口与本站看到的不同，访问 Cloudflare 的流量走了另一个出口。', 'Also, the exit Cloudflare sees differs from the one this site sees; traffic to Cloudflare uses a different exit.'));
     }
 
     setVerdict(tone, title, parts.join(''));
@@ -583,10 +585,10 @@
   function renderIpv4(result, main, colos) {
     if (!result.ok) {
       fill(cells.ipv4, [
-        line([tag('不可达', 'muted'), dim(P.failureText(result.kind))]),
+        line([tag(T('不可达', 'Unreachable'), 'muted'), dim(P.failureText(result.kind))]),
         note(result.kind === 'csp'
-          ? '本页的 CSP 没有放行 1.1.1.1（部署问题）。'
-          : '没有可用的 IPv4 连接（纯 IPv6 网络），或 1.1.1.1 在当前网络被屏蔽、劫持。不影响上面的结果。')
+          ? T('本页的 CSP 没有放行 1.1.1.1（部署问题）。', 'This page\'s CSP does not allow 1.1.1.1 (deployment issue).')
+          : T('没有可用的 IPv4 连接（纯 IPv6 网络），或 1.1.1.1 在当前网络被屏蔽、劫持。不影响上面的结果。', 'No IPv4 connection is available (IPv6-only network), or 1.1.1.1 is blocked or hijacked on this network. This does not affect the results above.'))
       ]);
       return;
     }
@@ -598,14 +600,14 @@
 
     if (visibleIp && !P.isIPv6(visibleIp)) {
       if (P.sameIp(ip, visibleIp)) {
-        nodes.push(tag('与本站看到的一致', 'ok'));
+        nodes.push(tag(T('与本站看到的一致', 'Same as seen by this site'), 'ok'));
       } else {
-        nodes.push(tag('与本站看到的不同', 'warn'));
-        text = '访问 1.1.1.1 与访问本站走了不同的 IPv4 出口，说明有按目的地分流的规则。';
+        nodes.push(tag(T('与本站看到的不同', 'Differs from what this site sees'), 'warn'));
+        text = T('访问 1.1.1.1 与访问本站走了不同的 IPv4 出口，说明有按目的地分流的规则。', '1.1.1.1 and this site are reached through different IPv4 exits, which means there are destination-based routing rules.');
       }
     } else if (mainIp && !P.isIPv6(mainIp) && !P.sameIp(ip, mainIp)) {
-      nodes.push(tag('与 ' + mainHost + ' 看到的不同', 'warn'));
-      text = '访问 1.1.1.1 与访问 ' + mainHost + ' 走了不同的 IPv4 出口，说明有按目的地分流的规则。';
+      nodes.push(tag(T('与 ', 'Differs from ') + mainHost + T(' 看到的不同', ''), 'warn'));
+      text = T('访问 1.1.1.1 与访问 ', '1.1.1.1 and ') + mainHost + T(' 走了不同的 IPv4 出口，说明有按目的地分流的规则。', ' use different IPv4 exits, which means there are destination-based routing rules.');
     }
 
     var info = P.colo(colos, result.data.colo);
@@ -683,7 +685,7 @@
 
   function renderTier(r, colos) {
     if (!r.ok) {
-      fill(r.nodeCell, [tag('不可达', 'muted')]);
+      fill(r.nodeCell, [tag(T('不可达', 'Unreachable'), 'muted')]);
       fill(r.latCell, [dim(P.failureText(r.kind))]);
       return;
     }
@@ -693,7 +695,7 @@
 
     /* 中国网络只对中国大陆访客生效：loc=CN 却落在境外，是「没命中中国网络」，不是错误 */
     if (r.net === 'cn' && String(r.data.loc).toUpperCase() === 'CN') {
-      nodes.push(info.cc === 'CN' ? tag('命中境内节点', 'ok') : tag('未命中中国网络', 'muted'));
+      nodes.push(info.cc === 'CN' ? tag(T('命中境内节点', 'Hits a node in China'), 'ok') : tag(T('未命中中国网络', 'Not on the China network'), 'muted'));
     }
 
     fill(r.nodeCell, [line(nodes)]);
@@ -705,7 +707,7 @@
     var lines = [];
 
     if (!ok.length) {
-      fill(tierSum, [P.el('span', 'cftier__sumline', '所有网络都不可达：cdn-cgi/trace 很可能被浏览器扩展、代理或网关拦截了。')]);
+      fill(tierSum, [P.el('span', 'cftier__sumline', T('所有网络都不可达：cdn-cgi/trace 很可能被浏览器扩展、代理或网关拦截了。', 'Every network is unreachable: cdn-cgi/trace is probably blocked by a browser extension, proxy or gateway.'))]);
       return;
     }
 
@@ -721,12 +723,12 @@
     });
 
     if (groups.length === 1) {
-      lines.push((ok.length > 1 ? '全部 ' + ok.length + ' 个网络都命中 ' : '命中 ') + coloTitle(groups[0].info)
-        + (ok.length > 1 ? '：调度一致，这是理想状态。' : '。'));
+      lines.push((ok.length > 1 ? T('全部 ', 'All ') + ok.length + T(' 个网络都命中 ', ' networks hit ') : T('命中 ', 'Hit ')) + coloTitle(groups[0].info)
+        + (ok.length > 1 ? T('：调度一致，这是理想状态。', ': consistent routing, which is ideal.') : T('。', '.')));
     } else {
-      lines.push(ok.length + ' 个网络分布在 ' + groups.length + ' 个节点：');
+      lines.push(ok.length + T(' 个网络分布在 ', ' networks spread across ') + groups.length + T(' 个节点：', ' nodes:'));
       groups.forEach(function (g) {
-        lines.push(coloTitle(g.info) + '：' + g.names.join('、'));
+        lines.push(coloTitle(g.info) + T('：', ': ') + g.names.join(T('、', ', ')));
       });
     }
 
@@ -737,12 +739,13 @@
       if (r.ms > slowest.ms) slowest = r;
     });
     if (ok.length > 1) {
-      lines.push('最快 ' + fastest.name + ' ' + fastest.ms + ' ms，最慢 ' + slowest.name + ' ' + slowest.ms + ' ms。');
+      lines.push(T('最快 ', 'Fastest: ') + fastest.name + ' ' + fastest.ms + T(' ms，最慢 ', ' ms; slowest: ') + slowest.name + ' ' + slowest.ms + T(' ms。', ' ms.'));
     }
 
     if (failed.length) {
-      lines.push(failed.length + ' 个不可达：' + failed.map(function (r) { return r.name; }).join('、')
-        + '。个别网络不通多半是被扩展或分流规则拦了，不影响其余结果。');
+      var failedNames = failed.map(function (r) { return r.name; }).join(T('、', ', '));
+      lines.push(T(failed.length + ' 个不可达：' + failedNames + '。个别网络不通多半是被扩展或分流规则拦了，不影响其余结果。',
+        failed.length + ' unreachable: ' + failedNames + '. A few networks failing is usually an extension or routing rule blocking them; the other results are unaffected.'));
     }
 
     fill(tierSum, lines.map(function (text) { return P.el('span', 'cftier__sumline', text); }));
@@ -753,14 +756,14 @@
     var results = [];
     var finished = 0;
 
-    fill(tierSum, [dim('正在对比…')]);
+    fill(tierSum, [dim(T('正在对比…', 'Comparing…'))]);
 
     return Promise.all(tierRows.map(function (row, index) {
       var nameNode = row.querySelector('.cftier__name');
       var nodeCell = row.querySelector('[data-cf-tier-node]');
 
       return queue.add(function () {
-        fill(nodeCell, [dim('检测中…')]);
+        fill(nodeCell, [dim(T('检测中…', 'Checking…'))]);
         return measureTier(row.getAttribute('data-host'));
       }).then(function (outcome) {
         /* net 是网络类型（ent / cn / …，来自 data-kind），kind 沿用 probe.js 的约定，是失败原因 */
@@ -778,7 +781,7 @@
         renderTier(r, colos);
         paintBars(results);
         finished++;
-        progress.textContent = '正在对比 ' + tierRows.length + ' 个网络：已完成 ' + finished + ' / ' + tierRows.length;
+        progress.textContent = T('正在对比 ', 'Comparing ') + tierRows.length + T(' 个网络：已完成 ', ' networks: done ') + finished + ' / ' + tierRows.length;
       });
     })).then(function () {
       summarize(results, colos);
@@ -795,14 +798,14 @@
     rawText = '';
     paintRaw();
     CELL_KEYS.forEach(function (key) {
-      fill(cells[key], [dim('检测中…')]);
+      fill(cells[key], [dim(T('检测中…', 'Checking…'))]);
     });
     /* 重测时上一轮的节点与延迟立刻清掉，免得主 trace 还没回来时表格里摆着旧结果 */
     tierRows.forEach(function (row) {
-      fill(row.querySelector('[data-cf-tier-node]'), [dim('排队中…')]);
+      fill(row.querySelector('[data-cf-tier-node]'), [dim(T('排队中…', 'Queued…'))]);
       fill(row.querySelector('[data-cf-tier-lat]'), []);
     });
-    fill(tierSum, [dim('等待主 trace…')]);
+    fill(tierSum, [dim(T('等待主 trace…', 'Waiting for the main trace…'))]);
   }
 
   function run() {
@@ -811,7 +814,7 @@
     runButton.disabled = true;
     var started = P.now();
     reset();
-    progress.textContent = '正在读取 ' + mainHost + ' 的 trace…';
+    progress.textContent = T('正在读取 ', 'Reading the trace from ') + mainHost + T(' 的 trace…', '…');
 
     var colosReady = P.iata(iataUrl);
     /* 同源的小请求，和主 trace 一起发：主 trace 回来时它多半已经到了。每轮都重新问——
@@ -842,10 +845,10 @@
         ]);
       });
     }).then(function () {
-      progress.textContent = '检测完成，用时 ' + ((P.now() - started) / 1000).toFixed(1) + ' 秒。';
+      progress.textContent = T('检测完成，用时 ', 'Done in ') + ((P.now() - started) / 1000).toFixed(1) + T(' 秒。', ' s.');
     }, function () {
       /* 渲染代码自己出了错：至少把按钮还回去，别让页面停在「检测中」 */
-      progress.textContent = '检测中断，请点击「重新检测」再试一次。';
+      progress.textContent = T('检测中断，请点击「重新检测」再试一次。', 'The check was interrupted. Click "Run again" to try again.');
     }).then(function () {
       running = false;
       runButton.disabled = false;
@@ -853,7 +856,7 @@
   }
 
   /* 页面一打开就自动跑，按钮从此只承担「再测一次」 */
-  runButton.textContent = '重新检测';
+  runButton.textContent = T('重新检测', 'Run again');
   runButton.addEventListener('click', run);
   run();
 })();

@@ -8,11 +8,16 @@ import { getEdgeEnv } from '../../lib/edge-env';
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = (await request.json()) as { token?: string; action?: string; mode?: string };
+    /* 页面以表单编码提交（不触发预检）；也兼容 JSON */
+    const type = request.headers.get('content-type') || '';
+    const body: { token?: string; action?: string; mode?: string; lang?: string } = type.includes('application/json')
+      ? await request.json()
+      : Object.fromEntries(new URLSearchParams(await request.text()));
+    const en = body?.lang === 'en';
     const token = String(body?.token || '').trim();
     const expectedAction = String(body?.action || '').trim();
     if (!token) {
-      return new Response(JSON.stringify({ ok: false, error: 'missing_token', message: '缺少验证令牌' }), {
+      return new Response(JSON.stringify({ ok: false, error: 'missing_token', message: en ? 'Missing token' : '缺少验证令牌' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json; charset=utf-8' },
       });
@@ -69,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
     );
   } catch {
-    return new Response(JSON.stringify({ ok: false, error: 'verify_failed', message: '复核接口异常' }), {
+    return new Response(JSON.stringify({ ok: false, error: 'verify_failed', message: 'Verification endpoint error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });
