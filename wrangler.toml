@@ -17,4 +17,3 @@ enabled = true
 
 [vars]
 PUBLIC_SITE_URL = "https://judgeip.com"
-PUBLIC_PROBE_DOMAIN = "ipnano.io"
