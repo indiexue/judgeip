@@ -1,6 +1,11 @@
 ---
 import IpcxLayout from '../layouts/IpcxLayout.astro';
 import { ipv4ToInt, parseIp } from '../lib/ip-utils';
+import { getLang, localePath } from '../lib/i18n';
+const lang = getLang(Astro.locals);
+const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
+const lp = (path: string) => localePath(path, lang);
+
 
 function intToIpv4(n: number): string {
   return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
@@ -50,11 +55,11 @@ const [addrPart, prefixPart] = rawQ.split('/');
 const parsed = parseIp(addrPart);
 
 if (!parsed) {
-  errorMsg = `「${rawQ}」格式无效，请输入如 192.168.1.0/24、73.160.0.0/14 或 2606:4700::/32。`;
+  errorMsg = (lang === 'en' ? `"${rawQ}" is not valid. Enter something like 192.168.1.0/24, 73.160.0.0/14 or 2606:4700::/32.` : `「${rawQ}」格式无效，请输入如 192.168.1.0/24、73.160.0.0/14 或 2606:4700::/32。`);
 } else if (parsed.version === 4) {
   const prefix = prefixPart !== undefined && prefixPart !== '' ? Number(prefixPart) : 24;
   if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
-    errorMsg = 'IPv4 掩码前缀长度必须在 0 到 32 之间。';
+    errorMsg = t('IPv4 掩码前缀长度必须在 0 到 32 之间。', 'An IPv4 prefix length must be between 0 and 32.');
   } else {
     const ipInt = ipv4ToInt(parsed.normalized);
     const maskInt = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
@@ -81,13 +86,13 @@ if (!parsed) {
       usableHosts: usable.toLocaleString('en-US'),
       binaryMask: intToBinaryDots(maskInt),
       isBogon: parsed.isBogon,
-      bogonNote: parsed.bogonReason || '公网可路由单播地址',
+      bogonNote: parsed.bogonReason || t('公网可路由单播地址', 'Public routable unicast address'),
     };
   }
 } else {
   const prefix = prefixPart !== undefined && prefixPart !== '' ? Number(prefixPart) : 64;
   if (!Number.isInteger(prefix) || prefix < 0 || prefix > 128) {
-    errorMsg = 'IPv6 前缀长度必须在 0 到 128 之间。';
+    errorMsg = t('IPv6 前缀长度必须在 0 到 128 之间。', 'An IPv6 prefix length must be between 0 and 128.');
   } else {
     const halves = parsed.normalized.split('::');
     const head = halves[0] ? halves[0].split(':') : [];
@@ -95,7 +100,7 @@ if (!parsed) {
     const fill = halves.length > 1 ? Array(8 - head.length - tail.length).fill('0000') : [];
     const groups = [...head, ...fill, ...tail].map((g) => g.padStart(4, '0'));
     const expanded = groups.join(':');
-    const subnets64 = prefix <= 64 ? Math.pow(2, 64 - prefix).toLocaleString('en-US') : '小于单个 /64';
+    const subnets64 = prefix <= 64 ? Math.pow(2, 64 - prefix).toLocaleString('en-US') : t('小于单个 /64', 'Smaller than one /64');
 
     calc = {
       kind: 'v6',
@@ -105,27 +110,27 @@ if (!parsed) {
       prefix,
       totalSubnets64: subnets64,
       isBogon: parsed.isBogon,
-      bogonNote: parsed.bogonReason || '公网可路由 IPv6 全局单播地址',
+      bogonNote: parsed.bogonReason || t('公网可路由 IPv6 全局单播地址', 'Public routable IPv6 global unicast address'),
     };
   }
 }
 ---
 
 <IpcxLayout
-  title="IP / CIDR 子网计算器 — 掩码、可用地址范围与网段换算 · JudgeIP"
-  description="在线计算 IPv4 与 IPv6 CIDR 网段的子网掩码、反掩码、网络地址、广播地址、可用主机范围与二进制表示。"
+  title={t('IP / CIDR 子网计算器 — 掩码、可用地址范围与网段换算 · JudgeIP', 'IP / CIDR subnet calculator: masks, usable ranges and prefixes · JudgeIP')}
+  description={t('在线计算 IPv4 与 IPv6 CIDR 网段的子网掩码、反掩码、网络地址、广播地址、可用主机范围与二进制表示。', 'Calculate the subnet mask, wildcard mask, network address, broadcast address, usable host range and binary form of IPv4 and IPv6 CIDR ranges.')}
   canonicalPath="/ip-calc"
   bodyClass="page-ipcalc"
-  currentLabel="IP 计算器"
+  currentLabel={t('IP 计算器', 'IP calculator')}
   activeNav="/ip-calc"
   extraCss={['/assets/css/whois.css']}
 >
   <section class="hero">
-    <h1 class="hero__title">IP / CIDR 子网计算器</h1>
-    <p class="hero__lede">输入 IPv4 或 IPv6 地址与前缀长度，计算子网掩码、首尾可用主机与网段容量。</p>
+    <h1 class="hero__title">{t('IP / CIDR 子网计算器', 'IP / CIDR subnet calculator')}</h1>
+    <p class="hero__lede">{t('输入 IPv4 或 IPv6 地址与前缀长度，计算子网掩码、首尾可用主机与网段容量。', 'Enter an IPv4 or IPv6 address with a prefix length to get the subnet mask, first and last usable hosts and range size.')}</p>
   </section>
 
-  <form class="query whois-query" method="get" action="/ip-calc" role="search">
+  <form class="query whois-query" method="get" action={lp('/ip-calc')} role="search">
     <div class="query__line">
       <span class="query__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -141,18 +146,18 @@ if (!parsed) {
         placeholder="192.168.1.0/24 / 10.0.0.1/16 / 2606:4700::/32"
         autocomplete="off"
         spellcheck="false"
-        aria-label="IP 或 CIDR 网段"
+        aria-label={t('IP 或 CIDR 网段', 'IP or CIDR range')}
       />
-      <button class="query__submit" type="submit">计算</button>
+      <button class="query__submit" type="submit">{t('计算', 'Calculate')}</button>
     </div>
 
     <p class="whois-examples">
-      <span class="whois-examples__label">试试</span>
-      <a class="whois-examples__item" href="/ip-calc?q=192.168.1.0/24" rel="nofollow">192.168.1.0/24</a>
-      <a class="whois-examples__item" href="/ip-calc?q=10.24.0.0/16" rel="nofollow">10.24.0.0/16</a>
-      <a class="whois-examples__item" href="/ip-calc?q=73.160.0.0/14" rel="nofollow">73.160.0.0/14</a>
-      <a class="whois-examples__item" href="/ip-calc?q=172.16.10.5/28" rel="nofollow">172.16.10.5/28</a>
-      <a class="whois-examples__item" href="/ip-calc?q=2606%3A4700%3A%3A/32" rel="nofollow">2606:4700::/32</a>
+      <span class="whois-examples__label">{t('试试', 'Try')}</span>
+      <a class="whois-examples__item" href={lp('/ip-calc?q=192.168.1.0/24')} rel="nofollow">192.168.1.0/24</a>
+      <a class="whois-examples__item" href={lp('/ip-calc?q=10.24.0.0/16')} rel="nofollow">10.24.0.0/16</a>
+      <a class="whois-examples__item" href={lp('/ip-calc?q=73.160.0.0/14')} rel="nofollow">73.160.0.0/14</a>
+      <a class="whois-examples__item" href={lp('/ip-calc?q=172.16.10.5/28')} rel="nofollow">172.16.10.5/28</a>
+      <a class="whois-examples__item" href={lp('/ip-calc?q=2606%3A4700%3A%3A/32')} rel="nofollow">2606:4700::/32</a>
     </p>
 
     {errorMsg && (
@@ -165,44 +170,44 @@ if (!parsed) {
   {calc && calc.kind === 'v4' && (
     <div class="groups">
       <section class="group">
-        <h2 class="group__title">IPv4 子网计算结果</h2>
+        <h2 class="group__title">{t('IPv4 子网计算结果', 'IPv4 subnet')}</h2>
         <div class="rows">
           <div class="row">
-            <span class="row__label">规范 CIDR</span>
+            <span class="row__label">{t('规范 CIDR', 'Canonical CIDR')}</span>
             <span class="row__value"><span class="mono">{calc.cidr}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">地址性质</span>
+            <span class="row__label">{t('地址性质', 'Address type')}</span>
             <span class="row__value">
               <span class={`badge badge--${calc.isBogon ? 'gray' : 'green'}`}>{calc.bogonNote}</span>
             </span>
           </div>
           <div class="row">
-            <span class="row__label">子网掩码</span>
+            <span class="row__label">{t('子网掩码', 'Subnet mask')}</span>
             <span class="row__value"><span class="mono">{calc.netmask}</span> <span class="dim mono">(/{calc.prefix})</span></span>
           </div>
           <div class="row">
-            <span class="row__label">反掩码 (Wildcard)</span>
+            <span class="row__label">{t('反掩码 (Wildcard)', 'Wildcard mask')}</span>
             <span class="row__value"><span class="mono">{calc.wildcard}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">网络地址</span>
+            <span class="row__label">{t('网络地址', 'Network address')}</span>
             <span class="row__value"><span class="mono">{calc.network}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">广播地址</span>
+            <span class="row__label">{t('广播地址', 'Broadcast address')}</span>
             <span class="row__value"><span class="mono">{calc.broadcast}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">可用主机范围</span>
+            <span class="row__label">{t('可用主机范围', 'Usable host range')}</span>
             <span class="row__value"><span class="mono">{calc.firstHost} – {calc.lastHost}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">总地址数 / 可用主机数</span>
-            <span class="row__value"><span class="mono">{calc.totalIps}</span> 总计 · <span class="mono">{calc.usableHosts}</span> 可分配</span>
+            <span class="row__label">{t('总地址数 / 可用主机数', 'Total addresses / usable hosts')}</span>
+            <span class="row__value"><span class="mono">{calc.totalIps}</span> {t('总计 ·', 'total ·')} <span class="mono">{calc.usableHosts}</span> {t('可分配', 'usable')}</span>
           </div>
           <div class="row">
-            <span class="row__label">二进制掩码</span>
+            <span class="row__label">{t('二进制掩码', 'Binary mask')}</span>
             <span class="row__value"><span class="mono">{calc.binaryMask}</span></span>
           </div>
         </div>
@@ -213,24 +218,24 @@ if (!parsed) {
   {calc && calc.kind === 'v6' && (
     <div class="groups">
       <section class="group">
-        <h2 class="group__title">IPv6 前缀计算结果</h2>
+        <h2 class="group__title">{t('IPv6 前缀计算结果', 'IPv6 prefix')}</h2>
         <div class="rows">
           <div class="row">
-            <span class="row__label">输入前缀</span>
+            <span class="row__label">{t('输入前缀', 'Input prefix')}</span>
             <span class="row__value"><span class="mono">{calc.cidr}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">地址性质</span>
+            <span class="row__label">{t('地址性质', 'Address type')}</span>
             <span class="row__value">
               <span class={`badge badge--${calc.isBogon ? 'gray' : 'green'}`}>{calc.bogonNote}</span>
             </span>
           </div>
           <div class="row">
-            <span class="row__label">完整展开地址 (128-bit)</span>
+            <span class="row__label">{t('完整展开地址 (128-bit)', 'Fully expanded address (128-bit)')}</span>
             <span class="row__value"><span class="mono">{calc.expanded}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">包含标准 /64 子网数</span>
+            <span class="row__label">{t('包含标准 /64 子网数', 'Standard /64 subnets contained')}</span>
             <span class="row__value"><span class="mono">{calc.totalSubnets64}</span></span>
           </div>
         </div>
@@ -239,12 +244,12 @@ if (!parsed) {
   )}
 
   <article class="prose">
-    <h2>常用 IPv4 前缀速查表</h2>
+    <h2>{t('常用 IPv4 前缀速查表', 'Common IPv4 prefixes')}</h2>
     <ul>
-      <li><span class="mono">/32</span>（掩码 <span class="mono">255.255.255.255</span>）：单台主机路由，共 1 个地址。</li>
-      <li><span class="mono">/28</span>（掩码 <span class="mono">255.255.255.240</span>）：共 16 个地址，14 台可用主机（常见专线小段）。</li>
-      <li><span class="mono">/24</span>（掩码 <span class="mono">255.255.255.0</span>）：标准 C 段，共 256 个地址，254 台可用主机（BGP 公网最小宣告粒度）。</li>
-      <li><span class="mono">/16</span>（掩码 <span class="mono">255.255.0.0</span>）：标准 B 段，共 65,536 个地址。</li>
+      <li><span class="mono">/32</span>{t('（掩码', ' (mask')} <span class="mono">255.255.255.255</span>{t('）：单台主机路由，共 1 个地址。', '): a single host route, 1 address.')}</li>
+      <li><span class="mono">/28</span>{t('（掩码', ' (mask')} <span class="mono">255.255.255.240</span>{t('）：共 16 个地址，14 台可用主机（常见专线小段）。', '): 16 addresses, 14 usable hosts (a common small block for leased lines).')}</li>
+      <li><span class="mono">/24</span>{t('（掩码', ' (mask')} <span class="mono">255.255.255.0</span>{t('）：标准 C 段，共 256 个地址，254 台可用主机（公网 BGP 通常接受的最小宣告长度）。', '): a classic class C block, 256 addresses, 254 usable hosts (the smallest prefix usually accepted in public BGP).')}</li>
+      <li><span class="mono">/16</span>{t('（掩码', ' (mask')} <span class="mono">255.255.0.0</span>{t('）：标准 B 段，共 65,536 个地址。', '): a classic class B block, 65,536 addresses.')}</li>
     </ul>
   </article>
 </IpcxLayout>
