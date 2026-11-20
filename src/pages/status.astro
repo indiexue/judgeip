@@ -1,23 +1,27 @@
 ---
 import IpcxLayout from '../layouts/IpcxLayout.astro';
 import { getLiveServiceStatuses } from '../lib/status-agg';
+import { getLang } from '../lib/i18n';
 
-const snap = await getLiveServiceStatuses();
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
+const snap = await getLiveServiceStatuses(lang);
 const hasIssues = snap.badCount > 0;
 ---
 
 <IpcxLayout
-  title="服务状态 — ChatGPT、Claude、GitHub、Cloudflare 等是否故障 · JudgeIP"
-  description="实时汇总主流 AI 服务、云平台与开发工具的官方运行状态。"
+  title={t('服务状态 — ChatGPT、Claude、GitHub、Cloudflare 等是否故障 · JudgeIP', 'Service status: is ChatGPT, Claude, GitHub or Cloudflare down · JudgeIP')}
+  description={t('汇总主流 AI 服务、云平台与开发工具官方状态页的运行状态。', 'Official status of major AI services, cloud platforms and developer tools in one place.')}
   canonicalPath="/status"
   bodyClass="page-status"
-  currentLabel="服务状态"
+  currentLabel={t('服务状态', 'Service status')}
   activeNav="/status"
   extraCss={['/assets/css/status.css']}
 >
   <section class="hero">
-    <h1 class="hero__title">服务状态</h1>
-    <p class="hero__lede">汇总 {snap.total} 个常用服务的官方运行状态，打不开时先看是不是对方出了故障。</p>
+    <h1 class="hero__title">{t('服务状态', 'Service status')}</h1>
+    <p class="hero__lede">{en ? `Official status of ${snap.total} common services. When something won't open, check here whether the service itself is down.` : `汇总 ${snap.total} 个常用服务的官方运行状态，打不开时先看是不是对方出了故障。`}</p>
   </section>
 
   <div class="status" id="status">
@@ -25,21 +29,21 @@ const hasIssues = snap.badCount > 0;
       <span class="verdict__dot" aria-hidden="true"></span>
       <div class="verdict__body">
         <p class="verdict__title">
-          {hasIssues ? `${snap.badCount} 个服务存在故障或异常` : '全部服务运行正常'}
+          {hasIssues ? (en ? `${snap.badCount} services have issues` : `${snap.badCount} 个服务存在故障或异常`) : (en ? 'No reported issues' : '没有服务报告故障')}
         </p>
         <p class="verdict__note">
           {hasIssues ? (
             <>
               {snap.badItems.map((b, idx) => (
                 <>
-                  {idx > 0 && '、'}
-                  <a class="status__jump" href={`#${b.id}`}>{b.name}</a>（{b.tagText}）
+                  {idx > 0 && t('、', ', ')}
+                  <a class="status__jump" href={`#${b.id}`}>{b.name}</a>{t('（', ' (')}{b.tagText}{t('）', ')')}
                 </>
               ))}
-              ；其余 {snap.okCount} 个运行正常。对方正在故障时，换网络、换节点都无济于事，只能等它恢复。
+              {en ? `; ${snap.okCount} others operational. While a service is down, switching networks or proxy nodes won't help; wait for it to recover.` : `；其余 ${snap.okCount} 个运行正常。对方故障时换网络、换节点都没用，只能等它恢复。`}
             </>
           ) : (
-            `监控中的 ${snap.total} 个主流 AI、云平台与开发服务官方状态页均显示正常运行。`
+            en ? `None of the ${snap.total} services report an outage on their official status pages${snap.mutedCount ? ` (${snap.mutedCount} could not be read)` : ''}.` : `${snap.total} 个服务的官方状态页都没有报告故障${snap.mutedCount ? `（其中 ${snap.mutedCount} 个没能读取）` : ''}。`
           )}
         </p>
       </div>
@@ -47,24 +51,24 @@ const hasIssues = snap.badCount > 0;
 
     <dl class="stsum">
       <div class={`stsum__item stsum__item--ok${snap.okCount === 0 ? ' is-zero' : ''}`}>
-        <dt class="stsum__label">正常</dt>
+        <dt class="stsum__label">{t('正常', 'Operational')}</dt>
         <dd class="stsum__num mono">{snap.okCount}</dd>
       </div>
       <div class={`stsum__item stsum__item--bad${snap.badCount === 0 ? ' is-zero' : ''}`}>
-        <dt class="stsum__label">故障</dt>
+        <dt class="stsum__label">{t('故障', 'Issues')}</dt>
         <dd class="stsum__num mono">{snap.badCount}</dd>
       </div>
       <div class={`stsum__item stsum__item--maint${snap.maintCount === 0 ? ' is-zero' : ''}`}>
-        <dt class="stsum__label">维护中</dt>
+        <dt class="stsum__label">{t('维护中', 'Maintenance')}</dt>
         <dd class="stsum__num mono">{snap.maintCount}</dd>
       </div>
       <div class={`stsum__item stsum__item--muted${snap.mutedCount === 0 ? ' is-zero' : ''}`}>
-        <dt class="stsum__label">暂无数据</dt>
+        <dt class="stsum__label">{t('暂无数据', 'No data')}</dt>
         <dd class="stsum__num mono">{snap.mutedCount}</dd>
       </div>
     </dl>
     <p class="stsum__time">
-      数据实时向各服务商官方状态页拉取（缓存 5 分钟）· 点击服务名可打开官方状态页面
+      {t('数据取自各服务商官方状态页（缓存 5 分钟）· 点击服务名打开官方状态页', 'Data from each provider\'s official status page (cached 5 minutes) · Click a name to open its status page')}
     </p>
 
     <div class="groups">
