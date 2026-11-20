@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/connectivity.html?raw";
+import zhHtml from "../snippets/connectivity.html?raw";
+import enHtml from "../snippets/en/connectivity.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="网络连通性测试 — 国内外网站、AI 服务可达性与延迟 · JudgeIP"
-  description="实时测试国内外主流网站、AI 服务、开发与社交站点的可达性与连接延迟。"
+  title={pick(lang, '网络连通性测试 — 国内外网站、AI 服务可达性与延迟 · JudgeIP', 'Connectivity test: latency to sites in and outside China · JudgeIP')}
+  description={pick(lang, '实时测试国内外主流网站、AI 服务、开发与社交站点的可达性与连接延迟。', 'Tests from your browser whether 44 sites in and outside China, AI services, social and developer sites are reachable, and how fast.')}
   canonicalPath="/connectivity"
   bodyClass="page-connectivity"
-  currentLabel="连通性"
+  currentLabel={pick(lang, '连通性', 'Connectivity')}
   activeNav="/connectivity"
   extraCss={["/assets/css/connectivity.css"]}
   extraJs={["/assets/js/probe.js", "/assets/js/connectivity.js"]}

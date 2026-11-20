@@ -24,6 +24,8 @@
 (function (window, document) {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var roots = document.querySelectorAll('[data-conn]');
   if (!roots.length) return;
 
@@ -50,7 +52,7 @@
   var detailSeq = 0;
 
   var GROUP_NAMES = {
-    cn: '国内', intl: '国际', ai: 'AI 服务', social: '社交与流媒体', dev: '开发与游戏', region: '地区'
+    cn: T('国内', 'China'), intl: T('国际', 'International'), ai: T('AI 服务', 'AI services'), social: T('社交与流媒体', 'Social and streaming'), dev: T('开发与游戏', 'Developer and gaming'), region: T('地区', 'Region')
   };
 
   /* 探测做不了的两种情况，都要说清楚，而不是让格子永远停在「待检测」：
@@ -81,12 +83,12 @@
   }
 
   if (!P) {
-    unavailable('检测脚本加载失败，请刷新页面重试。', '未加载');
+    unavailable(T('检测脚本加载失败，请刷新页面重试。', 'Failed to load the check script. Reload the page and try again.'), T('未加载', 'Not loaded'));
     return;
   }
 
   if (!window.fetch || !window.Promise) {
-    unavailable('当前浏览器太旧，不支持网页发起这类探测请求，换用较新版本的 Chrome、Edge、Firefox 或 Safari 即可。', '不支持');
+    unavailable(T('当前浏览器太旧，不支持网页发起这类探测请求，换用较新版本的 Chrome、Edge、Firefox 或 Safari 即可。', 'This browser is too old to send these probe requests. Use a recent version of Chrome, Edge, Firefox or Safari.'), T('不支持', 'Not supported'));
     return;
   }
 
@@ -127,15 +129,15 @@
      slowest 是这个站点所有失败里最慢的一次 */
   function failText(kind, slowest) {
     if (kind === 'csp') {
-      return P.failureText(kind) + '：本站的内容安全策略没有放行这个地址（地址在清单里却仍被拦，多半是它跳转到了别的主机）';
+      return P.failureText(kind) + T('：本站的内容安全策略没有放行这个地址（地址在清单里却仍被拦，多半是它跳转到了别的主机）', ': this site\'s Content Security Policy does not allow this URL (if it is on the list and still blocked, it probably redirected to another host)');
     }
     if (kind === 'timeout') {
-      return P.failureText(kind) + '：' + (TIMEOUT / 1000) + ' 秒内没有任何响应';
+      return P.failureText(kind) + T('：', ': ') + (TIMEOUT / 1000) + T(' 秒内没有任何响应', ' s without any response');
     }
     if (typeof slowest === 'number' && slowest >= 0 && slowest < INSTANT_MS) {
-      return '瞬间失败（' + slowest + 'ms 内）：请求没有真正发出去，多半是浏览器扩展或安全软件在本地拦下了它，不一定是网络不通';
+      return T('瞬间失败（', 'Instant failure (within ') + slowest + T('ms 内）：请求没有真正发出去，多半是浏览器扩展或安全软件在本地拦下了它，不一定是网络不通', 'ms): the request never actually went out. A browser extension or security software probably blocked it locally; the network may be fine');
     }
-    return P.failureText(kind) + '：连接被重置、证书错误或域名解析失败';
+    return P.failureText(kind) + T('：连接被重置、证书错误或域名解析失败', ': connection reset, certificate error or DNS failure');
   }
 
   function tag(text, kind) {
@@ -144,8 +146,8 @@
 
   /* 「百度、微信、淘宝 等 5 个」 */
   function names(list, max) {
-    var shown = list.slice(0, max).map(function (t) { return t.name; }).join('、');
-    return list.length > max ? shown + ' 等 ' + list.length + ' 个' : shown;
+    var shown = list.slice(0, max).map(function (t) { return t.name; }).join(T('、', ', '));
+    return list.length > max ? T(shown + ' 等 ' + list.length + ' 个', shown + ' and ' + (list.length - max) + ' more') : shown;
   }
 
   /* 页面「安顿下来」：window 的 load 与「本脚本运行后 SETTLE_MS」两者谁先到算谁。
@@ -309,12 +311,12 @@
       t.msCell.textContent = '—';
       t.node.classList.remove('is-down');
       collapse(t);
-      fill(t.stateCell, [el('span', 'conntile__wait', '排队中')]);
+      fill(t.stateCell, [el('span', 'conntile__wait', T('排队中', 'Queued'))]);
     }
 
     function record(t, round, result) {
       var dot = t.dots[round];
-      var label = '第 ' + (round + 1) + ' 轮：';
+      var label = T('第 ', 'Round ') + (round + 1) + T(' 轮：', ': ');
 
       if (result.ok) {
         t.samples.push(result.ms);
@@ -340,9 +342,9 @@
     /* 剩下的轮次不再测：画成空心圆，标明是跳过而不是失败 */
     function skipFrom(t, round, why) {
       for (var i = round; i < t.dots.length; i++) {
-        t.roundText[i] = '未测';
+        t.roundText[i] = T('未测', 'Skipped');
         t.dots[i].className = 'dot dot--skip';
-        t.dots[i].title = '第 ' + (i + 1) + ' 轮：未测（' + why + '）';
+        t.dots[i].title = T('第 ', 'Round ') + (i + 1) + T(' 轮：未测（', ': skipped (') + why + T('）', ')');
       }
       t.skipped = t.dots.length - round;
     }
@@ -388,8 +390,8 @@
     /* 「预热（不计入）：182ms；各轮：45ms、47ms、超时、未测」 */
     function roundsLine(t) {
       var parts = [];
-      for (var i = 0; i < rounds; i++) parts.push(t.roundText[i] || '未测');
-      return '预热（不计入）：' + (t.warm || '未测') + '；各轮：' + parts.join('、');
+      for (var i = 0; i < rounds; i++) parts.push(t.roundText[i] || T('未测', 'Skipped'));
+      return T('预热（不计入）：', 'Warm-up (not counted): ') + (t.warm || T('未测', 'Skipped')) + T('；各轮：', '; rounds: ') + parts.join(T('、', ', '));
     }
 
     function finish(t) {
@@ -399,28 +401,28 @@
       var summary;
 
       if (t.csp) {
-        tags.push(tag('CSP 未放行', 'tag--muted'));
+        tags.push(tag(T('CSP 未放行', 'Blocked by CSP'), 'tag--muted'));
         summary = failText('csp');
         t.msCell.className = 'conntile__ms mono conn-live is-fail';
         t.msCell.textContent = '—';
       } else if (!t.samples.length) {
         var tested = rounds - t.skipped;
         var head = t.skipped
-          ? '预热与前 ' + tested + ' 轮均失败，其余 ' + t.skipped + ' 轮未测。'
-          : rounds + ' 轮全部失败。';
-        tags.push(tag('不可达', 'tag--leak'));
-        summary = head + failText(t.lastKind, t.slowestFail) + '。';
+          ? T('预热与前 ', 'Warm-up and the first ') + tested + T(' 轮均失败，其余 ', ' rounds failed; the remaining ') + t.skipped + T(' 轮未测。', ' rounds were skipped.')
+          : rounds + T(' 轮全部失败。', ' rounds, all failed.');
+        tags.push(tag(T('不可达', 'Unreachable'), 'tag--leak'));
+        summary = head + failText(t.lastKind, t.slowestFail) + T('。', '.');
         t.msCell.className = 'conntile__ms mono conn-live is-fail';
-        t.msCell.textContent = t.lastKind === 'timeout' ? '超时' : '失败';
+        t.msCell.textContent = t.lastKind === 'timeout' ? T('超时', 'Timed out') : T('失败', 'Failed');
         t.node.classList.add('is-down');
       } else {
         var level = tone(t.median);
-        var quality = level === 'good' ? '优' : level === 'ok' ? '良' : '慢';
+        var quality = level === 'good' ? T('优', 'Good') : level === 'ok' ? T('良', 'OK') : T('慢', 'Slow');
         tags.push(tag(quality, level === 'slow' ? 'tag--warn' : 'tag--ok'));
-        summary = '成功 ' + t.samples.length + '/' + rounds + ' 轮，中位 ' + t.median + 'ms。';
+        summary = T('成功 ', 'Succeeded ') + t.samples.length + '/' + rounds + T(' 轮，中位 ', ' rounds, median ') + t.median + T('ms。', 'ms. ');
         if (t.fails > 0) {
-          tags.push(tag('不稳定', 'tag--warn'));
-          summary += '失败 ' + t.fails + ' 轮，最近一次为' + failText(t.lastKind, t.slowestFail) + '。';
+          tags.push(tag(T('不稳定', 'Unstable'), 'tag--warn'));
+          summary += T('失败 ', 'Failed ') + t.fails + T(' 轮，最近一次为', ' rounds, last: ') + failText(t.lastKind, t.slowestFail) + T('。', '.');
         }
       }
 
@@ -433,7 +435,7 @@
         t.nameLine,
         el('span', 'conntile__line', summary),
         t.samples.length ? el('span', 'conntile__line', roundsLine(t)) : null,
-        el('span', 'conntile__line conntile__url', '探测地址：' + t.url.replace(/^https:\/\//, ''))
+        el('span', 'conntile__line conntile__url', T('探测地址：', 'Probe: ') + t.url.replace(/^https:\/\//, ''))
       ].filter(Boolean));
       detail.hidden = true;
 
@@ -442,7 +444,7 @@
       button.setAttribute('aria-expanded', 'false');
       button.setAttribute('aria-controls', detail.id);
       /* 读屏器只听到「良」不知道是哪一站：把站名带上；展开 / 收起由 aria-expanded 播报 */
-      button.setAttribute('aria-label', t.name + '：' + tags.map(function (n) { return n.textContent; }).join('、') + '，详情');
+      button.setAttribute('aria-label', t.name + T('：', ': ') + tags.map(function (n) { return n.textContent; }).join(T('、', ', ')) + T('，详情', ', details'));
       tags.forEach(function (node) { button.appendChild(node); });
       var chevron = el('span', 'conntile__chev');
       chevron.setAttribute('aria-hidden', 'true');
@@ -455,7 +457,7 @@
     /* 一个站点：预热一次，再测 rounds 轮。token 变了说明这一格已经被重测接管，旧的这一趟静默收手 */
     function probeTile(t, token) {
       if (t.token !== token) return Promise.resolve();
-      fill(t.stateCell, [el('span', 'conntile__wait', '检测中')]);
+      fill(t.stateCell, [el('span', 'conntile__wait', T('检测中', 'Checking'))]);
 
       return P.timing(t.url, null, TIMEOUT).then(function (warm) {
         if (t.token !== token) return null;
@@ -464,7 +466,7 @@
         if (!warm.ok && warm.kind === 'csp') {
           t.csp = true;
           t.warm = P.failureText('csp');
-          skipFrom(t, 0, 'CSP 未放行');
+          skipFrom(t, 0, T('CSP 未放行', 'Blocked by CSP'));
           finish(t);
           return null;
         }
@@ -488,7 +490,7 @@
       }
 
       if (t.warmFailed && !t.samples.length && t.fails >= GIVE_UP_AFTER) {
-        skipFrom(t, round, '已判定不可达');
+        skipFrom(t, round, T('已判定不可达', 'Marked unreachable'));
         finish(t);
         return null;
       }
@@ -501,7 +503,7 @@
         if (!result.ok && result.kind === 'csp') {
           t.csp = true;
           record(t, round, result);
-          skipFrom(t, round + 1, 'CSP 未放行');
+          skipFrom(t, round + 1, T('CSP 未放行', 'Blocked by CSP'));
           finish(t);
           return null;
         }
@@ -523,7 +525,7 @@
     function updateProgress() {
       if (!progress || !fullRun) return;
       var done = tiles.filter(function (t) { return t.done; }).length;
-      progress.textContent = '检测中：已完成 ' + done + ' / ' + tiles.length + ' 个站点…';
+      progress.textContent = T('检测中：已完成 ', 'Checking: ') + done + ' / ' + tiles.length + T(' 个站点…', ' sites done…');
     }
 
     function updateSection(section) {
@@ -532,19 +534,19 @@
 
       if (pending) {
         section.sum.className = 'connhead__sum conn-live';
-        section.sum.textContent = '检测中 ' + (section.tiles.length - pending) + '/' + section.tiles.length;
+        section.sum.textContent = T('检测中 ', 'Checking ') + (section.tiles.length - pending) + '/' + section.tiles.length;
         return;
       }
 
       var s = stats(section.tiles);
       if (!s.n) {
         section.sum.className = 'connhead__sum conn-live is-bad';
-        section.sum.textContent = 'CSP 未放行';
+        section.sum.textContent = T('CSP 未放行', 'Blocked by CSP');
         return;
       }
 
       section.sum.className = 'connhead__sum conn-live ' + (s.ratio >= 0.75 ? 'is-good' : s.ratio >= 0.5 ? 'is-warn' : 'is-bad');
-      section.sum.textContent = '可达 ' + s.reach + '/' + s.n + (s.mid !== null ? ' · 中位 ' + showMs(s.mid) : '');
+      section.sum.textContent = T('可达 ', 'Reachable ') + s.reach + '/' + s.n + (s.mid !== null ? T(' · 中位 ', ' · median ') + showMs(s.mid) : '');
     }
 
     function sectionOf(t) {
@@ -558,7 +560,7 @@
       var anyBusy = tiles.some(function (t) { return t.busy; });
       if (runButton) {
         runButton.disabled = anyBusy;
-        runButton.textContent = fullRun ? '检测中…' : everRan ? '重新检测' : '开始检测';
+        runButton.textContent = fullRun ? T('检测中…', 'Checking…') : everRan ? T('重新检测', 'Run again') : T('开始检测', 'Start');
       }
       sections.forEach(function (section) {
         if (!section.button) return;
@@ -602,8 +604,8 @@
         fullRun = false;
         setButtons();
         if (progress) {
-          progress.textContent = '检测完成，用时 ' + Math.max(1, Math.round((P.now() - began) / 1000)) + ' 秒。'
-            + '每个站点 ' + rounds + ' 轮，延迟取成功轮次的中位数；点一下站点格子，可以展开每一轮的延迟与失败原因。';
+          progress.textContent = T('检测完成，用时 ', 'Done in ') + Math.max(1, Math.round((P.now() - began) / 1000)) + T(' 秒。', ' s. ')
+            + T('每个站点 ', 'Each site ran ') + rounds + T(' 轮，延迟取成功轮次的中位数；点一下站点格子，可以展开每一轮的延迟与失败原因。', ' rounds; latency is the median of successful rounds. Click a site tile to see each round\'s latency and failure reason.');
         }
         renderVerdict();
       });
@@ -678,26 +680,26 @@
     var shaky = tiles.filter(function (t) { return t.samples.length && t.fails; }).length;
     var tail = '';
     if (shaky >= 3) {
-      tail += '另有 ' + shaky + ' 个站点部分轮次失败（不稳定），线路可能有丢包。';
+      tail += T('另有 ' + shaky + ' 个站点部分轮次失败（不稳定），线路可能有丢包。', ' ' + shaky + ' more sites failed some rounds (unstable); the route may be losing packets.');
     }
     if (cspCount) {
-      tail += cspCount + ' 个站点被本页的内容安全策略（CSP）拦下，属于本站配置问题，已从统计中排除。';
+      tail += T(cspCount + ' 个站点被本页的内容安全策略（CSP）拦下，属于本站配置问题，已从统计中排除。', ' ' + cspCount + ' sites were blocked by this page\'s Content Security Policy (CSP). That is a configuration issue on this site, and they are excluded from the statistics.');
     }
 
     if (!all.n) {
       return {
         tone: 'is-bad',
-        title: '无法检测：所有站点都被本页的 CSP 拦下',
-        note: '这是本站的部署配置问题（connect-src 没有放行这些站点），与你的网络无关。'
+        title: T('无法检测：所有站点都被本页的 CSP 拦下', 'Cannot test: every site was blocked by this page\'s CSP'),
+        note: T('这是本站的部署配置问题（connect-src 没有放行这些站点），与你的网络无关。', 'This is a deployment configuration issue on this site (connect-src does not allow these sites), not your network.')
       };
     }
 
     if (!all.reach) {
       return {
         tone: 'is-bad',
-        title: '所有站点都连不上',
-        note: '包括国内站点在内，一个都没有响应。先确认网络本身是通的；如果别的网页能正常打开，'
-          + '多半是浏览器扩展（广告拦截、隐私保护）、安全软件或公司防火墙拦下了这类跨站请求。' + tail
+        title: T('所有站点都连不上', 'No site connects'),
+        note: T('包括国内站点在内，一个都没有响应。先确认网络本身是通的；如果别的网页能正常打开，', 'None responded, including sites in China. First make sure the network itself works; if other pages open normally,')
+          + T('多半是浏览器扩展（广告拦截、隐私保护）、安全软件或公司防火墙拦下了这类跨站请求。', ' a browser extension (ad blocking, privacy), security software or a corporate firewall is probably blocking these cross-site requests.') + tail
       };
     }
 
@@ -709,36 +711,36 @@
       if (intl.ratio < 0.5 && cn.ratio >= 0.75) {
         return {
           tone: 'is-bad',
-          title: '国际网站基本不通：没有使用代理，或代理 / 分流没有生效',
-          note: '国内站点 ' + cn.reach + '/' + cn.n + ' 可达（中位 ' + cnMs + '），国际站点只有 ' + intl.reach + '/' + intl.n + ' 能连上。'
-            + '确认代理客户端在运行、系统代理或 TUN 模式已经打开，并且浏览器没有绕过系统代理。' + tail
+          title: T('国际网站基本不通：没有使用代理，或代理 / 分流没有生效', 'International sites mostly fail: no proxy in use, or the proxy / routing is not working'),
+          note: T('国内站点 ', 'China sites: ') + cn.reach + '/' + cn.n + T(' 可达（中位 ', ' reachable (median ') + cnMs + T('），国际站点只有 ', '); international: only ') + intl.reach + '/' + intl.n + T(' 能连上。', ' connect. ')
+            + T('确认代理客户端在运行、系统代理或 TUN 模式已经打开，并且浏览器没有绕过系统代理。', 'Make sure the proxy client is running, system proxy or TUN mode is on, and the browser is not bypassing the system proxy.') + tail
         };
       }
 
       if (intl.ratio >= 0.75 && ai.ratio < 0.5) {
         return {
           tone: 'is-warn',
-          title: '国际网站正常，但 AI 服务不通：分流规则可能漏了 AI 域名',
-          note: names(ai.down, 5) + ' 连不上，而 Google、GitHub 等国际站点正常。这些服务很可能被分到了直连——'
-            + '检查规则里有没有 chatgpt.com、openai.com、anthropic.com、claude.ai、googleapis.com。' + tail
+          title: T('国际网站正常，但 AI 服务不通：分流规则可能漏了 AI 域名', 'International sites work, but AI services fail: your routing rules may be missing AI domains'),
+          note: names(ai.down, 5) + T(' 连不上，而 Google、GitHub 等国际站点正常。这些服务很可能被分到了直连，', ' fail to connect while international sites such as Google and GitHub work. These services are probably routed direct. ')
+            + T('检查规则里有没有 chatgpt.com、openai.com、anthropic.com、claude.ai、googleapis.com。', 'Check that your rules include chatgpt.com, openai.com, anthropic.com, claude.ai and googleapis.com.') + tail
         };
       }
 
       if (cn.ratio >= 0.75 && cn.mid !== null && cn.mid > Math.max(150, intl.mid !== null ? intl.mid : 0)) {
         return {
           tone: 'is-warn',
-          title: '国内网站比国外还慢：国内流量可能也走了代理（全局模式）',
-          note: '国内站点中位 ' + cnMs + '，国际站点中位 ' + intlMs + '。国内流量先出境、再绕回来，自然比直连慢一大截，'
-            + '国内服务还可能因此把你当成海外用户。切到「规则」或「绕过中国大陆」模式后再测一次。' + tail
+          title: T('国内网站比国外还慢：国内流量可能也走了代理（全局模式）', 'Domestic sites are slower than international ones: domestic traffic may be going through the proxy (global mode)'),
+          note: T('国内站点中位 ', 'Median for China sites ') + cnMs + T('，国际站点中位 ', ', international ') + intlMs + T('。国内流量先出境、再绕回来，自然比直连慢一大截，', '. Domestic traffic leaves China and comes back, so it is much slower than a direct connection,')
+            + T('国内服务还可能因此把你当成海外用户。切到「规则」或「绕过中国大陆」模式后再测一次。', ' and domestic services may treat you as an overseas user. Switch to "rule" or "bypass mainland China" mode and test again.') + tail
         };
       }
 
       if (cn.ratio < 0.5 && intl.ratio >= 0.75) {
         return {
           tone: 'is-warn',
-          title: '国内网站不通：国内流量被送出境后受阻',
-          note: '国际站点正常，国内站点只有 ' + cn.reach + '/' + cn.n + ' 能连上。国内流量多半被分到了境外节点，'
-            + '回国的线路不通，或者对方拒绝了海外访问。把国内域名设为直连通常就能解决。' + tail
+          title: T('国内网站不通：国内流量被送出境后受阻', 'Domestic sites fail: domestic traffic is sent abroad and gets stuck'),
+          note: T('国际站点正常，国内站点只有 ', 'International sites work, but only ') + cn.reach + '/' + cn.n + T(' 能连上。国内流量多半被分到了境外节点，', ' China sites connect. Domestic traffic is probably routed to a node abroad,')
+            + T('回国的线路不通，或者对方拒绝了海外访问。把国内域名设为直连通常就能解决。', ' and the route back into China fails or the sites refuse overseas access. Setting domestic domains to direct usually fixes it.') + tail
         };
       }
     }
@@ -751,26 +753,28 @@
 
     if (!weak.length) {
       var split = mainland && cn.mid !== null && intl.mid !== null && cn.mid <= intl.mid
-        ? '，符合「国内直连、国外走代理」的预期。'
-        : '。';
+        ? T('，符合「国内直连、国外走代理」的预期。', ', as expected for "China direct, international via proxy". ')
+        : T('。', '. ');
       return {
         tone: 'is-good',
-        title: '连通性良好',
-        note: '国内站点中位 ' + cnMs + '，国际站点中位 ' + intlMs + split
-          + (all.down.length ? '个别站点不可达：' + names(all.down, 5) + '。' : '各组站点都能连上。') + tail
+        title: T('连通性良好', 'Connectivity is good'),
+        note: T('国内站点中位 ', 'Median for China sites ') + cnMs + T('，国际站点中位 ', ', international ') + intlMs + split
+          + (all.down.length ? T('个别站点不可达：' + names(all.down, 5) + '。', 'Unreachable: ' + names(all.down, 5) + '.') : T('各组站点都能连上。', 'All groups are reachable.')) + tail
       };
     }
 
     var weakText = weak.map(function (key) {
       var s = stats(byGroup[key]);
-      return '「' + (GROUP_NAMES[key] || key) + '」' + s.reach + '/' + s.n;
-    }).join('、');
+      return T('「' + (GROUP_NAMES[key] || key) + '」', '"' + (GROUP_NAMES[key] || key) + '" ') + s.reach + '/' + s.n;
+    }).join(T('、', ', '));
 
     return {
       tone: 'is-warn',
-      title: all.down.length + ' 个站点不可达',
-      note: '不可达：' + names(all.down, 8) + '。可达比例偏低的分组：' + weakText + '。'
-        + '单个站点不通，多半是对方故障、被广告拦截扩展拦下，或分流规则漏了个别域名。' + tail
+      title: all.down.length + T(' 个站点不可达', ' sites unreachable'),
+      note: T('不可达：' + names(all.down, 8) + '。可达比例偏低的分组：' + weakText + '。'
+        + '单个站点不通，多半是对方故障、被广告拦截扩展拦下，或分流规则漏了个别域名。',
+        'Unreachable: ' + names(all.down, 8) + '. Groups with a low reachable share: ' + weakText + '. '
+        + 'A single unreachable site is usually an outage on their side, an ad-blocking extension, or a routing rule missing that domain.') + tail
     };
   }
 

@@ -12,25 +12,27 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('split');
   if (!root) return;
 
   /* probe.js 没加载成功（网络中断、被扩展拦截）时不能悄无声息：页面会一直停在「待检测」，像是卡住了。
      在进度提示和结论块里说清楚检测没能开始，并把两枚按钮停掉——留着按了没反应的按钮只会更困惑。 */
   function probeMissing() {
-    var message = '检测脚本加载失败，请刷新页面重试';
+    var message = T('检测脚本加载失败，请刷新页面重试', 'Failed to load the check script. Reload the page and try again');
     var hint = root.querySelector('[data-split-progress]');
     var box = root.querySelector('[data-split-verdict]');
     var title = root.querySelector('[data-split-verdict-title]');
     var notes = root.querySelector('[data-split-verdict-notes]');
     var summary = root.querySelector('[data-split-exits]');
 
-    if (hint) hint.textContent = message + '。';
+    if (hint) hint.textContent = message + T('。', '.');
     if (summary) {
       summary.textContent = '';
       var empty = document.createElement('p');
       empty.className = 'splitsum__empty';
-      empty.textContent = '检测没有开始，暂无出口可汇总。';
+      empty.textContent = T('检测没有开始，暂无出口可汇总。', 'The check did not start, so there are no exits to summarize.');
       summary.appendChild(empty);
     }
     if (box && title) {
@@ -38,8 +40,8 @@
       if (notes) {
         var p = document.createElement('p');
         p.className = 'verdict__note';
-        p.textContent = '本页依赖的公共检测脚本没有加载成功（网络中断，或被浏览器扩展拦截），所以一个网站都没有去问。'
-          + '下面的清单仍然是本页会检测的全部网站。';
+        p.textContent = T('本页依赖的公共检测脚本没有加载成功（网络中断，或被浏览器扩展拦截），所以一个网站都没有去问。', 'The shared check script this page depends on did not load (network dropped, or blocked by a browser extension), so no site was asked.')
+          + T('下面的清单仍然是本页会检测的全部网站。', ' The list below is still every site this page checks.');
         notes.textContent = '';
         notes.appendChild(p);
       }
@@ -228,13 +230,13 @@
 
   /* 地区名用 probe.js 的全站统一写法（中国香港、中国台湾……），这里只补 trace 特有的两个代码 */
   function countryName(cc) {
-    if (cc === 'T1') return 'Tor 网络';
-    if (cc === 'XX') return '未知地区';
+    if (cc === 'T1') return T('Tor 网络', 'Tor network');
+    if (cc === 'XX') return T('未知地区', 'Unknown region');
     return P.countryName(cc) || cc;
   }
 
   function countryList(codes) {
-    return codes.map(countryName).join('、');
+    return codes.map(countryName).join(T('、', ', '));
   }
 
   /* ---------------------------------------------------------------- DOM 工具 */
@@ -322,18 +324,18 @@
   }
 
   function failureText(kind) {
-    if (kind === 'noheader') return '该站未开放 IP 头';
-    if (kind === 'invalid') return '未返回 trace';
+    if (kind === 'noheader') return T('该站未开放 IP 头', 'IP header not exposed');
+    if (kind === 'invalid') return T('未返回 trace', 'No trace returned');
     return P.failureText(kind);
   }
 
   function failureTitle(row) {
     var parts = [];
-    if (row.kind === 'noheader') parts.push('浏览器只能读到对方明确开放的响应头，这一家没有把访客 IP 开放给其他网站读取');
-    if (row.kind === 'invalid') parts.push('请求成功，但回的不是 Cloudflare 的 trace，该站可能已经不走 Cloudflare');
-    if (row.kind === 'csp') parts.push('本页的 CSP 没有放行这个域名，属于本站的部署问题');
-    if (row.attempts > 1) parts.push('已重试 ' + (row.attempts - 1) + ' 次');
-    return parts.join('；');
+    if (row.kind === 'noheader') parts.push(T('浏览器只能读到对方明确开放的响应头，这一家没有把访客 IP 开放给其他网站读取', 'The browser can only read response headers the site explicitly exposes, and this site does not expose the visitor IP to other sites'));
+    if (row.kind === 'invalid') parts.push(T('请求成功，但回的不是 Cloudflare 的 trace，该站可能已经不走 Cloudflare', 'The request succeeded, but the response is not a Cloudflare trace; the site may no longer use Cloudflare'));
+    if (row.kind === 'csp') parts.push(T('本页的 CSP 没有放行这个域名，属于本站的部署问题', 'This page\'s CSP does not allow this domain; this is a deployment issue on this site'));
+    if (row.attempts > 1) parts.push(T('已重试 ', 'Retried ') + (row.attempts - 1) + T(' 次', ' times'));
+    return parts.join(T('；', '; '));
   }
 
   /* ---------------------------------------------------------------- 渲染：单行 */
@@ -343,7 +345,7 @@
     row.node.classList.toggle('is-empty', row.status !== 'ok');
     if (!row.ipCell) return;
     if (row.status !== 'ok') {
-      fill(row.ipCell, [dim(row.method === 'self' ? '未知' : '—')]);
+      fill(row.ipCell, [dim(row.method === 'self' ? T('未知', 'Unknown') : '—')]);
       return;
     }
     var nodes = [];
@@ -358,21 +360,21 @@
   function renderGeo(row, loc, derived) {
     if (!row.geoCell) return;
     if (row.status !== 'ok' || !loc) {
-      fill(row.geoCell, [dim('—', row.status === 'ok' ? '这一家只给了 IP，没有其他网站看到同一个出口，国家未知' : '')]);
+      fill(row.geoCell, [dim('—', row.status === 'ok' ? T('这一家只给了 IP，没有其他网站看到同一个出口，国家未知', 'This site only returns an IP and no other site saw the same exit, so the country is unknown') : '')]);
       return;
     }
     var wrap = el('span', 'splitgeo' + (derived ? ' is-derived' : ''));
     var flag = P.flag(loc);
     if (flag && loc !== 'XX') wrap.appendChild(el('span', 'flag', flag));
     wrap.appendChild(el('span', 'splitgeo__name', countryName(loc)));
-    wrap.title = derived ? '这一家只给了 IP，国家取自看到同一个出口的其他网站' : loc;
+    wrap.title = derived ? T('这一家只给了 IP，国家取自看到同一个出口的其他网站', 'This site only returns an IP; the country comes from other sites that see the same exit') : loc;
     fill(row.geoCell, [wrap]);
   }
 
   function renderColo(row, colos) {
     if (!row.coloCell) return;
     if (row.status !== 'ok' || !row.colo) {
-      var why = row.method === 'self' ? '本站不经过 Cloudflare' : row.method === 'header' ? '这一家不是 Cloudflare 的节点' : '';
+      var why = row.method === 'self' ? T('本站不经过 Cloudflare', 'This site is not behind Cloudflare') : row.method === 'header' ? T('这一家不是 Cloudflare 的节点', 'This site is not a Cloudflare node') : '';
       fill(row.coloCell, [dim('—', why)]);
       return;
     }
@@ -381,10 +383,10 @@
     if (info.known && info.city !== info.code) {
       wrap.appendChild(el('span', 'splitcolo__city', info.city));
       wrap.appendChild(el('span', 'splitcolo__code mono', info.code));
-      wrap.title = (info.cityEn ? info.cityEn + ' · ' : '') + (info.cc ? countryName(info.cc) : '') + '（Cloudflare 机房 ' + info.code + '）';
+      wrap.title = (info.cityEn ? info.cityEn + ' · ' : '') + (info.cc ? countryName(info.cc) : '') + T('（Cloudflare 机房 ', ' (Cloudflare colo ') + info.code + T('）', ')');
     } else {
       wrap.appendChild(el('span', 'mono', info.code));
-      wrap.title = 'Cloudflare 机房 ' + info.code;
+      wrap.title = T('Cloudflare 机房 ', 'Cloudflare colo ') + info.code;
     }
     fill(row.coloCell, [wrap]);
   }
@@ -393,12 +395,12 @@
     if (!row.stateCell) return;
     if (row.status === 'ok') {
       var nodes = [];
-      if (exitNo) nodes.push(el('span', 'tag splitexit splitexit--' + ((exitNo - 1) % EXIT_HUES), '出口 ' + exitNo));
-      if (row.method === 'self') nodes.push(el('span', 'splitrow__ms', '对照基准'));
+      if (exitNo) nodes.push(el('span', 'tag splitexit splitexit--' + ((exitNo - 1) % EXIT_HUES), T('出口 ', 'Exit ') + exitNo));
+      if (row.method === 'self') nodes.push(el('span', 'splitrow__ms', T('对照基准', 'Baseline')));
       else if (row.ms !== null) nodes.push(el('span', 'splitrow__ms mono', row.ms + ' ms'));
       if (row.via && row.via !== row.host && row.method === 'trace') {
-        nodes.push(el('span', 'splitrow__ms', '经备用域名'));
-        row.stateCell.title = '主域名不通，结果来自 ' + row.via;
+        nodes.push(el('span', 'splitrow__ms', T('经备用域名', 'Via fallback')));
+        row.stateCell.title = T('主域名不通，结果来自 ', 'Main domain failed; result from ') + row.via;
       } else {
         row.stateCell.removeAttribute('title');
       }
@@ -412,18 +414,18 @@
       return;
     }
     if (row.status === 'running') {
-      fill(row.stateCell, [dim(row.attempts > 1 ? '重试中…' : '检测中…')]);
+      fill(row.stateCell, [dim(row.attempts > 1 ? T('重试中…', 'Retrying…') : T('检测中…', 'Checking…'))]);
       return;
     }
     if (row.status === 'waiting') {
-      fill(row.stateCell, [dim(failureText(row.kind) + ' · 等待重试', failureTitle(row))]);
+      fill(row.stateCell, [dim(failureText(row.kind) + T(' · 等待重试', ' · waiting to retry'), failureTitle(row))]);
       return;
     }
     if (row.status === 'queued') {
-      fill(row.stateCell, [dim('排队中')]);
+      fill(row.stateCell, [dim(T('排队中', 'Queued'))]);
       return;
     }
-    fill(row.stateCell, [dim(row.method === 'self' ? '未知' : '待检测')]);
+    fill(row.stateCell, [dim(row.method === 'self' ? T('未知', 'Unknown') : T('待检测', 'Pending'))]);
   }
 
   /* ---------------------------------------------------------------- 汇总：出口 */
@@ -489,16 +491,16 @@
 
   function rangeTitle(exit) {
     var n = exit.ips.length;
-    if (masked) return '同一个 /64 网段里有 ' + n + ' 个不同地址，按一个出口算';
-    var shown = exit.ips.slice(0, RANGE_LIST_MAX).join('、') + (n > RANGE_LIST_MAX ? ' 等' : '');
-    return '同一个 /64 网段（' + prefix64(exit.ip) + '）里有 ' + n + ' 个不同地址：' + shown
-      + '。IPv6 的临时地址会在网段内轮换，有的代理也按连接换源地址，所以按一个出口算；显示与复制的是其中出现次数最多的那个';
+    if (masked) return T('同一个 /64 网段里有 ', 'The same /64 has ') + n + T(' 个不同地址，按一个出口算', ' different addresses, counted as one exit');
+    var shown = exit.ips.slice(0, RANGE_LIST_MAX).join(T('、', ', ')) + (n > RANGE_LIST_MAX ? T(' 等', ' and others') : '');
+    return T('同一个 /64 网段（', 'The /64 range (') + prefix64(exit.ip) + T('）里有 ', ') has ') + n + T(' 个不同地址：', ' different addresses: ') + shown
+      + T('。IPv6 的临时地址会在网段内轮换，有的代理也按连接换源地址，所以按一个出口算；显示与复制的是其中出现次数最多的那个', '. IPv6 temporary addresses rotate within the range, and some proxies change the source address per connection, so they count as one exit; the most frequent address is shown and copied');
   }
 
   function renderExits(exits) {
     if (!exitsBox) return;
     if (!exits.list.length) {
-      fill(exitsBox, [el('p', 'splitsum__empty', running ? '正在等待第一个网站返回…' : '还没有网站返回出口 IP。')]);
+      fill(exitsBox, [el('p', 'splitsum__empty', running ? T('正在等待第一个网站返回…', 'Waiting for the first site to respond…') : T('还没有网站返回出口 IP。', 'No site has returned an exit IP yet.'))]);
       return;
     }
 
@@ -510,11 +512,11 @@
       var button = el('button', 'splitchip');
       button.type = 'button';
       button.setAttribute('data-copy-target', id);
-      button.setAttribute('data-copy-done', '已复制');
-      button.title = (masked ? '点击复制完整 IP' : '点击复制 ' + exit.ip)
+      button.setAttribute('data-copy-done', T('已复制', 'Copied'));
+      button.title = (masked ? T('点击复制完整 IP', 'Click to copy the full IP') : T('点击复制 ', 'Click to copy ') + exit.ip)
         + (exit.ips.length > 1 ? '\n' + rangeTitle(exit) : '');
 
-      button.appendChild(el('span', 'tag splitexit splitexit--' + hue, '出口 ' + exit.no));
+      button.appendChild(el('span', 'tag splitexit splitexit--' + hue, T('出口 ', 'Exit ') + exit.no));
 
       var where = el('span', 'splitchip__where');
       var flag = exit.loc && exit.loc !== 'XX' ? P.flag(exit.loc) : '';
@@ -525,20 +527,20 @@
       where.appendChild(ip);
       /* 同一 /64 下的几个地址合成了这一个出口：紧跟在代表地址后面说出来（「2001:db8::1 等 3 个地址」），
          免得有人对着表格里各不相同的地址以为汇总算错了 */
-      if (exit.ips.length > 1) where.appendChild(el('span', 'splitchip__range', '等 ' + exit.ips.length + ' 个地址（同一 /64）'));
+      if (exit.ips.length > 1) where.appendChild(el('span', 'splitchip__range', T('等 ', ' (') + exit.ips.length + T(' 个地址（同一 /64）', ' addresses, same /64)')));
       if (exit.loc) where.appendChild(el('span', 'splitchip__country', countryName(exit.loc)));
       button.appendChild(where);
 
-      button.appendChild(el('span', 'splitchip__count', exit.rows.length + ' 个站点'));
+      button.appendChild(el('span', 'splitchip__count', exit.rows.length + T(' 个站点', ' sites')));
 
       var tags = el('span', 'splitchip__tags');
       exit.tags.forEach(function (text) {
-        var tone = text === '国内' ? 'cn' : text === '本站' ? 'name' : 'global';
+        var tone = text === T('国内', 'China') ? 'cn' : text === T('本站', 'This site') ? 'name' : 'global';
         tags.appendChild(el('span', 'tag tag--' + tone, text));
       });
       button.appendChild(tags);
 
-      button.appendChild(el('span', 'splitchip__copy copy__label', '复制'));
+      button.appendChild(el('span', 'splitchip__copy copy__label', T('复制', 'Copy')));
       return button;
     });
 
@@ -576,7 +578,8 @@
   /* 「X、Y、Z 等 7 个网站」。后面直接接中文谓语，只有以西文结尾时才空一格（「Claude 看到」「等 7 个网站看到」） */
   function nameList(list) {
     var names = list.map(function (row) { return row.name; });
-    var text = names.length <= 4 ? names.join('、') : names.slice(0, 4).join('、') + ' 等 ' + names.length + ' 个网站';
+    var sep = T('、', ', ');
+    var text = names.length <= 4 ? names.join(sep) : T(names.slice(0, 4).join(sep) + ' 等 ' + names.length + ' 个网站', names.slice(0, 4).join(sep) + ' and ' + (names.length - 4) + ' more sites');
     return /[\x21-\x7e]$/.test(text) ? text + ' ' : text;
   }
 
@@ -608,10 +611,10 @@
       var allCsp = failed.length && failed.every(function (row) { return row.kind === 'csp'; });
       showVerdict([{
         tone: 'bad',
-        title: allCsp ? '探测请求全部被本页的 CSP 拦下' : '没有一个网站返回出口 IP',
+        title: allCsp ? T('探测请求全部被本页的 CSP 拦下', 'All probe requests were blocked by this page\'s CSP') : T('没有一个网站返回出口 IP', 'No site returned an exit IP'),
         note: allCsp
-          ? '这是本站的部署问题：nginx 里这一页的 connect-src 没有放行这些域名。请稍后再试，或把这个情况告诉我们。'
-          : '可能是网络不通、浏览器扩展拦截了跨站请求，或者这些网站在你的网络里都被屏蔽了。稍后点「重新检测」再试一次。'
+          ? T('这是本站的部署问题：nginx 里这一页的 connect-src 没有放行这些域名。请稍后再试，或把这个情况告诉我们。', 'This is a deployment issue on this site: the connect-src for this page does not allow these domains. Try again later, or let us know.')
+          : T('可能是网络不通、浏览器扩展拦截了跨站请求，或者这些网站在你的网络里都被屏蔽了。稍后点「重新检测」再试一次。', 'The network may be down, a browser extension may be blocking cross-site requests, or these sites may all be blocked on your network. Click "Run again" later.')
       }], failed.length, probed.length);
       return;
     }
@@ -627,10 +630,10 @@
       var deniedCountries = unique(deniedRows.map(loc));
       findings.push({
         tone: 'bad',
-        title: 'AI 出口位于' + countryList(deniedCountries) + '：ChatGPT / Claude 不支持该地区',
-        note: nameList(deniedRows) + '看到的出口在' + countryList(deniedCountries) + '。OpenAI 与 Anthropic 都不向该地区提供服务，'
-          + '打开、注册或调用接口时可能被拒，已有账号也可能被标记。换到支持地区的节点，并让 AI 相关的域名都走它；各家服务完整的支持地区见',
-        link: { href: '/ai', text: 'AI 解锁检测' }
+        title: T('AI 出口位于', 'AI exit in ') + countryList(deniedCountries) + T('：ChatGPT / Claude 不支持该地区', ': not supported by ChatGPT / Claude'),
+        note: nameList(deniedRows) + T('看到的出口在', 'see an exit in ') + countryList(deniedCountries) + T('。OpenAI 与 Anthropic 都不向该地区提供服务，', '. OpenAI and Anthropic do not serve this region; ')
+          + T('打开、注册或调用接口时可能被拒，已有账号也可能被标记。换到支持地区的节点，并让 AI 相关的域名都走它；各家服务完整的支持地区见', 'opening the site, signing up or calling the API may be refused, and existing accounts may be flagged. Switch to a node in a supported region and route all AI domains through it. For each service\'s full list of supported regions, see '),
+        link: { href: '/ai', text: T('AI 解锁检测', 'AI access check') }
       });
     }
 
@@ -648,9 +651,9 @@
     if (familySplit) {
       findings.push({
         tone: 'warn',
-        title: 'IPv4 与 IPv6 走了不同出口',
-        note: '经 IPv4 访问的国外网站看到的出口在' + countryList(intlLocs[4]) + '，经 IPv6 访问的在' + countryList(intlLocs[6]) + '。'
-          + '常见原因是代理只接管了 IPv4：支持 IPv6 的网站会绕开代理直连。可以在代理软件里打开 IPv6 接管，或暂时在系统里关闭 IPv6。'
+        title: T('IPv4 与 IPv6 走了不同出口', 'IPv4 and IPv6 use different exits'),
+        note: T('经 IPv4 访问的国外网站看到的出口在', 'International sites reached over IPv4 see an exit in ') + countryList(intlLocs[4]) + T('，经 IPv6 访问的在', ', and over IPv6 in ') + countryList(intlLocs[6]) + T('。', '.')
+          + T('常见原因是代理只接管了 IPv4：支持 IPv6 的网站会绕开代理直连。可以在代理软件里打开 IPv6 接管，或暂时在系统里关闭 IPv6。', ' A common cause is a proxy that only handles IPv4, so sites that support IPv6 bypass it. Enable IPv6 handling in your proxy app, or turn off IPv6 in the system for now.')
       });
     }
 
@@ -665,16 +668,16 @@
     if (single) {
       var exitLoc = mostCommon(ok.map(loc));
       var text = exitLoc === 'CN'
-        ? '出口在中国大陆，这些网站都没有走代理。被屏蔽的国外网站大多打不开，可以到网络连通性里确认。'
-        : (exitLoc ? '出口在' + countryName(exitLoc) + '。' : '')
-          + '如果你在中国大陆、开着代理，说明代理处于全局模式：国内网站也绕道海外，打开会变慢，部分国内服务会把你当成海外用户。'
-          + '如果你本来就在海外、没有用代理，这是正常的。';
+        ? T('出口在中国大陆，这些网站都没有走代理。被屏蔽的国外网站大多打不开，可以到网络连通性里确认。', 'The exit is in mainland China; none of these sites went through a proxy. Most blocked international sites will not open; check on the Connectivity page.')
+        : (exitLoc ? T('出口在' + countryName(exitLoc) + '。', 'The exit is in ' + countryName(exitLoc) + '. ') : '')
+          + T('如果你在中国大陆、开着代理，说明代理处于全局模式：国内网站也绕道海外，打开会变慢，部分国内服务会把你当成海外用户。', 'If you are in mainland China with a proxy on, the proxy is in global mode: domestic sites are routed abroad too, open more slowly, and some domestic services will treat you as an overseas user. ')
+          + T('如果你本来就在海外、没有用代理，这是正常的。', 'If you are outside China and not using a proxy, this is normal.');
       if (dual) {
         text += locs4.length && locs6.length
-          ? '你同时有一个 IPv4 和一个 IPv6 出口，位于同一国家，属于正常的双栈网络。'
-          : '你同时有一个 IPv4 和一个 IPv6 出口，其中一个只有少数网站看到、国家未知，可以对照下面的表格确认。';
+          ? T('你同时有一个 IPv4 和一个 IPv6 出口，位于同一国家，属于正常的双栈网络。', ' You have one IPv4 and one IPv6 exit in the same country, which is a normal dual-stack network.')
+          : T('你同时有一个 IPv4 和一个 IPv6 出口，其中一个只有少数网站看到、国家未知，可以对照下面的表格确认。', ' You have one IPv4 and one IPv6 exit; one of them was seen by only a few sites and its country is unknown. Check the table below.');
       }
-      findings.push({ tone: 'info', title: '所有网站走同一出口（未分流：直连或全局代理）', note: text, link: exitLoc === 'CN' ? { href: '/connectivity', text: '查看网络连通性' } : null });
+      findings.push({ tone: 'info', title: T('所有网站走同一出口（未分流：直连或全局代理）', 'All sites use one exit (no split routing: direct or global proxy)'), note: text, link: exitLoc === 'CN' ? { href: '/connectivity', text: T('查看网络连通性', 'View connectivity') } : null });
     } else {
       var anyCN = ok.some(function (row) { return loc(row) === 'CN'; });
       var cnAway = cn.filter(function (row) { return loc(row) !== 'CN'; });
@@ -683,16 +686,16 @@
       if (cnAway.length && anyCN) {
         findings.push({
           tone: 'warn',
-          title: '国内网站也走了代理',
-          note: nameList(cnAway) + '看到的出口不在中国（' + countryList(unique(cnAway.map(loc))) + '）。'
-            + '访问国内网站会绕道海外、变慢，部分国内服务会把你判定为海外用户。把这些域名加进直连规则（或检查 GEOSITE,CN / GEOIP,CN 那几条的位置）即可。'
+          title: T('国内网站也走了代理', 'China-based sites also go through the proxy'),
+          note: nameList(cnAway) + T('看到的出口不在中国（', 'see an exit outside China (') + countryList(unique(cnAway.map(loc))) + T('）。', '). ')
+            + T('访问国内网站会绕道海外、变慢，部分国内服务会把你判定为海外用户。把这些域名加进直连规则（或检查 GEOSITE,CN / GEOIP,CN 那几条的位置）即可。', 'Domestic sites are routed abroad and get slower, and some domestic services will judge you as an overseas user. Add these domains to your direct rules (or check where the GEOSITE,CN / GEOIP,CN rules sit).')
         });
       } else if (cnAway.length) {
         findings.push({
           tone: 'info',
-          title: '国内网站看到的出口不在中国',
-          note: nameList(cnAway) + '看到的出口在' + countryList(unique(cnAway.map(loc))) + '。'
-            + '如果你在中国大陆，说明国内流量也走了代理（全局模式或规则缺漏）；如果你本来就在海外，这是正常的。'
+          title: T('国内网站看到的出口不在中国', 'China-based sites see an exit outside China'),
+          note: nameList(cnAway) + T('看到的出口在', 'see an exit in ') + countryList(unique(cnAway.map(loc))) + T('。', '.')
+            + T('如果你在中国大陆，说明国内流量也走了代理（全局模式或规则缺漏）；如果你本来就在海外，这是正常的。', 'If you are in mainland China, domestic traffic is also going through the proxy (global mode or missing rules); if you are outside China, this is normal.')
         });
       }
 
@@ -700,20 +703,20 @@
         if (intl.length && !intlHome.length) {
           findings.push({
             tone: 'good',
-            title: '分流正常：国内网站直连，国外网站走代理',
-            note: cn.length + ' 个国内网站看到的出口在中国，' + intl.length + ' 个国外网站看到的出口在' + countryList(unique(intl.map(loc))) + '。'
+            title: T('分流正常：国内网站直连，国外网站走代理', 'Split routing works: China-based sites direct, international sites via proxy'),
+            note: cn.length + T(' 个国内网站看到的出口在中国，', ' China-based sites see an exit in China; ') + intl.length + T(' 个国外网站看到的出口在', ' international sites see an exit in ') + countryList(unique(intl.map(loc))) + T('。', '.')
           });
         } else if (intlHome.length && intlHome.length < intl.length) {
           findings.push({
             tone: 'warn',
-            title: '部分国外网站没有走代理',
-            note: nameList(intlHome) + '看到的出口在中国大陆。如果这是你有意设置的直连规则可以忽略；否则请检查代理软件里这些域名命中了哪条规则。'
+            title: T('部分国外网站没有走代理', 'Some international sites do not go through the proxy'),
+            note: nameList(intlHome) + T('看到的出口在中国大陆。如果这是你有意设置的直连规则可以忽略；否则请检查代理软件里这些域名命中了哪条规则。', 'see an exit in mainland China. If this is an intentional direct rule, ignore it; otherwise check which rule these domains match in your proxy app.')
           });
         } else if (intl.length) {
           findings.push({
             tone: 'info',
-            title: '所有网站都从中国大陆直连',
-            note: '出口地址不止一个，但都在中国大陆，多半是运营商的多出口或双栈网络，并没有走代理。'
+            title: T('所有网站都从中国大陆直连', 'All sites connect directly from mainland China'),
+            note: T('出口地址不止一个，但都在中国大陆，多半是运营商的多出口或双栈网络，并没有走代理。', 'There is more than one exit address, but all are in mainland China; most likely your ISP has multiple exits or a dual-stack network, and no proxy is in use.')
           });
         }
       }
@@ -738,8 +741,8 @@
       if (scattered) {
         findings.push({
           tone: 'warn',
-          title: 'AI 网站分散在 ' + Math.max(count(aiKeys[4]), count(aiKeys[6])) + ' 个出口',
-          note: '同一家服务的几个域名（例如 chatgpt.com、openai.com 与 sora.com）出口不一致，容易被当成异常登录。建议让所有 AI 相关的域名走同一个节点。'
+          title: T('AI 网站分散在 ', 'AI sites are spread across ') + Math.max(count(aiKeys[4]), count(aiKeys[6])) + T(' 个出口', ' exits'),
+          note: T('同一家服务的几个域名（例如 chatgpt.com、openai.com 与 sora.com）出口不一致，容易被当成异常登录。建议让所有 AI 相关的域名走同一个节点。', 'Several domains of the same service (for example chatgpt.com, openai.com and sora.com) exit differently, which can look like a suspicious sign-in. Route all AI domains through the same node.')
         });
       } else if (ai.length && comparable && !overlap) {
         /* 按出口而不是按地址取：同一 /64 里轮换的几个地址是同一个出口。标题里写它在汇总里的编号，
@@ -747,16 +750,16 @@
         var aiExit = exits.map[mostCommon(ai.map(function (row) { return exitKey(row.ip); }))];
         findings.push({
           tone: 'info',
-          title: 'AI 流量单独分流到出口 ' + aiExit.no + '（' + exitLabel(aiExit) + (aiExit.loc ? '，' + countryName(aiExit.loc) : '') + '）',
-          note: ai.length + ' 个 AI 网站走的出口与其他国外网站不同，说明代理软件里为 AI 单独设置的规则生效了。'
+          title: T('AI 流量单独分流到出口 ', 'AI traffic routed separately to exit ') + aiExit.no + T('（', ' (') + exitLabel(aiExit) + (aiExit.loc ? T('，', ', ') + countryName(aiExit.loc) : '') + T('）', ')'),
+          note: ai.length + T(' 个 AI 网站走的出口与其他国外网站不同，说明代理软件里为 AI 单独设置的规则生效了。', ' AI sites use a different exit from other international sites, so the AI-specific rules in your proxy app are working.')
         });
       }
 
       if (!findings.length) {
         findings.push({
           tone: 'info',
-          title: '检测到 ' + exits.list.length + ' 个出口',
-          note: '不同网站看到了不同的地址，但能用来判断国内 / 国外的国家信息不全，无法断定规则是否正确。可以对照下面每一行的国家自行判断。'
+          title: T('检测到 ', 'Found ') + exits.list.length + T(' 个出口', ' exits'),
+          note: T('不同网站看到了不同的地址，但能用来判断国内 / 国外的国家信息不全，无法断定规则是否正确。可以对照下面每一行的国家自行判断。', 'Different sites see different addresses, but country data is incomplete for telling China-based from international, so it is unclear whether the rules are correct. Compare the country on each row below.')
         });
       }
     }
@@ -775,7 +778,7 @@
     var nodes = [note(head, false)];
     findings.forEach(function (item) { if (item !== head) nodes.push(note(item, true)); });
     if (failedCount) {
-      nodes.push(el('p', 'verdict__note', '另有 ' + failedCount + ' 个网站未能检测，结论只基于返回了地址的 ' + okCount + ' 个网站。'));
+      nodes.push(el('p', 'verdict__note', T('另有 ', 'Also, ') + failedCount + T(' 个网站未能检测，结论只基于返回了地址的 ', ' sites could not be checked; the conclusion is based only on the ') + okCount + T(' 个网站。', ' sites that returned an address.')));
     }
     fill(verdictNotes, nodes);
     verdict.hidden = false;
@@ -786,15 +789,15 @@
     if (withTitle) {
       /* 标题里本身常带冒号（「分流正常：国内直连……」），再接一个冒号会读成两层，用句号断开 */
       p.appendChild(el('strong', 'splitnotes__title', item.title));
-      p.appendChild(document.createTextNode('。'));
+      p.appendChild(document.createTextNode(T('。', '.')));
     }
     p.appendChild(document.createTextNode(item.note));
     if (item.link) {
       var a = el('a', 'splitnotes__link', item.link.text);
-      a.href = item.link.href;
+      a.href = window.I18N ? I18N.path(item.link.href) : item.link.href;
       p.appendChild(document.createTextNode(' '));
       p.appendChild(a);
-      p.appendChild(document.createTextNode('。'));
+      p.appendChild(document.createTextNode(T('。', '.')));
     }
     return p;
   }
@@ -846,7 +849,7 @@
         }, function (failure) {
           markFailed(row, failure);
         }).then(function () {
-          if (!finished && running) setProgress('已完成 ' + settledCount() + ' / ' + targets.length + '……');
+          if (!finished && running) setProgress(T('已完成 ', 'Done ') + settledCount() + ' / ' + targets.length + '……');
         });
       });
     }));
@@ -860,7 +863,7 @@
       row.status = 'waiting';
       renderState(row, 0);
     });
-    setProgress(failed.length + ' 个网站暂时失败，' + Math.round(RETRY_DELAYS[index] / 1000) + ' 秒后第 ' + (index + 1) + ' 次重试……');
+    setProgress(failed.length + T(' 个网站暂时失败，', ' sites failed for now; retrying in ') + Math.round(RETRY_DELAYS[index] / 1000) + T(' 秒后第 ', ' s (attempt ') + (index + 1) + T(' 次重试……', ')……'));
 
     return P.sleep(RETRY_DELAYS[index]).then(function () {
       return pass(failed, queue);
@@ -896,7 +899,7 @@
     var started = P.now();
     var queue = P.queue(LANES);
     if (!iataReady) iataReady = P.iata(IATA_URL);
-    setProgress('正在检测 ' + targets.length + ' 个网站……');
+    setProgress(T('正在检测 ', 'Checking ') + targets.length + T(' 个网站……', ' sites……'));
 
     pass(targets, queue).then(function () {
       evaluate();
@@ -914,9 +917,9 @@
       var ok = targets.filter(function (row) { return row.status === 'ok'; }).length;
       var bad = targets.length - ok;
       var seconds = ((P.now() - started) / 1000).toFixed(1);
-      setProgress('完成：' + ok + ' 个网站返回了出口 IP'
-        + (bad ? '，' + bad + ' 个未能检测' + (RETRY_DELAYS.length ? '（网络失败的已重试）' : '') : '')
-        + '，用时 ' + seconds + ' 秒。');
+      setProgress(T('完成：', 'Done: ') + ok + T(' 个网站返回了出口 IP', ' sites returned an exit IP')
+        + (bad ? T('，', ', ') + bad + T(' 个未能检测', ' could not be checked') + (RETRY_DELAYS.length ? T('（网络失败的已重试）', ' (network failures were retried)') : '') : '')
+        + T('，用时 ', ', took ') + seconds + T(' 秒。', ' s.'));
     });
   }
 
@@ -928,7 +931,7 @@
     masked = value;
     root.classList.toggle('is-masked', masked);
     if (maskButton) maskButton.setAttribute('aria-pressed', masked ? 'true' : 'false');
-    if (maskLabel) maskLabel.textContent = masked ? '显示 IP' : '隐藏 IP';
+    if (maskLabel) maskLabel.textContent = masked ? T('显示 IP', 'Show IPs') : T('隐藏 IP', 'Hide IPs');
     rows.forEach(renderIp);
     refresh();
     if (!verdict.hidden) evaluate();

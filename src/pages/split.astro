@@ -1,18 +1,22 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/split.html?raw";
+import zhHtml from "../snippets/split.html?raw";
+import enHtml from "../snippets/en/split.html?raw";
+import { getLang, pick } from "../lib/i18n";
 import { extractVisitorIp } from "../lib/ip-utils";
 
+const lang = getLang(Astro.locals);
+
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="网站分流测试 — 国内、国外、AI 网站分别走哪个出口 IP · JudgeIP"
-  description="同时检测数十个国内外与 AI 网站看到的你的出口 IP，验证代理分流规则是否生效。"
+  title={pick(lang, '网站分流测试 — 国内、国外、AI 网站分别走哪个出口 IP · JudgeIP', 'Split routing test: which exit each site sees · JudgeIP')}
+  description={pick(lang, '同时检测数十个国内外与 AI 网站看到的你的出口 IP，验证代理分流规则是否生效。', 'Shows which exit IP dozens of sites in and outside China, AI and crypto sites each see, to check whether your proxy routing rules work.')}
   canonicalPath="/split"
   bodyClass="page-split"
-  currentLabel="分流测试"
+  currentLabel={pick(lang, '分流测试', 'Split routing test')}
   activeNav="/split"
   extraCss={["/assets/css/split.css"]}
   extraJs={["/assets/js/probe.js", "/assets/js/split.js"]}

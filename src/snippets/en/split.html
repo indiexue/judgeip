@@ -1,0 +1,1139 @@
+
+<section class="hero">
+  <h1 class="hero__title">Split routing test</h1>
+  <p class="hero__lede">Shows which exit IP different sites see, to check whether your proxy routing rules work.</p>
+</section>
+
+<div class="probe split"
+     id="split"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-ai-denied="CN HK MO RU BY IR KP SY CU"
+     data-lanes="8"
+     data-timeout="6000"
+     data-retry="2000 4000">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-split-run>Run again</button>
+    <span class="probe__hint" data-split-progress>Starts when the page opens: your browser requests 40 sites directly, 8 at a time, waiting up to 6 seconds each; failed requests are retried twice.</span>
+    <button class="splitmask" type="button" data-split-mask aria-pressed="false" title="Hide the IPs on this page before screen recording or taking screenshots">
+      <svg class="splitmask__icon splitmask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
+        <circle cx="12" cy="12" r="2.9"></circle>
+      </svg>
+      <svg class="splitmask__icon splitmask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
+        <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
+        <path d="M4 4l16 16"></path>
+      </svg>
+      <span data-split-mask-label>Hide IPs</span>
+    </button>
+  </div>
+
+  <div class="verdict" data-split-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-split-verdict-title></p>
+      <div class="splitnotes" data-split-verdict-notes></div>
+    </div>
+  </div>
+
+  <section class="splitsum" aria-labelledby="splitsum-title">
+    <h2 class="splitsum__title" id="splitsum-title">Exits</h2>
+    <div class="splitsum__list" data-split-exits aria-live="polite">
+      <p class="splitsum__empty">Once the check starts, results are grouped here by exit IP: how many sites see each exit and which categories of sites use it.</p>
+    </div>
+    <p class="splitsum__note">Click an exit to copy the full IP. Several categories under one exit means they share a route. IPv4 and IPv6 are counted separately and not compared. IPv6 is grouped by /64: addresses rotating within one range count as one exit.</p>
+  </section>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">This site</h2>
+      <div class="rows splittable" role="table" aria-label="Address seen by this site">
+        <div class="splitrow splitrow--head" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span class="splitrow__state" role="columnheader">Status</span>
+        </div>
+        <div class="splitrow"
+             role="row"
+             data-split-row="self"
+             data-method="self"
+             data-name="JudgeIP"
+             data-region="self"
+             data-group="self"
+             data-tag="This site">
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Address seen by the JudgeIP server</span>
+              <span class="tag tag--name">This site</span>
+            </span>
+            <span class="splitrow__note">The address you used to reach this site when the page loaded</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip>
+            <span class="mono" data-ip="__VISITOR_IP__" title="__VISITOR_IP__">__VISITOR_IP__</span>
+          </div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim" title="This site is not behind Cloudflare">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Baseline</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">China</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for China-based sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="netease"
+             data-method="header"
+             data-name="NetEase"
+             data-region="cn"
+             data-group="cn"
+             data-tag="China"
+             data-url="https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png"
+             data-headers="cdn-user-ip"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">NetEase</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="splitrow__how" title="necaptcha.nosdn.127.net"><span class="mono">necaptcha.nosdn.127.net</span></span>
+            <span class="splitrow__note">Reads the cdn-user-ip response header</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="bytedance"
+             data-method="header"
+             data-name="ByteDance"
+             data-region="cn"
+             data-group="cn"
+             data-tag="China"
+             data-url="https://perfops.byte-test.com/500b-bench.jpg"
+             data-headers="x-request-ip x-response-cinfo"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">ByteDance</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="splitrow__how" title="perfops.byte-test.com"><span class="mono">perfops.byte-test.com</span></span>
+            <span class="splitrow__note">Reads the x-request-ip response header</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cfcn"
+             data-method="trace"
+             data-name="Cloudflare China network"
+             data-region="cn"
+             data-group="cn"
+             data-tag="China"
+             data-host="www.cloudflare-cn.com"
+             data-fallback="perfops.cloudflareperf.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare China network</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="splitrow__how" title="www.cloudflare-cn.com"><span class="mono">www.cloudflare-cn.com</span></span>
+            <span class="splitrow__fallback" title="Asked when the main domain fails">Fallback <span class="mono">perfops.<wbr>cloudflareperf.<wbr>com</span></span>
+            <span class="splitrow__note">Only visitors in mainland China hit nodes inside China</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="qualcomm"
+             data-method="trace"
+             data-name="Qualcomm China"
+             data-region="cn"
+             data-group="cn"
+             data-tag="China"
+             data-host="www.qualcomm.cn"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Qualcomm China</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="splitrow__how" title="www.qualcomm.cn"><span class="mono">www.qualcomm.cn</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">AI</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for AI sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="chatgpt"
+             data-method="trace"
+             data-name="ChatGPT"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="chatgpt.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">ChatGPT</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="chatgpt.com"><span class="mono">chatgpt.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="openai"
+             data-method="trace"
+             data-name="OpenAI"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="openai.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">OpenAI</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="openai.com"><span class="mono">openai.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="sora"
+             data-method="trace"
+             data-name="Sora"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="sora.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Sora</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="sora.com"><span class="mono">sora.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="claude"
+             data-method="trace"
+             data-name="Claude"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="claude.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Claude</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="claude.ai"><span class="mono">claude.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="anthropic"
+             data-method="trace"
+             data-name="Anthropic"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="anthropic.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Anthropic</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="anthropic.com"><span class="mono">anthropic.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="grok"
+             data-method="trace"
+             data-name="Grok"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="grok.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Grok</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="grok.com"><span class="mono">grok.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="perplexity"
+             data-method="trace"
+             data-name="Perplexity"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="www.perplexity.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Perplexity</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="www.perplexity.ai"><span class="mono">www.perplexity.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="mistral"
+             data-method="trace"
+             data-name="Mistral"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="mistral.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Mistral</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="mistral.ai"><span class="mono">mistral.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="midjourney"
+             data-method="trace"
+             data-name="Midjourney"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="midjourney.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Midjourney</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="midjourney.com"><span class="mono">midjourney.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="poe"
+             data-method="trace"
+             data-name="Poe"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="poe.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Poe</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="poe.com"><span class="mono">poe.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Social</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for social sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="x"
+             data-method="trace"
+             data-name="X (Twitter)"
+             data-region="intl"
+             data-group="social"
+             data-tag="Social"
+             data-host="x.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">X (Twitter)</span>
+              <span class="tag tag--global">Social</span>
+            </span>
+            <span class="splitrow__how" title="x.com"><span class="mono">x.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="discord"
+             data-method="trace"
+             data-name="Discord"
+             data-region="intl"
+             data-group="social"
+             data-tag="Social"
+             data-host="gateway.discord.gg"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Discord</span>
+              <span class="tag tag--global">Social</span>
+            </span>
+            <span class="splitrow__how" title="gateway.discord.gg"><span class="mono">gateway.discord.gg</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="medium"
+             data-method="trace"
+             data-name="Medium"
+             data-region="intl"
+             data-group="social"
+             data-tag="Social"
+             data-host="medium.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Medium</span>
+              <span class="tag tag--global">Social</span>
+            </span>
+            <span class="splitrow__how" title="medium.com"><span class="mono">medium.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="signal"
+             data-method="trace"
+             data-name="Signal"
+             data-region="intl"
+             data-group="social"
+             data-tag="Social"
+             data-host="signal.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Signal</span>
+              <span class="tag tag--global">Social</span>
+            </span>
+            <span class="splitrow__how" title="signal.org"><span class="mono">signal.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Crypto</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for crypto sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="coinbase"
+             data-method="trace"
+             data-name="Coinbase"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="Crypto"
+             data-host="coinbase.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Coinbase</span>
+              <span class="tag tag--global">Crypto</span>
+            </span>
+            <span class="splitrow__how" title="coinbase.com"><span class="mono">coinbase.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="okx"
+             data-method="trace"
+             data-name="OKX"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="Crypto"
+             data-host="www.okx.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">OKX</span>
+              <span class="tag tag--global">Crypto</span>
+            </span>
+            <span class="splitrow__how" title="www.okx.com"><span class="mono">www.okx.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="binance"
+             data-method="trace"
+             data-name="Binance"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="Crypto"
+             data-host="www.binance.info"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Binance</span>
+              <span class="tag tag--global">Crypto</span>
+            </span>
+            <span class="splitrow__how" title="www.binance.info"><span class="mono">www.binance.info</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cryptocom"
+             data-method="trace"
+             data-name="Crypto.com"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="Crypto"
+             data-host="crypto.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Crypto.com</span>
+              <span class="tag tag--global">Crypto</span>
+            </span>
+            <span class="splitrow__how" title="crypto.com"><span class="mono">crypto.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Work and payments</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for work and payment sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="zoom"
+             data-method="trace"
+             data-name="Zoom"
+             data-region="intl"
+             data-group="office"
+             data-tag="Work"
+             data-host="zoom.us"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Zoom</span>
+              <span class="tag tag--global">Work</span>
+            </span>
+            <span class="splitrow__how" title="zoom.us"><span class="mono">zoom.us</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="notion"
+             data-method="trace"
+             data-name="Notion"
+             data-region="intl"
+             data-group="office"
+             data-tag="Work"
+             data-host="notion.so"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Notion</span>
+              <span class="tag tag--global">Work</span>
+            </span>
+            <span class="splitrow__how" title="notion.so"><span class="mono">notion.so</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="1password"
+             data-method="trace"
+             data-name="1Password"
+             data-region="intl"
+             data-group="office"
+             data-tag="Work"
+             data-host="1password.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">1Password</span>
+              <span class="tag tag--global">Work</span>
+            </span>
+            <span class="splitrow__how" title="1password.com"><span class="mono">1password.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="wise"
+             data-method="trace"
+             data-name="Wise"
+             data-region="intl"
+             data-group="office"
+             data-tag="Payments"
+             data-host="wise.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Wise</span>
+              <span class="tag tag--global">Payments</span>
+            </span>
+            <span class="splitrow__how" title="wise.com"><span class="mono">wise.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="visa"
+             data-method="trace"
+             data-name="Visa"
+             data-region="intl"
+             data-group="office"
+             data-tag="Payments"
+             data-host="www.visa.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Visa</span>
+              <span class="tag tag--global">Payments</span>
+            </span>
+            <span class="splitrow__how" title="www.visa.com"><span class="mono">www.visa.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="shopify"
+             data-method="trace"
+             data-name="Shopify"
+             data-region="intl"
+             data-group="office"
+             data-tag="Shopping"
+             data-host="shopify.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Shopify</span>
+              <span class="tag tag--global">Shopping</span>
+            </span>
+            <span class="splitrow__how" title="shopify.com"><span class="mono">shopify.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Developer and static</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for developer and static sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cdnjs"
+             data-method="trace"
+             data-name="cdnjs"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="cdnjs.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">cdnjs</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="cdnjs.cloudflare.com"><span class="mono">cdnjs.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="npm"
+             data-method="trace"
+             data-name="npm"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="registry.npmjs.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">npm</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="registry.npmjs.org"><span class="mono">registry.npmjs.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="unpkg"
+             data-method="trace"
+             data-name="unpkg"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="app.unpkg.com"
+             data-fallback="unpkg.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">unpkg</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="app.unpkg.com"><span class="mono">app.unpkg.com</span></span>
+            <span class="splitrow__fallback" title="Asked when the main domain fails">Fallback <span class="mono">unpkg.<wbr>com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="jsdelivr"
+             data-method="trace"
+             data-name="jsDelivr"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="testingcf.jsdelivr.net"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">jsDelivr</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="testingcf.jsdelivr.net"><span class="mono">testingcf.jsdelivr.net</span></span>
+            <span class="splitrow__note">Cloudflare network</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="nodejs"
+             data-method="trace"
+             data-name="Node.js"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="nodejs.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Node.js</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="nodejs.org"><span class="mono">nodejs.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="gitlab"
+             data-method="trace"
+             data-name="GitLab"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="gitlab.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">GitLab</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="gitlab.com"><span class="mono">gitlab.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="kali"
+             data-method="trace"
+             data-name="Kali Linux"
+             data-region="intl"
+             data-group="dev"
+             data-tag="Developer"
+             data-host="kali.download"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Kali Linux</span>
+              <span class="tag tag--global">Developer</span>
+            </span>
+            <span class="splitrow__how" title="kali.download"><span class="mono">kali.download</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Streaming</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for streaming sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="crunchyroll"
+             data-method="trace"
+             data-name="Crunchyroll"
+             data-region="intl"
+             data-group="media"
+             data-tag="Streaming"
+             data-host="crunchyroll.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Crunchyroll</span>
+              <span class="tag tag--global">Streaming</span>
+            </span>
+            <span class="splitrow__how" title="crunchyroll.com"><span class="mono">crunchyroll.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="bytedance-global"
+             data-method="header"
+             data-name="ByteDance international"
+             data-region="intl"
+             data-group="media"
+             data-tag="Streaming"
+             data-url="https://perfops2.byte-test.com/500b-bench.jpg"
+             data-headers="x-request-ip x-response-cinfo"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">ByteDance international</span>
+              <span class="tag tag--global">Streaming</span>
+            </span>
+            <span class="splitrow__how" title="perfops2.byte-test.com"><span class="mono">perfops2.byte-test.com</span></span>
+            <span class="splitrow__note">Reads the x-request-ip response header</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Cloudflare</h2>
+      <div class="rows splittable" role="table" aria-label="Exits for Cloudflare sites">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">Site</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">Country</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cloudflare"
+             data-method="trace"
+             data-name="Cloudflare website"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="www.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare website</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="www.cloudflare.com"><span class="mono">www.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cfspeed"
+             data-method="trace"
+             data-name="Cloudflare speed test"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="speed.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare speed test</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="speed.cloudflare.com"><span class="mono">speed.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="one"
+             data-method="trace"
+             data-name="1.1.1.1"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="1.1.1.1"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">1.1.1.1</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="1.1.1.1"><span class="mono">1.1.1.1</span></span>
+            <span class="splitrow__note">IPv4 only</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Only the site being visited knows which exit you used, so the browser has to ask each one. JavaScript is disabled, so this page can only show the site list and notes.
+        You can also check by hand: open <span class="mono">https://chatgpt.com/cdn-cgi/trace</span>
+        and <span class="mono">https://www.qualcomm.cn/cdn-cgi/trace</span> in your browser and compare the values after <span class="mono">ip=</span> and <span class="mono">loc=</span>.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What split routing is</h2>
+  <p>
+    Proxy apps such as Clash, Surge, Shadowrocket and sing-box usually have three modes: <strong>direct</strong> (nothing through the proxy), <strong>global</strong> (everything through the proxy)
+    and <strong>rule</strong> (decided per domain or IP owner). Rule mode is what "split routing" means: China-based sites matching rules such as <span class="mono">GEOSITE,CN</span> or
+    <span class="mono">GEOIP,CN</span> connect directly and everything else goes through a proxy node. More careful setups assign separate nodes for AI, streaming and crypto,
+    for example pinning ChatGPT and Claude to a US residential IP and Binance to Singapore.
+  </p>
+  <p>
+    With many rules, the config file alone won't tell you what actually happens: missing domains, rule order and where DNS resolution takes place can all send a site out through an unexpected exit.
+    The direct way to check is to <strong>ask the site itself</strong>: the IP each site sees is the exit your traffic actually used to reach it.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>For each site on the list, your browser sends a cross-origin request directly, without cookies or a referrer.</li>
+    <li>For sites behind Cloudflare, request <span class="mono">/cdn-cgi/trace</span> and read <span class="mono">ip</span> (how it sees you), <span class="mono">loc</span> (the country of that IP) and <span class="mono">colo</span> (the Cloudflare data center you hit).</li>
+    <li>The NetEase and ByteDance rows request a speed-test file on their CDN and read the visitor address echoed in a response header. They only return an IP; the country is taken from other sites that see the same exit (same IP, or same /64 for IPv6).</li>
+    <li>8 at a time, up to 6 seconds each; failed sites are retried once after 2 seconds and once after 4. If the main domain fails, a fallback domain is asked: <span class="mono">perfops.cloudflareperf.com</span> for the Cloudflare China network and <span class="mono">unpkg.com</span> for unpkg.</li>
+    <li>Group results by exit IP, compare the China group with the international group and the AI group with other international sites, and draw a conclusion. IPv4 and IPv6 are only compared within the same family, so a dual-stack network is not mistaken for split routing. IPv6 is grouped by /64: a device's temporary addresses rotate within the range, and some proxies change the source address per connection, but it is still one exit.</li>
+  </ol>
+  <p>
+    All requests go straight from your browser; this site's server is not involved and receives no results. The only server-provided value is the "Address seen by the JudgeIP server" row,
+    the address you used to reach this site when the page loaded, shown for comparison with what other sites see.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>Split routing works</strong>: China-based sites see an exit in China and international sites see one abroad. This is what rule mode should look like.</li>
+    <li><strong>All sites use one exit</strong>: no split routing. An exit in China means no proxy at all; an exit abroad means the proxy is in global mode. If you are outside China without a proxy, this is normal.</li>
+    <li><strong>China-based sites also go through the proxy</strong>: domestic sites are routed through a node abroad. Access gets slower and some domestic services will treat you as an overseas user. Check the domestic direct rules in your config.</li>
+    <li><strong>AI traffic routed separately</strong>: AI sites use a different exit from other international sites, so your AI-specific rules are working.</li>
+    <li><strong>AI exit in an unsupported region</strong>: AI sites see an exit in mainland China, Hong Kong, Macau, Russia or similar. ChatGPT and Claude are not available there; switch nodes.</li>
+    <li><strong>IPv4 and IPv6 use different exits</strong>: common when the proxy only handles IPv4 and sites that support IPv6 bypass it.</li>
+  </ul>
+  <p class="prose__note">
+    Click an exit in the summary to copy the full IP, then look up its owner, access type and risk records on the <a href="/en">home page</a>;
+    for the full list of supported regions for AI services, see the <a href="/en/ai">AI access check</a>; for whether each site opens and how fast, see <a href="/en/connectivity">Connectivity</a>;
+    for your Cloudflare colo, WARP status and a comparison across Cloudflare network tiers, see the <a href="/en/cloudflare">Cloudflare edge check</a>.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>"All sites use one exit": does that mean the proxy isn't working?</dt>
+    <dd>Not necessarily. It only means these dozens of sites see the same address: either no proxy at all (the exit is your local ISP) or a proxy in global mode (the exit is the proxy node). The exit's country tells them apart: mainland China means the former, abroad means the latter. To connect domestic sites directly and route international ones through the proxy, switch apps like Clash, Surge or Shadowrocket to "rule" mode.</dd>
+    <dt>What happens if China-based sites see a foreign IP?</dt>
+    <dd>Domestic sites are reached via a node abroad and back, so they get noticeably slower. Video, music, online banking and other domestic services judge you as an overseas user by IP, which can mean unavailable licensed content, extra sign-in verification or even risk-control flags. Usually the proxy app is in global mode, or the rules are missing domestic domains or direct rules such as GEOIP,CN.</dd>
+    <dt>The AI exit is in Hong Kong. Why does it say unsupported?</dt>
+    <dd>OpenAI and Anthropic do not serve mainland China, Hong Kong or Macau, and Russia, Belarus, Iran, North Korea, Syria, Cuba and others are also off the list. With an exit in one of these regions, pages may not open, sign-ups may be refused, and existing accounts may get flagged. This page only gives a short warning based on that common list; see the AI access check on this site for each service's full list of supported regions.</dd>
+    <dt>Why do some sites show "IP header not exposed" or "connection failed"?</dt>
+    <dd>The NetEase and ByteDance rows read the IP from a response header, which the browser only lets a page read if the site explicitly exposes it (Access-Control-Expose-Headers); otherwise this message is shown. The other sites read Cloudflare's /cdn-cgi/trace; a failure usually means the site is blocked on your network, timed out, or no longer uses Cloudflare. Failed sites are retried twice automatically, and a few failures do not affect the overall conclusion.</dd>
+    <dt>Does this site store the split routing results?</dt>
+    <dd>No. Each request goes straight from your browser to the site, without cookies or a referrer, and the addresses read are shown only on this page and never sent back to this site. The "Address seen by the JudgeIP server" row is the connection address this site saw when you opened the page; this page is not cached, and that address is not stored with the results.</dd>
+  </dl>
+</article>
