@@ -421,10 +421,10 @@ const encodedIp = encodeURIComponent(info.ip);
         <div class="conngrid__col">
           <div class="conngrid__cap">{t('国内直连', 'China direct')}</div>
           {[
-            { key: 'baidu', url: 'https://www.baidu.com/favicon.ico', mark: '百', dom: 'baidu.com', label: t('百度', 'Baidu') },
-            { key: 'wechat', url: 'https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico', mark: '微', dom: 'weixin.qq.com', label: t('微信', 'WeChat') },
-            { key: 'taobao', url: 'https://www.taobao.com/favicon.ico', mark: '淘', dom: 'taobao.com', label: t('淘宝', 'Taobao') },
-            { key: 'bytedance', url: 'https://perfops.byte-test.com/500b-bench.jpg', mark: '字', dom: 'bytedance.com', label: t('字节跳动', 'ByteDance') },
+            { key: 'baidu', url: 'https://www.baidu.com/favicon.ico', mark: t('百', 'B'), dom: 'baidu.com', label: t('百度', 'Baidu') },
+            { key: 'wechat', url: 'https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico', mark: t('微', 'W'), dom: 'weixin.qq.com', label: t('微信', 'WeChat') },
+            { key: 'taobao', url: 'https://www.taobao.com/favicon.ico', mark: t('淘', 'T'), dom: 'taobao.com', label: t('淘宝', 'Taobao') },
+            { key: 'bytedance', url: 'https://perfops.byte-test.com/500b-bench.jpg', mark: t('字', 'B'), dom: 'bytedance.com', label: t('字节跳动', 'ByteDance') },
           ].map((item) => (
             <div class="conntile" data-conn-key={item.key} data-conn-url={item.url} data-conn-group="cn" title={(lang === 'en' ? `Probe: ${item.url.replace(/^https?:\/\//, '')}` : `探测地址：${item.url.replace(/^https?:\/\//, '')}`)}>
               <span class="conntile__mark conntile__mark--cn" aria-hidden="true">

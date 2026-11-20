@@ -324,7 +324,7 @@ function buildSceneFitMatrix(opts: {
       label: 'AI 应用',
       status: aiBlocked ? `地区受限 (${countryCode})` : score >= 72 && !hasThreat ? '适配' : usage === 'hosting' ? 'API 可用/网页慎用' : '易弹验证',
       tone: aiBlocked ? 'leak' : score >= 72 && !hasThreat ? 'ok' : 'warn',
-      note: 'ChatGPT / Claude / Gemini 地区许可与防降智',
+      note: 'ChatGPT / Claude / Gemini 地区与网络类型参考',
     },
     {
       key: 'social',

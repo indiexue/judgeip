@@ -2,39 +2,46 @@
 import IpcxLayout from '../layouts/IpcxLayout.astro';
 import { extractVisitorIp, parseIp } from '../lib/ip-utils';
 import { lookupIpFull } from '../lib/ipcx-lookup';
+import { localizeLookup } from '../lib/lookup-en';
+import { getLang, localePath, pick } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
+const t = (zh: string, en: string) => pick(lang, zh, en);
+const href = (path: string) => localePath(path, lang);
 
 const visitorIp = extractVisitorIp(Astro.request);
 const rawIp = (Astro.url.searchParams.get('ip') || '').trim();
 const parsed = rawIp ? parseIp(rawIp) : null;
 const targetIp = parsed ? parsed.normalized : visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
-const info = await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp);
+const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
 
 const scoreColor = info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
-const nativeText = info.isBogon ? '保留地址' : info.isNative ? '原生 IP (Native)' : '广播 IP (Broadcast)';
+const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
 const locationText = [info.countryZh, info.region !== '—' ? info.region : '', info.city !== '—' ? info.city : '']
   .filter(Boolean)
   .filter((v, idx, arr) => arr.indexOf(v) === idx)
   .join(' · ');
 
-const markdownSnippet = `[![JudgeIP ${info.ip}](https://judgeip.com/card.svg?ip=${encodeURIComponent(info.ip)})](https://judgeip.com/?ip=${encodeURIComponent(info.ip)})`;
-const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
+const imageUrl = `https://judgeip.com${href('/card.svg')}?ip=${encodeURIComponent(info.ip)}`;
+const shareReportUrl = `https://judgeip.com${href('/')}?ip=${encodeURIComponent(info.ip)}`;
+const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})`;
 ---
 
 <IpcxLayout
-  title={`IP 信息分享卡片 (${info.ip}) · JudgeIP`}
-  description={`生成并下载 ${info.ip} 的高清 IP 纯净度与网络属性报告卡片。`}
+  title={t(`IP 信息分享卡片 (${info.ip}) · JudgeIP`, `IP share card (${info.ip}) · JudgeIP`)}
+  description={t(`生成并下载 ${info.ip} 的 IP 评分与网络信息卡片。`, `Create and download an IP score and network information card for ${info.ip}.`)}
   canonicalPath="/card"
   bodyClass="page-card"
-  currentLabel="IP 信息卡片"
+  currentLabel={t('IP 信息卡片', 'IP card')}
   activeNav="/card"
 >
   <section class="hero">
-    <h1 class="hero__title">IP 信息分享卡片</h1>
-    <p class="hero__lede">生成干净清晰的 IP 纯净度与网络属性信息卡，支持一键隐藏后两段隐私脱敏、下载高清 PNG 图片或复制链接。</p>
+    <h1 class="hero__title">{t('IP 信息分享卡片', 'IP share card')}</h1>
+    <p class="hero__lede">{t('生成 IP 信息卡片，可隐藏部分地址、下载 PNG 或复制查询链接。打码仅影响预览和下载图片，链接中仍包含完整 IP。', 'Create an IP information card, mask part of the address, download a PNG or copy a report link. Masking only affects the preview and downloaded image; links still contain the full IP.')}</p>
   </section>
 
-  <form class="query" method="get" action="/card" novalidate>
+  <form class="query" method="get" action={href('/card')} novalidate>
     <div class="query__line">
       <span class="query__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -47,20 +54,21 @@ const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
         type="text"
         name="ip"
         value={rawIp ? info.ip : ''}
-        placeholder="输入任意 IP 生成卡片（留空默认本机）"
+        placeholder={t('输入 IP，留空使用本机地址', 'Enter an IP, or leave blank for your current address')}
+        aria-label={t('IP 地址', 'IP address')}
         autocomplete="off"
         spellcheck="false"
       />
-      <button class="query__submit" type="submit">生成</button>
+      <button class="query__submit" type="submit">{t('生成', 'Create')}</button>
     </div>
   </form>
 
   <div class="probe" id="ip-card-tool" data-ip={info.ip}>
     <div class="probe__bar" style="flex-wrap:wrap; gap:10px;">
-      <button class="probe__run" type="button" id="btn-download-png">下载 PNG 卡片</button>
-      <button class="copy" type="button" id="btn-toggle-mask" style="padding:8px 14px;">隐藏后两段 (打码)</button>
-      <button class="copy" type="button" data-copy-target="card-share-url" data-copy-done="已复制链接" style="padding:8px 14px;">
-        <span class="copy__label">复制查询链接</span>
+      <button class="probe__run" type="button" id="btn-download-png">{t('下载 PNG 卡片', 'Download PNG')}</button>
+      <button class="copy" type="button" id="btn-toggle-mask" style="padding:8px 14px;">{t('隐藏部分 IP', 'Mask IP')}</button>
+      <button class="copy" type="button" data-copy-target="card-share-url" data-copy-done={t('已复制链接', 'Link copied')} style="padding:8px 14px;">
+        <span class="copy__label">{t('复制查询链接', 'Copy report link')}</span>
       </button>
       <span id="card-share-url" hidden>{shareReportUrl}</span>
     </div>
@@ -84,52 +92,52 @@ const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
 
         <!-- Brand Header -->
         <text x="36" y="48" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="24" font-weight="800" fill="#f8fafc">Judge<tspan fill="#3b82f6">IP</tspan></text>
-        <text x="142" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#9ca3af">IP 纯净度与网络属性报告 · judgeip.com</text>
+        <text x="155" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('IP 评分与网络信息 · judgeip.com', 'IP score & network data · judgeip.com')}</text>
 
         <!-- Target IP -->
         <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#f9fafb" id="svg-ip-text">{info.ip}</text>
         <text x="36" y="124" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d1d5db">
-          {locationText || '未知位置'} · {info.asnCode} · {info.isp.slice(0, 38)}
+          {locationText || t('未知位置', 'Unknown location')} · {info.asnCode} · {info.isp.slice(0, 38)}
         </text>
 
         <!-- Score Box Right -->
         <rect x="536" y="34" width="148" height="96" rx="14" fill="#172033" stroke={scoreColor} stroke-opacity="0.45" stroke-width="1.5" />
-        <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">纯净度评分</text>
+        <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('纯净度评分', 'IP score')}</text>
         <text x="610" y="96" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, monospace" font-size="34" font-weight="800" fill={scoreColor}>{info.score}</text>
-        <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>等级 {info.grade}</text>
+        <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>{t('等级', 'Grade')} {info.grade}</text>
 
         <line x1="36" y1="150" x2="684" y2="150" stroke="#1f2937" stroke-width="1" />
 
         <!-- Attribute Grid -->
         <g font-family="system-ui, -apple-system, sans-serif" font-size="13">
-          <text x="36" y="184" fill="#9ca3af">网络类型</text>
+          <text x="36" y="184" fill="#9ca3af">{t('网络类型', 'Network type')}</text>
           <text x="135" y="184" fill="#f3f4f6" font-weight="600">{info.ipTypeLabel}</text>
 
-          <text x="36" y="218" fill="#9ca3af">原生血统</text>
+          <text x="36" y="218" fill="#9ca3af">{t('IP 属性', 'IP origin')}</text>
           <text x="135" y="218" fill={info.isNative ? '#34d399' : '#fbbf24'} font-weight="600">{nativeText}</text>
 
-          <text x="36" y="252" fill="#9ca3af">注册机构</text>
+          <text x="36" y="252" fill="#9ca3af">{t('注册机构', 'Registry')}</text>
           <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName} ({info.rirCountry || info.countryCode})</text>
 
-          <text x="36" y="286" fill="#9ca3af">路由前缀</text>
+          <text x="36" y="286" fill="#9ca3af">{t('路由前缀', 'Route prefix')}</text>
           <text x="135" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">{info.bgpPrefix}</text>
 
-          <text x="376" y="184" fill="#9ca3af">代理状态</text>
+          <text x="376" y="184" fill="#9ca3af">{t('代理状态', 'Proxy')}</text>
           <text x="476" y="184" fill={info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.proxyLabel}</text>
 
-          <text x="376" y="218" fill="#9ca3af">威胁 / 黑名单</text>
+          <text x="376" y="218" fill="#9ca3af">{t('威胁 / 黑名单', 'Threats / lists')}</text>
           <text x="476" y="218" fill={info.hasThreat ? '#f87171' : '#34d399'} font-weight="600">{info.threatLabel}</text>
 
-          <text x="376" y="252" fill="#9ca3af">RPKI 授权</text>
+          <text x="376" y="252" fill="#9ca3af">{t('RPKI 授权', 'RPKI')}</text>
           <text x="476" y="252" fill={info.rpkiStatus === 'valid' ? '#34d399' : '#d1d5db'} font-weight="600">{info.rpkiLabel}</text>
 
-          <text x="376" y="286" fill="#9ca3af">人机流量比</text>
+          <text x="376" y="286" fill="#9ca3af">{t('人机流量比', 'Human / bot')}</text>
           <text x="476" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">Human {info.humanPct} / Bot {info.botPct}</text>
         </g>
 
         <line x1="36" y1="316" x2="684" y2="316" stroke="#1f2937" stroke-width="1" />
         <text x="36" y="348" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#6b7280">
-          Verified by JudgeIP.com · 原始多源路由、WHOIS 与威胁情报交叉核验
+          {t('JudgeIP.com · 路由、注册与威胁情报', 'JudgeIP.com · Routing, registry & threat data')}
         </text>
         <text x="684" y="348" text-anchor="end" font-family="ui-monospace, monospace" font-size="12" fill="#6b7280">
           {new Date().toISOString().slice(0, 10)}
@@ -139,22 +147,22 @@ const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
 
     <div class="groups">
       <section class="group">
-        <h2 class="group__title">论坛 / Markdown 嵌入代码</h2>
+        <h2 class="group__title">{t('论坛 / Markdown 嵌入代码', 'Embed / Markdown')}</h2>
         <div class="rows">
           <div class="row">
-            <span class="row__label">直链地址</span>
+            <span class="row__label">{t('直链地址', 'Report URL')}</span>
             <span class="row__value"><span class="mono">{shareReportUrl}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">SVG 图片地址</span>
-            <span class="row__value"><span class="mono">https://judgeip.com/card.svg?ip={encodeURIComponent(info.ip)}</span></span>
+            <span class="row__label">{t('SVG 图片地址', 'SVG image URL')}</span>
+            <span class="row__value"><span class="mono">{imageUrl}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">Markdown 代码</span>
+            <span class="row__label">{t('Markdown 代码', 'Markdown code')}</span>
             <span class="row__value">
               <span class="mono" id="md-badge-code">{markdownSnippet}</span>
-              <button class="copy" type="button" data-copy-target="md-badge-code" data-copy-done="已复制" style="margin-left:8px;">
-                <span class="copy__label">复制</span>
+              <button class="copy" type="button" data-copy-target="md-badge-code" data-copy-done={t('已复制', 'Copied')} style="margin-left:8px;">
+                <span class="copy__label">{t('复制', 'Copy')}</span>
               </button>
             </span>
           </div>
@@ -167,6 +175,7 @@ const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
     (function () {
       var tool = document.getElementById('ip-card-tool');
       if (!tool) return;
+      var T = window.T || function (zh) { return zh; };
       var fullIp = tool.getAttribute('data-ip') || '';
       var svgIp = document.getElementById('svg-ip-text');
       var maskBtn = document.getElementById('btn-toggle-mask');
@@ -184,7 +193,7 @@ const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
         maskBtn.addEventListener('click', function () {
           masked = !masked;
           svgIp.textContent = masked ? maskIp(fullIp) : fullIp;
-          maskBtn.textContent = masked ? '显示完整 IP' : '隐藏后两段 (打码)';
+          maskBtn.textContent = masked ? T('显示完整 IP', 'Show full IP') : T('隐藏部分 IP', 'Mask IP');
         });
       }
 

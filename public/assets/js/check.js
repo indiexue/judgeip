@@ -2,6 +2,15 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+  var en = window.I18N && I18N.lang === 'en';
+  function country(code, fallback) {
+    if (en && /^[A-Z]{2}$/.test(code || '')) {
+      try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code); } catch (e) {}
+    }
+    return en ? (code || 'Unknown') : fallback;
+  }
+
   var root = document.getElementById('envcheck');
   if (!root) return;
 
@@ -54,7 +63,7 @@
     return new Promise(function (resolve) {
       var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
       if (!PC) {
-        resolve({ ok: true, status: '已禁用 WebRTC', note: '无 UDP 旁路风险', penalty: 0 });
+        resolve({ ok: true, tone: 'muted', status: T('WebRTC 不可用', 'WebRTC unavailable'), note: T('未执行 STUN 检测', 'STUN check was not run'), penalty: 0 });
         return;
       }
       var srflx = [];
@@ -66,11 +75,11 @@
         try { pc.close(); } catch (e) {}
         var leaked = srflx.filter(function (ip) { return knownIps.indexOf(ip) === -1; });
         if (leaked.length) {
-          resolve({ ok: false, tone: 'leak', status: '发现泄露 (' + leaked[0] + ')', note: 'UDP 未走当前代理出口', penalty: 25 });
+          resolve({ ok: false, tone: 'leak', status: T('发现不同出口 (', 'Different exit found (') + leaked[0] + ')', note: T('UDP 出口与已知 HTTP 出口不同', 'UDP exit differs from the known HTTP exits'), penalty: 25 });
         } else if (srflx.length) {
-          resolve({ ok: true, tone: 'ok', status: '一致无泄露', note: 'STUN 回显 ' + srflx[0], penalty: 0 });
+          resolve({ ok: true, tone: 'ok', status: T('与已知出口一致', 'Matches a known exit'), note: T('STUN 回显 ', 'STUN address: ') + srflx[0], penalty: 0 });
         } else {
-          resolve({ ok: true, tone: 'ok', status: '已受保护', note: '无公网候选暴露 / mDNS 生效', penalty: 0 });
+          resolve({ ok: true, tone: 'ok', status: T('未发现公网候选地址', 'No public candidates found'), note: T('可能受浏览器设置或网络限制', 'Browser settings or network restrictions may affect this result'), penalty: 0 });
         }
       };
       try {
@@ -87,7 +96,7 @@
         window.setTimeout(finish, 2600);
         pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).catch(finish);
       } catch (e) {
-        resolve({ ok: true, tone: 'ok', status: '已屏蔽', note: '连接受限无泄露', penalty: 0 });
+        resolve({ ok: true, tone: 'ok', status: T('WebRTC 连接失败', 'WebRTC connection failed'), note: T('未能完成 STUN 检测', 'Could not complete the STUN check'), penalty: 0 });
       }
     });
   }
@@ -118,7 +127,7 @@
       var uniq = [];
       ips.forEach(function (ip) { if (ip && uniq.indexOf(ip) === -1) uniq.push(ip); });
       if (!uniq.length) {
-        return { ok: true, tone: 'muted', status: '未捕获探测回显', note: '可前往「DNS 泄露检测」单独详测', penalty: 0 };
+        return { ok: true, tone: 'muted', status: T('未收到探测响应', 'No probe response'), note: T('可用 DNS 泄露工具复查', 'Use the DNS leak tool to investigate'), penalty: 0 };
       }
       return window.fetch('/dnsleak/api', {
         method: 'POST',
@@ -128,21 +137,21 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (!data || !data.ok || !data.resolvers || !data.resolvers.length) {
-            return { ok: true, tone: 'muted', status: '已捕获 ' + uniq.length + ' 台', note: uniq[0], penalty: 0 };
+            return { ok: true, tone: 'muted', status: T('已捕获解析地址：', 'Resolver addresses found: ') + uniq.length, note: uniq[0], penalty: 0 };
           }
           var cc = data.client && data.client.country_code;
           var crossIsp = data.resolvers.filter(function (rv) { return rv.type === 'isp' && rv.country_code && cc && rv.country_code !== cc; });
           var crossAny = data.resolvers.filter(function (rv) { return rv.country_code && cc && rv.country_code !== cc; });
           if (crossIsp.length) {
-            return { ok: false, tone: 'leak', status: '运营商 DNS 泄露', note: crossIsp[0].country + ' · ' + crossIsp[0].isp, penalty: 22 };
+            return { ok: false, tone: 'leak', status: T('运营商 DNS 地区不同', 'ISP DNS region differs'), note: country(crossIsp[0].country_code, crossIsp[0].country) + ' · ' + crossIsp[0].isp, penalty: 22 };
           }
           if (crossAny.length) {
-            return { ok: false, tone: 'warn', status: '跨区解析 (' + crossAny[0].country_code + ')', note: '出口 ' + cc + '，解析在 ' + crossAny[0].country, penalty: 10 };
+            return { ok: false, tone: 'warn', status: T('跨区解析 (', 'Cross-region DNS (') + crossAny[0].country_code + ')', note: T('出口 ', 'Exit: ') + cc + T('，解析在 ', '; DNS: ') + country(crossAny[0].country_code, crossAny[0].country), penalty: 10 };
           }
-          return { ok: true, tone: 'ok', status: '同区一致 (' + data.resolvers.length + ' 台)', note: data.resolvers[0].isp, penalty: 0 };
+          return { ok: true, tone: 'ok', status: T('同区解析：', 'Same-region resolvers: ') + data.resolvers.length, note: data.resolvers[0].isp, penalty: 0 };
         })
         .catch(function () {
-          return { ok: true, tone: 'muted', status: '部分完成', note: uniq[0] || '', penalty: 0 };
+          return { ok: true, tone: 'muted', status: T('部分完成', 'Partially completed'), note: uniq[0] || '', penalty: 0 };
         });
     });
   }
@@ -158,27 +167,27 @@
     var cnLocaleOnForeign = ipCc && ['CN', 'HK', 'MO', 'TW', 'SG'].indexOf(ipCc) === -1 && /zh-CN|zh-Hans/i.test(langs);
 
     if (!tzMatch && cnLocaleOnForeign) {
-      return { ok: false, tone: 'leak', status: '时区与语言双重不一致', note: '系统 ' + sysTz + ' ≠ IP ' + ipTz + '，且首选 ' + langs, penalty: 18 };
+      return { ok: false, tone: 'leak', status: T('时区与语言均有差异', 'Timezone and language differ'), note: T('系统 ', 'System: ') + sysTz + ' ≠ IP ' + ipTz + T('，首选语言 ', '; languages: ') + langs, penalty: 18 };
     }
     if (!tzMatch) {
-      return { ok: false, tone: 'warn', status: '时区不一致', note: '本地 ' + sysTz + ' vs IP ' + ipTz, penalty: 12 };
+      return { ok: false, tone: 'warn', status: T('时区不同', 'Timezone differs'), note: T('本地 ', 'Local: ') + sysTz + ' vs IP ' + ipTz, penalty: 12 };
     }
     if (cnLocaleOnForeign) {
-      return { ok: false, tone: 'warn', status: '语言偏好暴露', note: '出口 ' + ipCc + ' 但首选语言为 ' + langs, penalty: 8 };
+      return { ok: false, tone: 'warn', status: T('语言与出口地区不同', 'Language differs from exit region'), note: T('出口 ', 'Exit: ') + ipCc + T('，首选语言 ', '; languages: ') + langs, penalty: 8 };
     }
-    return { ok: true, tone: 'ok', status: '时区与区域一致', note: sysTz + ' · ' + langs, penalty: 0 };
+    return { ok: true, tone: 'ok', status: T('未见时区或语言差异', 'No timezone or language differences flagged'), note: sysTz + ' · ' + langs, penalty: 0 };
   }
 
   function probeStealth() {
     var issues = [];
     if (navigator.webdriver) issues.push('navigator.webdriver=true');
-    if (!navigator.languages || navigator.languages.length === 0) issues.push('无语言列表');
-    if (window.outerWidth === 0 && window.outerHeight === 0) issues.push('无头窗口尺寸异常');
+    if (!navigator.languages || navigator.languages.length === 0) issues.push(T('语言列表为空', 'Empty language list'));
+    if (window.outerWidth === 0 && window.outerHeight === 0) issues.push(T('窗口尺寸为零', 'Zero window dimensions'));
 
     if (issues.length) {
-      return { ok: false, tone: 'leak', status: '发现自动化特征', note: issues.join('、'), penalty: 20 };
+      return { ok: false, tone: 'leak', status: T('发现自动化标记', 'Automation flags found'), note: issues.join(T('、', ', ')), penalty: 20 };
     }
-    return { ok: true, tone: 'ok', status: '真人浏览器特征', note: 'WebDriver 正常 · 硬件线程 ' + (navigator.hardwareConcurrency || '—'), penalty: 0 };
+    return { ok: true, tone: 'ok', status: T('未见常见自动化标记', 'No common automation flags found'), note: T('未见 WebDriver 标记 · 硬件线程 ', 'No WebDriver flag · hardware threads: ') + (navigator.hardwareConcurrency || '—'), penalty: 0 };
   }
 
   function probeAiReachability(ipInfo) {
@@ -198,16 +207,16 @@
         var locMatch = /(?:^|\n)loc=([A-Z]{2})/.exec(txt || '');
         var aiLoc = locMatch ? locMatch[1] : cc;
         if (blockedCc.indexOf(aiLoc) !== -1) {
-          return { ok: false, tone: 'leak', status: 'AI 地区受限 (' + aiLoc + ')', note: 'ChatGPT / Claude 不支持该出口地区', penalty: 15 };
+          return { ok: false, tone: 'leak', status: T('地区可能受限 (', 'Region may be restricted (') + aiLoc + ')', note: T('地区规则仅供参考，请使用单项工具复查', 'Region rules are indicative; verify with the individual tools'), penalty: 15 };
         }
-        return { ok: true, tone: 'ok', status: '可达且地区受支持 (' + aiLoc + ')', note: 'ChatGPT 边缘连通正常', penalty: 0 };
+        return { ok: true, tone: 'ok', status: T('已收到边缘响应 (', 'Edge response received (') + aiLoc + ')', note: T('边缘响应不代表已登录服务或 API 可用', 'An edge response does not confirm signed-in service or API access'), penalty: 0 };
       })
       .catch(function () {
         clearTimeout(timer);
         if (blockedCc.indexOf(cc) !== -1) {
-          return { ok: false, tone: 'leak', status: '连接受阻 / 地区受限', note: '当前网络无法直连海外 AI 服务', penalty: 15 };
+          return { ok: false, tone: 'leak', status: T('连接失败，地区可能受限', 'Connection failed; region may be restricted'), note: T('未能连接 ChatGPT 探测接口', 'Could not reach the ChatGPT probe endpoint'), penalty: 15 };
         }
-        return { ok: false, tone: 'warn', status: '连接超时', note: '未能连通 chatgpt.com 边缘接口', penalty: 8 };
+        return { ok: false, tone: 'warn', status: T('未收到有效响应', 'No valid response'), note: T('未能连通 chatgpt.com 边缘接口', 'Could not reach the chatgpt.com edge endpoint'), penalty: 8 };
       });
   }
 
@@ -216,10 +225,10 @@
     running = true;
     runBtn.disabled = true;
     verdict.hidden = true;
-    progress.textContent = '正在执行 6 大维度环境交叉校验…';
+    progress.textContent = T('正在检查网络与浏览器环境…', 'Checking network and browser settings…');
 
     ['purity', 'webrtc', 'dns', 'consistency', 'stealth', 'ai'].forEach(function (k) {
-      setDimCell(k, 'muted', '检测中…', '');
+      setDimCell(k, 'muted', T('检测中…', 'Checking…'), '');
     });
 
     var serverVisibleIp = (root.getAttribute('data-visible-ip') || '').trim();
@@ -229,7 +238,7 @@
       var knownIps = [serverVisibleIp, v4].filter(Boolean);
       if (ipCell) ipCell.innerHTML = '<span class="mono">' + primaryIp + '</span>';
 
-      return window.fetch('/api/ipinfo?ip=' + encodeURIComponent(primaryIp), { headers: { Accept: 'application/json' } })
+      return window.fetch('/api/ipinfo?ip=' + encodeURIComponent(primaryIp) + (en ? '&lang=en' : ''), { headers: { Accept: 'application/json' } })
         .then(function (r) { return r.json(); })
         .then(function (ipRes) {
           var info = (ipRes && ipRes.ok && ipRes.info) ? ipRes.info : null;
@@ -242,8 +251,8 @@
           setDimCell(
             'purity',
             d1Tone,
-            info ? info.ipTypeLabel + ' · ' + info.score + '/100 (' + info.grade + ')' : '已读取',
-            info ? (info.isNative ? '原生 IP · ' : '广播 IP · ') + info.countryZh + ' ' + info.asnCode : ''
+            info ? info.ipTypeLabel + ' · ' + info.score + '/100 (' + info.grade + ')' : T('未能读取 IP 数据', 'Could not load IP data'),
+            info ? (info.isNative ? T('原生 IP · ', 'Native IP · ') : T('广播 IP · ', 'Geo-announced IP · ')) + info.countryZh + ' ' + info.asnCode : ''
           );
 
           // Dim 4 & 5 synchronous
@@ -279,35 +288,35 @@
                 '<span class="score__num mono">' + envScore + '<span class="score__total">/100</span></span></span>';
             }
             if (passCell) {
-              passCell.innerHTML = '<span class="mono">' + passCount + ' / 6 项通过</span>';
+              passCell.textContent = passCount + T(' / 6 项通过', ' / 6 checks passed');
             }
 
             verdict.hidden = false;
             if (envScore >= 82 && passCount >= 5) {
               verdict.className = 'verdict is-good';
-              verdictTitle.textContent = '环境高度纯净一致（综合 ' + envScore + ' 分）';
-              verdictNote.textContent = 'IP 属性、WebRTC/DNS 隧道与本地浏览器时区语言高度自洽，适合对风控敏感的跨境电商、社媒与 AI 平台使用。';
+              verdictTitle.textContent = T('未见明显差异（参考评分 ', 'No major differences found (score ') + envScore + '/100)';
+              verdictNote.textContent = T('已完成的检测未见明显差异。这不代表所有请求都使用同一出口，也不保证账号安全或服务可用。', 'Completed checks found no major differences. This does not confirm all requests use the same exit or guarantee account safety or service access.');
             } else if (envScore >= 55) {
               verdict.className = 'verdict is-warn';
-              verdictTitle.textContent = '环境存在轻微破绽（综合 ' + envScore + ' 分）';
-              verdictNote.textContent = '共有 ' + (6 - passCount) + ' 个维度出现警告（常见于机房出口、时区未跟随代理地区、或跨区 DNS），登录高敏账号前建议按下方提示修正。';
+              verdictTitle.textContent = T('部分项目需要复查（参考评分 ', 'Some checks need review (score ') + envScore + '/100)';
+              verdictNote.textContent = T('需要复查的项目：', 'Checks to review: ') + (6 - passCount) + T('。请查看下方明细，确认是否符合你的网络设置。', '. Review the details below against your network settings.');
             } else {
               verdict.className = 'verdict is-bad';
-              verdictTitle.textContent = '环境存在明显泄漏或高风险特征（综合 ' + envScore + ' 分）';
-              verdictNote.textContent = '多项核心指标未通过交叉核验，网站风控很容易识别出代理异常，请逐项排查标红维度。';
+              verdictTitle.textContent = T('发现多项差异或风险标记（参考评分 ', 'Multiple differences or risk flags found (score ') + envScore + '/100)';
+              verdictNote.textContent = T('请逐项查看结果。地区差异、浏览器设置和请求失败都可能影响评分，不能据此判断平台会如何处理账号。', 'Review each result. Region differences, browser settings and failed requests can affect this score; it cannot predict how a platform will treat an account.');
             }
 
             running = false;
             runBtn.disabled = false;
-            runBtn.textContent = '重新体检';
-            progress.textContent = '6 大维度交叉校验已完成。';
+            runBtn.textContent = T('重新检测', 'Run again');
+            progress.textContent = T('检测已完成，请结合各项结果判断。', 'Checks complete. Review the individual results.');
           });
         });
     }).catch(function () {
       running = false;
       runBtn.disabled = false;
-      runBtn.textContent = '重试体检';
-      progress.textContent = '部分检测请求异常，请点击重试。';
+      runBtn.textContent = T('重试', 'Try again');
+      progress.textContent = T('部分请求失败，请重试。', 'Some requests failed. Try again.');
     });
   }
 

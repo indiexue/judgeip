@@ -60,7 +60,7 @@ const LABELS: Record<string, string> = {
   'AI 应用': 'AI apps',
   'API 可用/网页慎用': 'API OK / web risky',
   易弹验证: 'Frequent verification',
-  'ChatGPT / Claude / Gemini 地区许可与防降智': 'ChatGPT / Claude / Gemini region rules and degraded-service risk',
+  'ChatGPT / Claude / Gemini 地区与网络类型参考': 'ChatGPT / Claude / Gemini region and network-type indicators',
   社媒运营: 'Social media',
   原生适配: 'Native fit',
   广播偏区注意: 'Region skew possible',
