@@ -358,10 +358,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'isp_residential',
       delta: +5,
       severity: 'good',
-      titleEn: 'Genuine Consumer ISP ASN',
-      titleZh: '真实家庭宽带运营商 ASN',
-      detailEn: `Routed via consumer broadband network (${isp}). High baseline trust for social & e-commerce platforms.`,
-      detailZh: `隶属于民用家庭宽带网络 (${isp})，在社媒养号与跨境电商风控中拥有最高基础信任度。`,
+      titleEn: 'Residential ISP Network',
+      titleZh: '家庭宽带运营商网络',
+      detailEn: `Assigned to consumer broadband ISP (${isp}).`,
+      detailZh: `归属普通民用宽带运营商 (${isp})，信誉度良好。`,
     });
   } else if (usageType === 'mobile') {
     score += 6;
@@ -369,10 +369,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'isp_mobile',
       delta: +6,
       severity: 'good',
-      titleEn: 'Cellular Mobile Carrier (CGNAT)',
-      titleZh: '蜂窝移动通信基站网络 (4G/5G)',
-      detailEn: `Mobile carrier IP (${isp}) shares CGNAT across real handsets — rarely blocked by anti-bot engines.`,
-      detailZh: `移动蜂窝基站网络 (${isp}) 天然由大量真实手机共享 CGNAT，极少触发平台封号机制。`,
+      titleEn: 'Mobile Carrier Network',
+      titleZh: '移动蜂窝运营商网络',
+      detailEn: `Mobile carrier network (${isp}) using shared carrier NAT.`,
+      detailZh: `归属移动通信运营商 (${isp})，通常不易触发反爬与风控拦截。`,
     });
   } else if (usageType === 'education') {
     score += 2;
@@ -380,10 +380,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'isp_edu',
       delta: +2,
       severity: 'info',
-      titleEn: 'Academic / Research Network',
-      titleZh: '高校 / 科研学术机构网络',
-      detailEn: `Assigned to an educational or research institution (${isp}). Generally clean reputation.`,
-      detailZh: `分配给高校或科研教育网 (${isp})，整体历史信誉干净。`,
+      titleEn: 'Education / Research Network',
+      titleZh: '教育或科研机构网络',
+      detailEn: `Assigned to an academic or research organization (${isp}).`,
+      detailZh: `分配给高校或科研机构 (${isp})，历史风险较低。`,
     });
   } else if (usageType === 'cdn') {
     score -= 35;
@@ -391,10 +391,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'isp_cdn',
       delta: -35,
       severity: 'warn',
-      titleEn: 'Anycast CDN / Cloud Edge Proxy',
-      titleZh: 'Anycast 边缘网关 / WARP 代理节点',
-      detailEn: `Belongs to global edge network (${isp}). Websites recognize this as shared proxy/CDN egress rather than a household.`,
-      detailZh: `属于全球任播边缘网络 (${isp})，各大平台会将其识别为共享代理/WARP 出口而非真实家庭住户。`,
+      titleEn: 'CDN / Anycast Edge Network',
+      titleZh: 'CDN / 边缘网络出口',
+      detailEn: `Belongs to an edge/CDN provider (${isp}) rather than a local household ISP.`,
+      detailZh: `属于边缘网关或公共代理服务 (${isp})，非普通家庭宽带地址。`,
     });
   } else if (usageType === 'hosting') {
     const penalty = knownProfile?.riskModifier ? Math.min(-35, knownProfile.riskModifier) : -45;
@@ -404,9 +404,9 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       delta: penalty,
       severity: 'bad',
       titleEn: 'Datacenter / Cloud Hosting ASN',
-      titleZh: 'IDC 机房 / 云服务器托管段',
-      detailEn: `${knownProfile?.note || isp} is classified as commercial server hosting. High risk of zero-views on TikTok and verification loops on AI/payment sites.`,
-      detailZh: `识别为商业机房/云服务器网络 (${knownProfile?.note || isp})，极易触发 TikTok 零播放、AI 封号及支付风控。`,
+      titleZh: '数据中心 / 云服务器网段',
+      detailEn: `${knownProfile?.note || isp} is registered as server hosting infrastructure.`,
+      detailZh: `所属自治系统 (${knownProfile?.note || isp}) 为云服务器或托管机房网段。`,
     });
   }
 
@@ -417,10 +417,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'rir_native',
       delta: +3,
       severity: 'good',
-      titleEn: `Verified Native IP (${countryCode})`,
-      titleZh: `RIR 原生 IP 验真通过 (${countryCode})`,
-      detailEn: `RIR WHOIS registration country (${rirCountryCode}) matches physical GeoIP location (${countryCode}).`,
-      detailZh: `RIR 注册局原始分配国 (${rirCountryCode}) 与当前 BGP 物理归属地 (${countryCode}) 完全一致，属正宗原生 IP。`,
+      titleEn: `Native IP (${countryCode})`,
+      titleZh: `原生 IP (${countryCode})`,
+      detailEn: `WHOIS registration country (${rirCountryCode}) matches GeoIP location (${countryCode}).`,
+      detailZh: `WHOIS 注册国家 (${rirCountryCode}) 与当前物理归属地 (${countryCode}) 一致。`,
     });
   } else if (nativeStatus === 'broadcast') {
     score -= 18;
@@ -428,20 +428,20 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'rir_broadcast',
       delta: -18,
       severity: 'warn',
-      titleEn: `Broadcasted / Geo-Fed IP (${rirCountryCode} → ${countryCode})`,
-      titleZh: `广播 IP 警告（原注册国 ${rirCountryCode} → 宣告至 ${countryCode}）`,
-      detailEn: `Originally registered under ${rirCountryCode} in RIR WHOIS, but BGP-announced in ${countryCode}. Streaming & strict region locks may misidentify your region.`,
-      detailZh: `WHOIS 原始注册地为 ${rirCountryCode}，后经 BGP 广播宣告至 ${countryCode}。部分流媒体、TikTok 及 AI 平台可能将其识别回原注册国。`,
+      titleEn: `Broadcasted IP (${rirCountryCode} → ${countryCode})`,
+      titleZh: `广播 IP（注册国 ${rirCountryCode} → 当前 ${countryCode}）`,
+      detailEn: `Registered under ${rirCountryCode} in WHOIS, currently routed in ${countryCode}. Some services may detect the original country.`,
+      detailZh: `WHOIS 原始注册国为 ${rirCountryCode}，通过 BGP 广播在 ${countryCode} 使用，部分平台可能识别为原注册国。`,
     });
   } else if (nativeStatus === 'anycast') {
     factors.push({
       id: 'rir_anycast',
       delta: 0,
       severity: 'info',
-      titleEn: 'Global Anycast Prefix',
-      titleZh: '全球 Anycast 多点任播路由',
-      detailEn: `Prefix is announced simultaneously from multiple global PoPs (RIR HQ: ${rirCountryCode}, Exit: ${countryCode}).`,
-      detailZh: `该网段在全球多个边缘机房同时任播宣告（注册总部 ${rirCountryCode}，当前出口 ${countryCode}）。`,
+      titleEn: 'Anycast Prefix',
+      titleZh: '全球任播网段 (Anycast)',
+      detailEn: `Announced from multiple global locations (RIR: ${rirCountryCode}, Current: ${countryCode}).`,
+      detailZh: `该网段在全球多地同时宣告（注册地 ${rirCountryCode}，当前接入 ${countryCode}）。`,
     });
   }
 
@@ -452,10 +452,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'tor_exit',
       delta: -50,
       severity: 'bad',
-      titleEn: 'Active Tor Anonymity Exit Node',
-      titleZh: '命中 Tor 洋葱路由出口节点',
-      detailEn: 'Listed as a public Tor exit relay. Blocked by virtually all banking, e-commerce, and AI platforms.',
-      detailZh: '命中公开 Tor 匿名出口黑名单，几乎所有跨境支付、电商及主流 AI 平台均会直接拦截。',
+      titleEn: 'Tor Exit Node',
+      titleZh: 'Tor 出口节点',
+      detailEn: 'Listed as a public Tor exit relay.',
+      detailZh: '位于公开 Tor 匿名网络出口列表中，大多数网站会直接限制访问。',
     });
   } else if (isProxyOrVpn && usageType !== 'hosting') {
     score -= 28;
@@ -463,10 +463,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'proxy_vpn_flag',
       delta: -28,
       severity: 'bad',
-      titleEn: 'Proxy / VPN Tunnel Signature Detected',
-      titleZh: '检测到共享 VPN / 代理中转特征',
-      detailEn: 'Upstream threat feeds or proxy port telemetry flagged this IP as an active anonymizer or residential proxy relay.',
-      detailZh: '威胁情报源或端口探针标记该 IP 存在活跃的共享 VPN / 代理转发行为（疑似被多人混用的家宽代理池）。',
+      titleEn: 'Proxy / VPN Activity Detected',
+      titleZh: '检测到代理或 VPN 特征',
+      detailEn: 'Flagged by upstream security feeds or open proxy port checks.',
+      detailZh: '风险库或端口检测显示该地址存在共享代理或 VPN 转发记录。',
     });
   } else if (isProxyOrVpn && usageType === 'hosting') {
     score -= 12;
@@ -474,10 +474,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'proxy_vpn_hosting',
       delta: -12,
       severity: 'bad',
-      titleEn: 'Known Commercial VPN / Proxy Transit',
-      titleZh: '已知公共 VPN / 机场代理出口段',
-      detailEn: 'Matches known public VPN or proxy server infrastructure with high multi-user IP sharing.',
-      detailZh: '命中公共 VPN 或商业代理节点特征，多人共用出口会导致极高的连坐关联风险。',
+      titleEn: 'Commercial VPN / Proxy Provider',
+      titleZh: '已知公共 VPN / 代理服务商',
+      detailEn: 'Matches known commercial VPN or shared proxy server ranges.',
+      detailZh: '属于常见商业 VPN 或公共代理服务商网段，多人共用概率较高。',
     });
   }
 
@@ -488,10 +488,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'exposed_proxy_ports',
       delta: -15,
       severity: 'bad',
-      titleEn: `Exposed Proxy / Tunnel Ports (${exposedProxyPorts.join(', ')})`,
-      titleZh: `公网暴露代理特征端口 (${exposedProxyPorts.join(', ')})`,
-      detailEn: 'Passive Internet scan detected open proxy/VPN listener ports on this IP, revealing non-household gateway behavior.',
-      detailZh: '全网被动扫描发现该 IP 开放了代理或隧道监听端口，暴露了非普通家庭路由器的中转网关特征。',
+      titleEn: `Open Proxy Ports (${exposedProxyPorts.join(', ')})`,
+      titleZh: `开放代理端口 (${exposedProxyPorts.join(', ')})`,
+      detailEn: 'Publicly reachable proxy or tunnel ports detected in Shodan scans.',
+      detailZh: '公网扫描发现开放常见代理或隧道服务端口。',
     });
   } else if (openPorts.length > 5) {
     score -= 8;
@@ -499,20 +499,20 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'many_open_ports',
       delta: -8,
       severity: 'warn',
-      titleEn: `${openPorts.length} Publicly Reachable Server Ports`,
-      titleZh: `开放 ${openPorts.length} 个公网服务端口`,
-      detailEn: `Open ports (${openPorts.slice(0, 6).join(', ')}) indicate an internet-facing server rather than a NATed home device.`,
-      detailZh: `公网暴露多个服务端口 (${openPorts.slice(0, 6).join(', ')})，表现为公网服务器而非家用 NAT 终端。`,
+      titleEn: `${openPorts.length} Open Public Ports`,
+      titleZh: `开放 ${openPorts.length} 个公网端口`,
+      detailEn: `Multiple open ports (${openPorts.slice(0, 6).join(', ')}) suggest a server host.`,
+      detailZh: `对外开放多个服务端口 (${openPorts.slice(0, 6).join(', ')})，具有服务器特征。`,
     });
   } else if (parsed.version === 4) {
     factors.push({
       id: 'clean_port_surface',
       delta: 0,
       severity: 'good',
-      titleEn: 'Zero Exposed Proxy Ports',
-      titleZh: '零代理特征端口暴露（端口面干净）',
-      detailEn: 'No open SOCKS5, HTTP proxy, Shadowsocks, or WireGuard ports found in passive Internet scans.',
-      detailZh: '全网扫描未发现开放 SOCKS5、HTTP 代理或常见科学上网协议特征端口，外网指纹隐蔽。',
+      titleEn: 'No Exposed Proxy Ports',
+      titleZh: '无公开代理端口暴露',
+      detailEn: 'No open SOCKS5, HTTP proxy, or VPN ports found in public scan data.',
+      detailZh: '公开扫描数据中未发现开放常见代理端口。',
     });
   }
 
@@ -522,10 +522,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'abuse_scanner',
       delta: -22,
       severity: 'bad',
-      titleEn: 'Abuse / Scanner / CVE Footprint',
-      titleZh: '存在恶意扫描或安全漏洞黑历史',
-      detailEn: `Tagged with automated scanning activity or ${vulnsCount} unpatched CVEs in threat intelligence feeds.`,
-      detailZh: `在威胁情报库中存在自动化扫描记录或 ${vulnsCount} 个未修复高危漏洞特征，连带欺诈分偏高。`,
+      titleEn: 'Historical Abuse / Vulnerability Tags',
+      titleZh: '存在扫描或安全漏洞记录',
+      detailEn: `Flagged with scanner activity or ${vulnsCount} known CVEs in Shodan.`,
+      detailZh: `在威胁记录中存在扫描行为或 ${vulnsCount} 个未修复漏洞记录。`,
     });
   } else if (hostnameImpliesProxy) {
     score -= 6;
@@ -533,10 +533,10 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
       id: 'rdns_server_hint',
       delta: -6,
       severity: 'warn',
-      titleEn: 'Server-Style Reverse DNS (rDNS)',
-      titleZh: '反向解析域名 (rDNS) 含机房/代理字样',
-      detailEn: `PTR hostname (${hostnames[0]}) contains server/proxy naming patterns.`,
-      detailZh: `PTR 反向域名 (${hostnames[0]}) 带有明显的云主机或代理节点命名规律。`,
+      titleEn: 'Server Hostname Pattern (rDNS)',
+      titleZh: '反向域名包含服务器特征词',
+      detailEn: `PTR record (${hostnames[0]}) matches hosting/proxy naming conventions.`,
+      detailZh: `反向解析记录 (${hostnames[0]}) 带有云主机或节点命名特征。`,
     });
   }
 
@@ -628,41 +628,41 @@ export async function evaluateIpVerdict(rawIp: string, options: EvaluateOptions 
 function buildVerdictHeadline(grade: VerdictGrade, usageType: UsageType, nativeStatus: NativeStatus, country: string) {
   if (grade === 'S') {
     return {
-      titleEn: `Pristine Native ${usageType === 'mobile' ? 'Mobile' : 'Residential'} IP`,
-      titleZh: `极品纯净 · 原生${usageType === 'mobile' ? '蜂窝移动' : '家庭宽带'} IP`,
-      summaryEn: `Final Verdict: Grade S. Genuine ${country} consumer ISP allocation with aligned RIR registration and zero proxy/port leaks.`,
-      summaryZh: `判官终审：S 级极品纯净度。正宗 ${country} 本土民用宽带分配，RIR 注册国一致且无任何代理端口与黑名单污染，适合高价值账号长期运营。`,
+      titleEn: `Clean Native ${usageType === 'mobile' ? 'Mobile' : 'Residential'} IP`,
+      titleZh: `高纯净度 · ${country} 原生${usageType === 'mobile' ? '移动网络' : '家庭宽带'}`,
+      summaryEn: `${country} consumer ISP address with matching WHOIS registration and no detected proxy or blacklist records.`,
+      summaryZh: `属于 ${country} 本地民用宽带网段，WHOIS 注册国家与归属地一致，未发现代理端口暴露或风险记录。`,
     };
   }
   if (grade === 'A') {
     return {
-      titleEn: 'Clean & Trustworthy Network Identity',
-      titleZh: '优良纯净 · 高信任度网络环境',
-      summaryEn: `Final Verdict: Grade A. Low fraud footprint suitable for daily browsing, AI workspaces, and standard regional services.`,
-      summaryZh: `判官终审：A 级优良纯净度。整体欺诈风险极低，可安全用于主流跨境业务、AI 工具订阅与日常访问。`,
+      titleEn: 'Low-Risk Network Address',
+      titleZh: '纯净度良好 · 低风险网络',
+      summaryEn: 'Clean network reputation with low fraud indicators, suitable for regular web services.',
+      summaryZh: '整体网络信誉良好，无明显滥用记录，适合常规跨境业务与日常访问。',
     };
   }
   if (grade === 'B') {
     return {
-      titleEn: nativeStatus === 'broadcast' ? 'Broadcasted / Mixed-Signal IP' : 'Moderate Shared Network Risk',
-      titleZh: nativeStatus === 'broadcast' ? '中度风险 · 广播宣告或混合特征 IP' : '中度风险 · 共享出口或轻度疑似特征',
-      summaryEn: 'Final Verdict: Grade B. Usable for general web traffic, but strict anti-fraud platforms may trigger CAPTCHA or secondary SMS checks.',
-      summaryZh: '判官终审：B 级中度风险。普通网页浏览无碍，但在风控极严的电商主店或新号注册场景下可能触发人机验证或二次风控。',
+      titleEn: nativeStatus === 'broadcast' ? 'Broadcasted IP · Moderate Risk' : 'Moderate Risk · Shared Signal',
+      titleZh: nativeStatus === 'broadcast' ? '中等风险 · 广播 IP 网段' : '中等风险 · 存在共享网络特征',
+      summaryEn: 'Usable for general browsing, though stricter platforms may request CAPTCHA verification.',
+      summaryZh: '日常网页浏览正常，但在风控较严的平台注册或登录时可能出现人机验证。',
     };
   }
   if (grade === 'C') {
     return {
-      titleEn: 'Datacenter / Shared Proxy Footprint',
-      titleZh: '高危预警 · 机房托管或共享代理池',
-      summaryEn: 'Final Verdict: Grade C. Recognized as server hosting or shared VPN infrastructure. Not recommended for TikTok, banking, or seller accounts.',
-      summaryZh: '判官终审：C 级高风险环境。已被识别为云服务器机房或共享代理网络，严禁直接用于 TikTok 养号、跨境收款与电商店铺防关联。',
+      titleEn: 'High Risk · Hosting / Shared Proxy',
+      titleZh: '较高风险 · 机房托管或共享节点',
+      summaryEn: 'Identified as cloud hosting or shared proxy infrastructure. Not recommended for sensitive accounts.',
+      summaryZh: '识别为云服务器机房或共享代理网络，不建议直接用于对网络环境敏感的账号运营。',
     };
   }
   return {
-    titleEn: 'Critical Risk · Flagged Proxy / Abused Node',
-    titleZh: '极高危裁决 · 万人骑节点或黑名单污染',
-    summaryEn: 'Final Verdict: Grade D. Heavy anonymizer, exposed proxy ports, or abuse history detected. Expect immediate blocks or shadowbans.',
-    summaryZh: '判官终审：D 级极高危裁决！命中公共代理/机房黑名单或暴露代理端口，极易导致账号秒封、零播放或支付拒付，建议立即更换纯净原生住宅 IP。',
+    titleEn: 'High Fraud Risk · Flagged Proxy / Hosting',
+    titleZh: '高风险 · 公共代理或受污染网段',
+    summaryEn: 'Public VPN/proxy exit, exposed tunnel ports, or abuse history detected. Frequently restricted by websites.',
+    summaryZh: '检测到公共代理出口、开放代理端口或历史滥用记录，访问主流平台容易受限或触发风控。',
   };
 }
 
@@ -684,35 +684,35 @@ function buildPlatformMatrix(ctx: {
   if (isResOrMob && nativeStatus === 'native' && !isProxyOrVpn && score >= 82) {
     tiktok = {
       id: 'tiktok',
-      nameEn: 'TikTok Creator / Shop',
-      nameZh: 'TikTok 养号 / 小店直播',
+      nameEn: 'TikTok',
+      nameZh: 'TikTok 运营',
       status: 'pass',
-      badgeEn: 'Native Residential Pass',
-      badgeZh: '真原生家宽 · 推荐运营',
-      reasonEn: `Clean ${countryCode} native ISP — optimal for normal For-You feed recommendation weight.`,
-      reasonZh: `${countryCode} 正宗本土原生宽带，符合自然推流权重标准，不易出现 0 播放黑屏。`,
+      badgeEn: 'Available',
+      badgeZh: '正常可用',
+      reasonEn: `Native ${countryCode} consumer ISP with clean reputation.`,
+      reasonZh: `${countryCode} 本地原生宽带，符合常规账号推流环境要求。`,
     };
   } else if (usageType === 'hosting' || usageType === 'cdn' || isTor || score < 55) {
     tiktok = {
       id: 'tiktok',
-      nameEn: 'TikTok Creator / Shop',
-      nameZh: 'TikTok 养号 / 小店直播',
+      nameEn: 'TikTok',
+      nameZh: 'TikTok 运营',
       status: 'block',
-      badgeEn: 'Shadowban / 0-View Risk',
-      badgeZh: '极易 0 播放 / 限流高危',
-      reasonEn: 'TikTok strictly penalizes datacenter ASNs and shared VPN exits with 0-view shadowbans.',
-      reasonZh: 'TikTok 算法对机房 ASN 与公共代理极其敏感，使用此 IP 发视频极易触发 0 播放或店铺二审。',
+      badgeEn: 'High Risk',
+      badgeZh: '限流风险高',
+      reasonEn: 'Datacenter ASNs and public proxies frequently trigger traffic restrictions.',
+      reasonZh: '机房网段与公共代理容易触发账号异常验证或播放受限。',
     };
   } else {
     tiktok = {
       id: 'tiktok',
-      nameEn: 'TikTok Creator / Shop',
-      nameZh: 'TikTok 养号 / 小店直播',
+      nameEn: 'TikTok',
+      nameZh: 'TikTok 运营',
       status: 'warn',
-      badgeEn: nativeStatus === 'broadcast' ? 'Broadcast IP Caution' : 'Shared Pool Caution',
-      badgeZh: nativeStatus === 'broadcast' ? '广播 IP · 推流偏区风险' : '共享特征 · 仅限浏览',
-      reasonEn: 'Broadcasted prefix or moderate proxy signal may cause region mismatch in feed targeting.',
-      reasonZh: '存在广播宣告或轻度共享特征，可能导致账号归属区错乱或推流受限，核心主号建议升级静态原生家宽。',
+      badgeEn: nativeStatus === 'broadcast' ? 'Broadcast IP' : 'Caution',
+      badgeZh: nativeStatus === 'broadcast' ? '广播网段' : '一般可用',
+      reasonEn: 'Broadcasted prefix or shared network may affect region targeting accuracy.',
+      reasonZh: '非本地原生分配或存在共享特征，可能导致地区识别偏差。',
     };
   }
 
@@ -721,46 +721,46 @@ function buildPlatformMatrix(ctx: {
   if (aiRestrictedRegions.has(countryCode)) {
     ai = {
       id: 'ai',
-      nameEn: 'Claude / ChatGPT / Gemini',
-      nameZh: 'Claude / ChatGPT 防封检测',
+      nameEn: 'Claude / ChatGPT',
+      nameZh: 'Claude / ChatGPT',
       status: 'block',
-      badgeEn: `Unsupported Region (${countryCode})`,
-      badgeZh: `服务受限地区 (${countryCode})`,
-      reasonEn: `Anthropic & OpenAI restrict direct access from ${countryCode}. Switch to a clean US/SG/JP/EU residential exit.`,
-      reasonZh: `OpenAI 与 Anthropic 官方限制 ${countryCode} 地区访问，请切换至美/日/新/欧等支持地区的纯净节点。`,
+      badgeEn: `Unsupported (${countryCode})`,
+      badgeZh: `地区受限 (${countryCode})`,
+      reasonEn: `Service is not officially supported in ${countryCode}.`,
+      reasonZh: `当前所在地区 (${countryCode}) 不在官方支持服务列表内。`,
     };
   } else if (isTor || isAbuserOrCrawler || score < 42) {
     ai = {
       id: 'ai',
-      nameEn: 'Claude / ChatGPT / Gemini',
-      nameZh: 'Claude / ChatGPT 防封检测',
+      nameEn: 'Claude / ChatGPT',
+      nameZh: 'Claude / ChatGPT',
       status: 'block',
-      badgeEn: 'High Ban Probability',
-      badgeZh: 'Claude 极易封号 / 降智',
-      reasonEn: 'High-abuse datacenter/VPN exit triggers Anthropic automated account suspension & OpenAI PoW degradation.',
-      reasonZh: '高污染机房/万人骑出口极易触发 Claude 自动封号及 ChatGPT 频繁弹验证/模型降智。',
+      badgeEn: 'High Risk',
+      badgeZh: '风控风险高',
+      reasonEn: 'High-risk proxy ranges often trigger login blocks or frequent CAPTCHAs.',
+      reasonZh: '高风险代理网段容易导致登录受阻、频繁人机验证或账号受限。',
     };
   } else if (usageType === 'hosting' || usageType === 'cdn') {
     ai = {
       id: 'ai',
-      nameEn: 'Claude / ChatGPT / Gemini',
-      nameZh: 'Claude / ChatGPT 防封检测',
+      nameEn: 'Claude / ChatGPT',
+      nameZh: 'Claude / ChatGPT',
       status: 'warn',
-      badgeEn: 'API OK · Web Account Caution',
-      badgeZh: 'API 可用 · 网页号慎用',
-      reasonEn: 'Datacenter IP works for API calls, but Claude.ai web sign-ups strongly prefer residential ISPs.',
-      reasonZh: '调用 API 接口无碍，但直接登录 Claude 网页版付费账号存在组织风控连坐隐患。',
+      badgeEn: 'Hosting IP',
+      badgeZh: '机房出口',
+      reasonEn: 'Works for API requests, though web accounts are safer on residential networks.',
+      reasonZh: '调用 API 正常，网页端长期登录更建议使用宽带网络。',
     };
   } else {
     ai = {
       id: 'ai',
-      nameEn: 'Claude / ChatGPT / Gemini',
-      nameZh: 'Claude / ChatGPT 防封检测',
+      nameEn: 'Claude / ChatGPT',
+      nameZh: 'Claude / ChatGPT',
       status: 'pass',
-      badgeEn: 'Full Reasoning & Safe Login',
-      badgeZh: '满血不降智 · 安全登录',
-      reasonEn: `Supported region (${countryCode}) with clean residential reputation — low risk of false bans.`,
-      reasonZh: `支持地区 (${countryCode}) 且具备干净家宽信誉，不易触发风控封禁或算力降级。`,
+      badgeEn: 'Supported',
+      badgeZh: '正常可用',
+      reasonEn: `Supported region (${countryCode}) with low risk score.`,
+      reasonZh: `属于受支持地区 (${countryCode})，网络信誉正常。`,
     };
   }
 
@@ -769,35 +769,35 @@ function buildPlatformMatrix(ctx: {
   if (isResOrMob && !isProxyOrVpn && score >= 80) {
     ecommerce = {
       id: 'ecommerce',
-      nameEn: 'Amazon / Etsy Seller',
-      nameZh: 'Amazon / Etsy 店铺防关联',
+      nameEn: 'Amazon / E-commerce',
+      nameZh: '跨境电商店铺',
       status: 'pass',
-      badgeEn: 'Isolated Seller Safe',
-      badgeZh: '独立纯净 · 可登主店铺',
-      reasonEn: 'Dedicated-looking consumer ISP footprint minimizes multi-account linkage alerts.',
-      reasonZh: '本土运营商宽带指纹干净，配合独立浏览器环境可有效规避多店铺关联审核。',
+      badgeEn: 'Low Risk',
+      badgeZh: '环境正常',
+      reasonEn: 'Standard residential ISP footprint suitable for store management.',
+      reasonZh: '常规本地宽带特征，适合配合独立环境进行店铺管理。',
     };
   } else if (score >= 58 && !isTor) {
     ecommerce = {
       id: 'ecommerce',
-      nameEn: 'Amazon / Etsy Seller',
-      nameZh: 'Amazon / Etsy 店铺防关联',
+      nameEn: 'Amazon / E-commerce',
+      nameZh: '跨境电商店铺',
       status: 'warn',
-      badgeEn: 'Buyer OK · Seller Risky',
-      badgeZh: '买家号可用 · 卖家店慎登',
-      reasonEn: 'Acceptable for normal shopping, but seller central logins require static native residential IPs.',
-      reasonZh: '可用于普通买家浏览下单，但登录跨境卖家后台存在同段历史关联风险。',
+      badgeEn: 'Buyer Only',
+      badgeZh: '仅适合浏览',
+      reasonEn: 'Fine for browsing, but seller accounts typically require dedicated residential IPs.',
+      reasonZh: '普通购物浏览无碍，登录卖家后台建议使用固定独享宽带 IP。',
     };
   } else {
     ecommerce = {
       id: 'ecommerce',
-      nameEn: 'Amazon / Etsy Seller',
-      nameZh: 'Amazon / Etsy 店铺防关联',
+      nameEn: 'Amazon / E-commerce',
+      nameZh: '跨境电商店铺',
       status: 'block',
-      badgeEn: 'Account Linkage Hazard',
-      badgeZh: '高关联封店风险',
-      reasonEn: 'Shared hosting/VPN IPs are heavily blacklisted by Etsy & Amazon Seller risk engines.',
-      reasonZh: 'Etsy 与亚马逊卖家风控对机房及共享代理段实施严厉连坐扫号，切勿直接登录店铺后台。',
+      badgeEn: 'High Risk',
+      badgeZh: '不建议使用',
+      reasonEn: 'Datacenter and shared VPN addresses carry high account verification risk.',
+      reasonZh: '机房及多人共享节点登录电商后台容易触发二审验证。',
     };
   }
 
@@ -806,35 +806,35 @@ function buildPlatformMatrix(ctx: {
   if (isResOrMob && nativeStatus === 'native' && !isProxyOrVpn) {
     streaming = {
       id: 'streaming',
-      nameEn: 'Netflix / Disney+ Originals',
-      nameZh: 'Netflix / 流媒体全解锁',
+      nameEn: 'Netflix / Streaming',
+      nameZh: '流媒体地域版权',
       status: 'pass',
-      badgeEn: `Full ${countryCode} Library Unlock`,
-      badgeZh: `解锁 ${countryCode} 本土非自制剧`,
-      reasonEn: 'Native residential ISP unlocks full local third-party catalog without proxy error.',
-      reasonZh: '正宗原生本土 ISP，完美解锁当地版权库（含非自制剧、Disney+ 及区域限定体育赛事）。',
+      badgeEn: `Local (${countryCode})`,
+      badgeZh: `本地片库 (${countryCode})`,
+      reasonEn: 'Native ISP typically accesses full regional streaming libraries.',
+      reasonZh: '原生运营商网段，通常可正常访问当地完整版权内容。',
     };
   } else if (nativeStatus === 'broadcast' || usageType === 'cdn') {
     streaming = {
       id: 'streaming',
-      nameEn: 'Netflix / Disney+ Originals',
-      nameZh: 'Netflix / 流媒体全解锁',
+      nameEn: 'Netflix / Streaming',
+      nameZh: '流媒体地域版权',
       status: 'warn',
-      badgeEn: 'Originals Only / Geo Drift',
-      badgeZh: '仅自制剧或跨区偏移',
-      reasonEn: 'Broadcasted or Anycast IP often falls back to Netflix Originals-only catalog.',
-      reasonZh: '广播 IP 或边缘任播段容易被流媒体版权库识别为代理，通常仅能观看 Netflix 自制剧。',
+      badgeEn: 'Limited',
+      badgeZh: '部分受限',
+      reasonEn: 'Broadcasted or Anycast prefixes may be limited to Originals-only content.',
+      reasonZh: '广播或任播网段可能仅解锁自制内容，或出现跨区偏差。',
     };
   } else {
     streaming = {
       id: 'streaming',
-      nameEn: 'Netflix / Disney+ Originals',
-      nameZh: 'Netflix / 流媒体全解锁',
+      nameEn: 'Netflix / Streaming',
+      nameZh: '流媒体地域版权',
       status: 'block',
-      badgeEn: 'Unblocker / Proxy Flagged',
-      badgeZh: '机房段 · 版权库受限',
-      reasonEn: 'Commercial hosting ASNs are routinely restricted to Originals or blocked by Disney+/Hulu.',
-      reasonZh: '主流商业云机房网段均在流媒体 Unblocker 拦截名单内，无法稳定解锁本土版权内容。',
+      badgeEn: 'Restricted',
+      badgeZh: '机房受限',
+      reasonEn: 'Cloud hosting ranges are commonly flagged by streaming proxy filters.',
+      reasonZh: '商业云主机网段通常会被流媒体平台识别并限制地区版权库。',
     };
   }
 
@@ -843,35 +843,35 @@ function buildPlatformMatrix(ctx: {
   if (score >= 78 && !isProxyOrVpn && !isTor) {
     payments = {
       id: 'payments',
-      nameEn: 'Stripe Radar / PayPal',
-      nameZh: 'Stripe / PayPal 支付风控',
+      nameEn: 'Stripe / PayPal',
+      nameZh: '在线支付结账',
       status: 'pass',
-      badgeEn: 'Low 3DS Friction',
-      badgeZh: '低拒付分 · 顺畅绑卡支付',
-      reasonEn: 'Low fraud score passes Stripe Radar checks when billing country & browser timezone match.',
-      reasonZh: '反欺诈评分健康，只要保持账单国家与浏览器本地时区一致即可顺畅完成绑卡结账。',
+      badgeEn: 'Normal',
+      badgeZh: '风控较低',
+      reasonEn: 'Low fraud score when browser timezone matches billing country.',
+      reasonZh: '风险分较低，保持浏览器时区与账单地区一致即可正常支付。',
     };
   } else if (score >= 52 && !isTor) {
     payments = {
       id: 'payments',
-      nameEn: 'Stripe Radar / PayPal',
-      nameZh: 'Stripe / PayPal 支付风控',
+      nameEn: 'Stripe / PayPal',
+      nameZh: '在线支付结账',
       status: 'warn',
-      badgeEn: '3DS Verification Likely',
-      badgeZh: '易触发 3DS 验证 / 预授权审单',
-      reasonEn: 'Elevated network risk may trigger mandatory 3D-Secure or manual card verification.',
-      reasonZh: '网络环境存在一定代理或机房权重，大额支付或虚拟卡绑卡可能触发强制 3DS 验证。',
+      badgeEn: '3DS Check',
+      badgeZh: '可能需验证',
+      reasonEn: 'Moderate risk score may trigger 3D-Secure verification during checkout.',
+      reasonZh: '在线支付时可能触发银行 3DS 短信或二次身份验证。',
     };
   } else {
     payments = {
       id: 'payments',
-      nameEn: 'Stripe Radar / PayPal',
-      nameZh: 'Stripe / PayPal 支付风控',
+      nameEn: 'Stripe / PayPal',
+      nameZh: '在线支付结账',
       status: 'block',
-      badgeEn: 'High Decline / Limitation Risk',
-      badgeZh: '极易拒付 / PayPal 180天风控',
-      reasonEn: 'Stripe Radar & PayPal automatically decline high-risk anonymizer/VPS checkouts.',
-      reasonZh: '高危代理与云机房 IP 登录收付款账户极易触发 Stripe Radar 拦截或 PayPal 账户受限。',
+      badgeEn: 'High Risk',
+      badgeZh: '易被拦截',
+      reasonEn: 'High-risk proxy/hosting exits are frequently declined by payment gateways.',
+      reasonZh: '高风险代理或机房出口容易触发支付网关拒付保护。',
     };
   }
 

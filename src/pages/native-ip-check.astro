@@ -17,16 +17,16 @@ const report = await evaluateIpVerdict(visitorIp, {
 
 const title =
   locale === 'zh'
-    ? '真假原生 IP 检测 — RIR 注册局分配国 vs 广播 IP 鉴别 | JudgeIP'
-    : 'True Native IP Checker — RIR WHOIS vs Broadcasted Geo-Fed IP | JudgeIP';
+    ? '原生 IP 与广播 IP 查询 — RIR 注册国比对 | JudgeIP'
+    : 'Native vs Broadcast IP Checker — RIR WHOIS Lookup | JudgeIP';
 const description =
   locale === 'zh'
-    ? '交叉比对 ARIN/RIPE/APNIC 注册局原始分配国与当前 BGP 物理归属地，一秒识破商家宣传的“假原生广播 IP”。'
-    : 'Compare RIR WHOIS original country allocation against live BGP geolocation to distinguish genuine Native IPs from broadcasted prefixes.';
+    ? '比对 ARIN / RIPE / APNIC 注册局原始分配国家与当前 BGP 物理归属地，区分原生 IP 与广播 IP。'
+    : 'Compare RIR WHOIS registration country against current GeoIP location to distinguish native and broadcasted IPs.';
 const heading =
   locale === 'zh'
-    ? 'RIR 注册局溯源 · 真原生 vs 广播 IP 照妖镜'
-    : 'RIR WHOIS Native vs Broadcasted IP Forensics';
+    ? '原生 IP 与广播 IP 检测'
+    : 'Native vs Broadcast IP Check';
 ---
 
 <BaseLayout title={title} description={description} canonicalPath="/native-ip-check" locale={locale}>

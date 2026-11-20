@@ -19,13 +19,13 @@ const report = await evaluateIpVerdict(visitorIp, {
 
 const title =
   locale === 'zh'
-    ? 'JudgeIP (IP判官) — 免费 IP 纯净度检测 · 原生家宽验真 · 欺诈风险评分'
-    : 'JudgeIP — Free IP Purity Check, Fraud Score & Native ISP Verdict';
+    ? 'JudgeIP — IP 纯净度检测 · 原生 IP 查询 · 风险评分'
+    : 'JudgeIP — IP Purity Check, Risk Score & Native ISP Lookup';
 
 const description =
   locale === 'zh'
-    ? '毫秒级免费 IP 纯净度检测与风险终审：0-100 透明评分、RIR 原生/广播 IP 血统鉴别、机房/住宅代理识别、Shodan 端口暴露扫描及 TikTok/Claude 通关矩阵。'
-    : 'Instant IP purity score (0-100), RIR native vs broadcasted IP verification, residential vs datacenter ASN detection, WebRTC leak check, and TikTok/Claude survival matrix.';
+    ? '免费查询本机或指定 IP 的纯净度评分、归属地、ASN 运营商类型（住宅宽带 / 机房）、WHOIS 原生 / 广播属性及 WebRTC 泄漏检测。'
+    : 'Free IP purity and risk checker: inspect geolocation, residential vs datacenter ASN, RIR WHOIS native status, open ports, and WebRTC leaks.';
 ---
 
 <BaseLayout title={title} description={description} canonicalPath="/" locale={locale}>

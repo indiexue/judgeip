@@ -27,13 +27,13 @@ const report = await evaluateIpVerdict(parsed.normalized, {
 
 const title =
   locale === 'zh'
-    ? `${report.ip} IP 纯净度裁决：${report.score}/100 (${report.grade}级) · ${report.network.isp} | JudgeIP`
-    : `${report.ip} IP Purity Score: ${report.score}/100 (Grade ${report.grade}) · ${report.network.isp} | JudgeIP`;
+    ? `${report.ip} IP 纯净度与归属地查询 (${report.score}/100) | JudgeIP`
+    : `${report.ip} IP Purity & ISP Lookup (${report.score}/100) | JudgeIP`;
 
 const description =
   locale === 'zh'
-    ? `IP ${report.ip} (${report.geo.countryName} · ${report.network.asnCode} ${report.network.isp}) 终审得分 ${report.score}/100，血统判定：${report.network.nativeStatus}。查看完整欺诈风险与端口暴露证据链。`
-    : `Forensic IP verdict for ${report.ip} (${report.geo.countryName}, ${report.network.asnCode} ${report.network.isp}): Purity Score ${report.score}/100, RIR status: ${report.network.nativeStatus}.`;
+    ? `IP ${report.ip} (${report.geo.countryName} · ${report.network.asnCode} ${report.network.isp}) 纯净度评分 ${report.score}/100，注册属性：${report.network.nativeStatus}。`
+    : `IP details for ${report.ip} (${report.geo.countryName}, ${report.network.asnCode} ${report.network.isp}): Purity Score ${report.score}/100, RIR status: ${report.network.nativeStatus}.`;
 ---
 
 <BaseLayout title={title} description={description} canonicalPath={`/ip/${report.ip}`} locale={locale}>

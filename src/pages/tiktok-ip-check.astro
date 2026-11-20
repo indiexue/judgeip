@@ -17,16 +17,16 @@ const report = await evaluateIpVerdict(visitorIp, {
 
 const title =
   locale === 'zh'
-    ? 'TikTok 原生 IP 与防 0 播放环境检测 | JudgeIP (IP判官)'
-    : 'TikTok IP Check — Native Residential ISP & Shadowban Risk Audit | JudgeIP';
+    ? 'TikTok 网络环境与原生 IP 检测 | JudgeIP'
+    : 'TikTok IP Check — Native ISP & Hosting Risk Lookup | JudgeIP';
 const description =
   locale === 'zh'
-    ? '免费检测您的 TikTok 运营节点是否为正宗 RIR 原生住宅 IP，提前排查机房 ASN、广播 IP 偏区与 WebRTC/时区泄漏引发的 0 播放黑屏隐患。'
-    : 'Verify if your proxy/ISP passes TikTok native residential checks. Detect datacenter ASNs, broadcasted IPs, and timezone/WebRTC leaks before posting.';
+    ? '检测当前 IP 是否为本地原生宽带，排查机房网段、广播 IP 与浏览器时区不一致问题。'
+    : 'Check whether your IP belongs to a native residential ISP or datacenter range for TikTok account operations.';
 const heading =
   locale === 'zh'
-    ? 'TikTok 养号 · 原生家宽与防 0 播放专项裁决'
-    : 'TikTok Native ISP & 0-View Risk Verdict';
+    ? 'TikTok 原生 IP 与网络环境检测'
+    : 'TikTok Native IP & ISP Check';
 ---
 
 <BaseLayout title={title} description={description} canonicalPath="/tiktok-ip-check" locale={locale}>
