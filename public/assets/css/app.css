@@ -232,6 +232,16 @@ body {
   max-inline-size: none;
 }
 
+/* Neutralize Open Props normalize.min.css `:where(p, ul, ol, dl, h6) { font-size: var(--font-size-2) }` (1.1rem / ~18px)
+   and `:where(li) { padding-inline-start: var(--size-2) }` so lists, descriptions, and footer links inherit unified UI typography */
+:where(p, ul, ol, dl) {
+  font-size: inherit;
+}
+
+:where(li) {
+  padding-inline-start: 0;
+}
+
 .wrap,
 .wrap--wide {
   max-width: var(--wrap-width);
@@ -1746,14 +1756,17 @@ main:focus {
   margin-block-start: 48px;
   padding-block-start: 28px;
   border-top: 1px solid var(--border);
+  font-family: var(--font-ui);
   font-size: 13px;
+  line-height: 1.6;
   color: var(--text-dim);
 }
 
 .foot__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.65fr) minmax(0, 1.45fr);
-  gap: 24px 32px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.55fr) minmax(0, 1.5fr);
+  gap: 24px 36px;
+  align-items: start;
 }
 
 .brand--foot {
@@ -1761,34 +1774,59 @@ main:focus {
 }
 
 .foot__about {
-  margin: 0 0 5px;
+  margin: 0 0 6px;
   font-size: 13px;
   line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.foot__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-block-start: 8px;
+  font-size: 12.5px;
+  color: var(--text-mute);
 }
 
 .foot__title {
-  margin: 2px 0 10px;
-  font-size: 12px;
+  margin: 0 0 10px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
   color: var(--text);
 }
 
 .foot__list {
   margin: 0;
   padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
   list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.foot__list li {
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .foot__list--grid {
-  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px 14px;
+  gap: 6px 18px;
 }
 
 .foot__link {
   display: inline-block;
-  padding-block: 3px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
   color: var(--text-dim);
   text-decoration: none;
   white-space: nowrap;
@@ -1803,7 +1841,7 @@ main:focus {
   margin: 24px 0 0;
   padding-block-start: 16px;
   border-top: 1px solid var(--border-soft);
-  font-family: var(--font-code);
+  font-family: var(--font-ui);
   font-size: 12px;
   color: var(--text-mute);
   text-align: center;
