@@ -4,6 +4,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('dnsleak');
   if (!root) return;
 
@@ -101,15 +103,15 @@
 
   function classify(resolver, client) {
     if (client.asn && resolver.asn && resolver.asn === client.asn) {
-      return { key: 'same', tone: 'ok', label: '与出口同网' };
+      return { key: 'same', tone: 'ok', label: T('与出口同网', 'Same network as exit') };
     }
     if (ISP_TYPES.indexOf(resolver.type) !== -1 && resolver.country_code !== client.country_code) {
-      return { key: 'isp', tone: 'leak', label: '运营商解析' };
+      return { key: 'isp', tone: 'leak', label: T('运营商解析', 'ISP resolver') };
     }
     if (client.country_code && resolver.country_code && resolver.country_code !== client.country_code) {
-      return { key: 'cross', tone: 'warn', label: '跨境解析' };
+      return { key: 'cross', tone: 'warn', label: T('跨境解析', 'Cross-border') };
     }
-    return { key: 'third', tone: 'ok', label: '公共 / 同区解析' };
+    return { key: 'third', tone: 'ok', label: T('公共 / 同区解析', 'Public / same region') };
   }
 
   function resolverRow(resolver, state) {
@@ -146,7 +148,7 @@
 
     var result = el('div', 'dnsrow__result');
     result.appendChild(el('span', 'tag tag--' + state.tone, state.label));
-    result.appendChild(el('span', 'dnsrow__count mono', resolver.queries + ' 次查询'));
+    result.appendChild(el('span', 'dnsrow__count mono', resolver.queries + T(' 次查询', ' queries')));
     row.appendChild(result);
 
     return row;
@@ -166,7 +168,7 @@
     if (client.isp) parts.push(el('span', 'dim', client.isp));
 
     if (!parts.length) {
-      fill(exitCell, [el('span', 'dim', '未知')]);
+      fill(exitCell, [el('span', 'dim', T('未知', 'Unknown'))]);
       return;
     }
 
@@ -183,7 +185,7 @@
     fill(countCell, [el('span', 'mono', String(resolvers.length))]);
 
     if (!resolvers.length) {
-      fill(list, [el('div', 'dnsrow dnsrow--empty', '未捕获到递归 DNS 解析记录。')]);
+      fill(list, [el('div', 'dnsrow dnsrow--empty', T('未捕获到递归 DNS 解析记录。', 'No recursive DNS lookups captured.'))]);
       return { leak: 0, cross: 0, third: 0, same: 0 };
     }
 
@@ -210,36 +212,39 @@
   function conclude(data, tally, failure) {
     var total = (data.resolvers || []).length;
     var client = data.client || {};
-    var where = client.country || client.country_code || (visibleIp || '你的出口');
+    var where = client.country || client.country_code || (visibleIp || T('你的出口', 'your exit'));
 
     if (fixNote) fixNote.hidden = true;
 
     if (failure) {
-      say('is-warn', '检测请求受阻', '未能读取递归 DNS 回显结果，可能是广告拦截扩展或当前网络策略阻断了探测域名。');
+      say('is-warn', T('检测请求受阻', 'Test requests blocked'), T('没能读取解析结果，可能是广告拦截扩展或当前网络策略拦下了检测域名。', 'Could not read the lookup results. An ad blocker or your network policy may be blocking the test domain.'));
       return;
     }
 
     if (!total) {
-      say('is-warn', '未捕获到任何 DNS 请求', '未能收到递归解析器记录。请检查是否有浏览器去广告插件拦截了测试请求。');
+      say('is-warn', T('未捕获到任何 DNS 请求', 'No DNS requests captured'), T('没有收到解析器记录。检查一下是否有广告拦截扩展拦下了检测请求。', 'No resolver records received. Check whether an ad-blocking extension is blocking the test requests.'));
       return;
     }
 
     if (tally.leak) {
-      say('is-bad', '检测到 DNS 泄露',
-        total + ' 台解析器里有 ' + tally.leak + ' 台属于跨区运营商网络，且不在你出口所在的网络中。网站看到的是 ' + where + ' 的出口，而你的域名解析仍在本地运营商网络中进行。');
+      say('is-bad', T('检测到 DNS 泄露', 'DNS leak detected'),
+        T(total + ' 台解析器里有 ' + tally.leak + ' 台是其他国家/地区的运营商网络，也不在你的出口网络里。网站看到的出口在 ' + where + '，域名查询却仍经过本地运营商。',
+          tally.leak + ' of ' + total + ' resolvers are ISP networks in another country/region and not in your exit\'s network. Websites see an exit in ' + where + ', but DNS lookups still go through your local ISP.'));
       if (fixNote) fixNote.hidden = false;
       return;
     }
 
     if (tally.cross) {
-      say('is-warn', 'DNS 与出口不在同一国家或地区',
-        total + ' 台解析器里有 ' + tally.cross + ' 台的归属地与你的出口（' + where + '）不一致。若非手动指定的公共 DNS，建议检查代理客户端的 DNS 分流设置。');
+      say('is-warn', T('DNS 与出口不在同一国家或地区', 'DNS and exit are in different countries/regions'),
+        T(total + ' 台解析器里有 ' + tally.cross + ' 台与你的出口（' + where + '）不在同一国家/地区。如果不是你手动指定的公共 DNS，检查一下代理客户端的 DNS 设置。',
+          tally.cross + ' of ' + total + ' resolvers are not in the same country/region as your exit (' + where + '). If this isn\'t a public DNS you set yourself, check your proxy client\'s DNS settings.'));
       if (fixNote) fixNote.hidden = false;
       return;
     }
 
-    say('is-good', '未发现 DNS 泄露',
-      '捕获到的 ' + total + ' 台递归解析器均位于 ' + where + ' 同区或与当前出口网络一致，未发现本地运营商抢答泄露。');
+    say('is-good', T('未发现 DNS 泄露', 'No DNS leak found'),
+      T('捕获到的 ' + total + ' 台递归解析器都和出口在同一国家/地区（' + where + '）或同一网络，没有发现经本地运营商解析的情况。',
+        'All ' + total + ' recursive resolvers captured are in the same country/region as your exit (' + where + ') or in the same network. No lookups through a local ISP found.'));
   }
 
   function run() {
@@ -248,10 +253,10 @@
     runButton.disabled = true;
     verdict.hidden = true;
     if (fixNote) fixNote.hidden = true;
-    fill(list, [el('div', 'dnsrow dnsrow--empty', '正在并发解析 ' + probeCount + ' 个一次性随机子域…')]);
-    fill(exitCell, [el('span', 'dim', '查询中…')]);
-    fill(countCell, [el('span', 'dim', '查询中…')]);
-    progress.textContent = '正在向递归服务器发起 ' + probeCount + ' 路随机解析探测…';
+    fill(list, [el('div', 'dnsrow dnsrow--empty', T('正在并发解析 ', 'Resolving ') + probeCount + T(' 个一次性随机子域…', ' one-time random subdomains in parallel…'))]);
+    fill(exitCell, [el('span', 'dim', T('查询中…', 'Looking up…'))]);
+    fill(countCell, [el('span', 'dim', T('查询中…', 'Looking up…'))]);
+    progress.textContent = T('正在发起 ', 'Sending ') + probeCount + T(' 路随机子域解析…', ' random subdomain lookups…');
 
     var jobs = [];
     for (var i = 0; i < probeCount; i++) {
@@ -269,9 +274,9 @@
         });
 
         var ips = Object.keys(counts);
-        progress.textContent = '已捕获 ' + ips.length + ' 台解析器，正在核对 ASN 与归属地…';
+        progress.textContent = T('已捕获 ', 'Captured ') + ips.length + T(' 台解析器，正在核对 ASN 与归属地…', ' resolvers, checking ASN and location…');
 
-        return window.fetch('/dnsleak/api', {
+        return window.fetch('/dnsleak/api' + (window.I18N && window.I18N.lang === 'en' ? '?lang=en' : ''), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
@@ -285,21 +290,21 @@
       .then(function (data) {
         running = false;
         runButton.disabled = false;
-        runButton.textContent = '重新检测';
+        runButton.textContent = T('重新检测', 'Run again');
         if (!data || !data.ok) {
-          progress.textContent = '检测中断。';
+          progress.textContent = T('检测中断。', 'Test interrupted.');
           conclude({ resolvers: [] }, { leak: 0, cross: 0, third: 0, same: 0 }, true);
           return;
         }
         var tally = render(data);
-        progress.textContent = '检测完成，共捕获 ' + (data.resolvers || []).length + ' 台解析器。';
+        progress.textContent = T('检测完成，共捕获 ', 'Done, captured ') + (data.resolvers || []).length + T(' 台解析器。', ' resolvers.');
         conclude(data, tally, false);
       })
       .catch(function () {
         running = false;
         runButton.disabled = false;
-        runButton.textContent = '重新检测';
-        progress.textContent = '检测中断。';
+        runButton.textContent = T('重新检测', 'Run again');
+        progress.textContent = T('检测中断。', 'Test interrupted.');
         conclude({ resolvers: [] }, { leak: 0, cross: 0, third: 0, same: 0 }, true);
       });
   }

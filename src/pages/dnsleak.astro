@@ -1,18 +1,21 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/dnsleak.html?raw";
+import zhHtml from "../snippets/dnsleak.html?raw";
+import enHtml from "../snippets/en/dnsleak.html?raw";
 import { extractVisitorIp } from "../lib/ip-utils";
+import { getLang, pick } from "../lib/i18n";
 
+const lang = getLang(Astro.locals);
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="DNS 泄露检测 — 查出是谁在替你解析域名 · JudgeIP"
-  description="找出真正替你解析域名的递归 DNS 服务器，检查 DNS 请求是否绕过代理泄露。"
+  title={pick(lang, 'DNS 泄露检测 — 查出是谁在替你解析域名 · JudgeIP', 'DNS leak test: see who resolves domains for you · JudgeIP')}
+  description={pick(lang, '找出真正替你解析域名的递归 DNS 服务器，检查 DNS 请求是否绕过代理泄露。', 'Find the recursive DNS servers that actually resolve names for you, and check whether DNS requests bypass your proxy.')}
   canonicalPath="/dnsleak"
   bodyClass="page-dnsleak"
-  currentLabel="DNS 泄露检测"
+  currentLabel={pick(lang, 'DNS 泄露检测', 'DNS leak test')}
   activeNav="/dnsleak"
   extraCss={[]}
   extraJs={["/assets/js/dnsleak.js"]}

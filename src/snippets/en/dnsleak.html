@@ -1,0 +1,133 @@
+
+<section class="hero">
+  <h1 class="hero__title">DNS leak test</h1>
+  <p class="hero__lede">Find the DNS servers that actually resolve names for you, and check whether DNS requests bypass your proxy.</p>
+</section>
+
+<div class="probe"
+     id="dnsleak"
+     data-zone="edns.ip-api.com"
+     data-probes="8"
+     data-visible-ip="__VISITOR_IP__">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-dns-run>Start</button>
+    <span class="probe__hint" data-dns-progress>Each subdomain has to be looked up by your recursive DNS at the authoritative server. 8 run in parallel; it usually takes a few seconds, at most about 10.</span>
+  </div>
+
+  <div class="verdict" data-dns-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-dns-verdict-title></p>
+      <p class="verdict__note" data-dns-verdict-note></p>
+    </div>
+  </div>
+
+    <div class="fixnote" data-dns-fix hidden>
+    <p class="fixnote__title">How to send DNS through the tunnel too</p>
+    <p class="fixnote__note">
+      First look for a switch such as "DNS through tunnel" or "Block DNS leaks" in your VPN client (names vary: in OpenVPN it is <span class="mono">block-outside-dns</span>, in WireGuard the <span class="mono">DNS =</span> line in the config). If the client has no such option, enable DoH in the browser and hand resolution to a provider you trust, so it at least no longer goes through your local ISP.
+    </p>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">Exit vs. resolvers</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Address seen over HTTP</div>
+          <div class="row__value"><span class="mono">__VISITOR_IP__</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Exit owner</div>
+          <div class="row__value" data-dns-exit><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Resolvers captured</div>
+          <div class="row__value" data-dns-count><span class="dim">Not checked yet</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">DNS servers resolving for you</h2>
+      <div class="rows" data-dns-list>
+        <div class="dnsrow dnsrow--empty" data-dns-placeholder>
+          <span class="dim">Not started yet. Click the button above: the page resolves 8 random subdomains, and the servers that came to ask for them are listed here.</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>The DNS leak test needs the browser to start the lookups. JavaScript is disabled, so this page can only show the notes. You can also check by hand in a terminal: <span class="mono">curl -s https://randomstring.edns.ip-api.com/json</span>; <span class="mono">dns.ip</span> in the response is the server that resolved it for you.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What a DNS leak is</h2>
+  <p>
+    The first step in opening a URL is <strong>resolving the domain</strong>: the device asks a DNS server which IP the domain maps to, and only then can it connect. This is done by a <strong>recursive resolver</strong>, usually the one your ISP assigns automatically, or one you set by hand such as 8.8.8.8, 1.1.1.1 or 223.5.5.5. It queries the root, the TLD and the authoritative servers in turn and returns the result to you.
+  </p>
+  <p>
+    This step is <strong>independent</strong> of whether web traffic goes through the proxy. Browser-extension proxies only take over HTTP(S) requests, and so do some VPN clients that change routes but not the DNS settings. The result: websites see the proxy exit, while your ISP sees every domain you looked up. That is a DNS leak.
+  </p>
+  <p>
+    In some cases a DNS leak <strong>reveals more</strong> than an IP leak: the IP says where you are, the domain log says what you visit. Seeing it requires no decryption, and HTTPS does not hide it: HTTPS encrypts the connection, not the domains you looked up.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>The browser generates 8 distinct one-time random subdomains of the form <span class="mono">{32 random characters}.edns.ip-api.com</span>.</li>
+    <li>It requests them over HTTPS at the same time. These names have never existed, so no cache has them, and your recursive resolver has to ask ip-api.com's authoritative server for each one.</li>
+    <li>ip-api.com's authoritative server records <strong>the address that asked</strong> and returns it to the browser in the response to that request.</li>
+    <li>The page sends the collected resolver addresses to this site to add country/region, ISP and ASN, then compares them with your HTTP exit and draws a conclusion.</li>
+  </ol>
+  <p>
+    Why 8 and not 1: a public DNS service runs many recursive machines, and which one sends a given query is random. One lookup shows only one of them; several show the range. Each subdomain is used once, which also avoids caches: a cache hit at any layer would make the test useless.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>Resolver and exit share an ASN</strong>: DNS and web traffic take the same path. Either you use no proxy, or the proxy also handles DNS. This is the cleanest case.</li>
+    <li><strong>Resolver is a well-known public DNS in the same country/region as the exit</strong>: no cross-border leak, but that provider gets your domain log. Whether that is acceptable depends on whether you trust it.</li>
+    <li><strong>Resolver is your local ISP, but the exit is elsewhere</strong>: a typical DNS leak. The proxy only handles web traffic, and DNS lookups still go through your local network.</li>
+    <li><strong>No resolver captured</strong>: the requests did not reach ip-api.com. Common causes are network restrictions or a browser extension blocking them. This does not mean you are safe, only that this run measured nothing; try another network.</li>
+  </ul>
+  <p class="prose__note">
+    If the result shows <strong>ECS</strong>, the resolver told the authoritative server your subnet (EDNS Client Subnet, RFC 7871). This lets CDNs route you to a nearby node, at the cost that every authoritative server learns roughly which subnet you are on, even when DNS itself does not cross a border.
+  </p>
+
+  <h2>How to prevent DNS leaks</h2>
+  <ul>
+    <li><strong>Let the VPN client handle DNS.</strong> This is the most complete fix.
+        In WireGuard, set <span class="mono">DNS = </span> in the config;
+        in OpenVPN on Windows, use <span class="mono">block-outside-dns</span>;
+        commercial clients usually have a "Block DNS leaks" switch. Clients in TUN mode that take over the whole network stack don't have this problem.</li>
+    <li><strong>Enable DoH / DoT.</strong> Browsers and operating systems can encrypt lookups and send them to a chosen provider.
+        This changes who resolves and whether the path can be observed; it does not mean nobody knows what you visit.</li>
+    <li><strong>Check the DNS settings on your system and router.</strong> Many leaks come from ISP DNS hard-coded on the router,
+        which DHCP pushes back to your devices no matter what you change on them.</li>
+    <li><strong>Disable IPv6, or make sure IPv6 also goes through the tunnel.</strong> With a proxy that only handles IPv4 on a dual-stack network,
+        DNS leaks out over IPv6 untouched. This one is the hardest to notice.</li>
+  </ul>
+  <p>
+    After making changes, come back and test again. Each run uses new random subdomains, so nothing from the last run is cached.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>I'm on a VPN. Why does DNS still go to my ISP?</dt>
+    <dd>Because resolution happens before the connection. The system has to turn the domain into an IP before it knows where to send packets, and which DNS it uses is set by the network adapter configuration. Browser-extension proxies that only handle HTTP(S), and some VPN clients that change routes but not DNS, leave that configuration alone. So websites see the proxy exit, while your ISP gets every domain you visit.</dd>
+    <dt>The address shown doesn't match the 8.8.8.8 I set. Is the test wrong?</dt>
+    <dd>No. This is the most commonly misread part of the test. 8.8.8.8 is where you send queries; the authoritative server sees the address of the machine in Google's recursive cluster that actually sent the query, usually in 74.125.x or 172.253.x. Both belong to the same company and ASN, but they are never the same address. That is why this page identifies providers by ASN rather than IP.</dd>
+    <dt>Why does one test show several resolvers?</dt>
+    <dd>A public DNS service runs many recursive machines, and which one sends a query is random; many systems also have a primary and a secondary DNS configured. This page sends several distinct random subdomains to show that range, and every one of those machines saw the domains you visit.</dd>
+    <dt>With encrypted DNS (DoH / DoT) on, do I still need to test?</dt>
+    <dd>Yes, and the result may not be what you expect. Encryption stops others on the path from seeing queries; it does not change who does the lookup in the end. DoH replaces plain-text queries with HTTPS requests to one provider, and that provider still knows what you visit. That is what this page tests: who finally asks the authoritative server on your behalf.</dd>
+    <dt>Does this site store DNS test results?</dt>
+    <dd>No. The random subdomains are resolved by ip-api.com's public EDNS service, which sees your resolver addresses, ECS subnet and IP, and handles them under its own policy. The page then sends the resolver addresses and your exit IP to this site to look up their owners. This site does not record the test; owner lookups are cached briefly per IP and not linked to the test.</dd>
+  </dl>
+</article>

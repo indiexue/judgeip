@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
+import { localizeLookup } from '../../lib/lookup-en';
 
 const PUBLIC_DNS_PROVIDERS: Record<number, string> = {
   15169: 'Google Public DNS',
@@ -20,7 +21,20 @@ const PUBLIC_DNS_PROVIDERS: Record<number, string> = {
   9808: '中国移动',
 };
 
-export const POST: APIRoute = async ({ request }) => {
+const PROVIDERS_EN: Record<number, string> = {
+  37963: 'AliDNS',
+  45102: 'Alibaba Cloud DNS',
+  45090: 'Tencent DNSPod',
+  132203: 'Tencent Cloud DNS',
+  38365: 'Baidu Public DNS',
+  3462: 'Chunghwa Telecom HiNet',
+  4134: 'China Telecom',
+  4837: 'China Unicom',
+  9808: 'China Mobile',
+};
+
+export const POST: APIRoute = async ({ request, url }) => {
+  const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'zh';
   try {
     const body = (await request.json()) as {
       clientIp?: string;
@@ -29,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const visitorIp = parseIp(body.clientIp)?.normalized || extractVisitorIp(request);
     const cf = (request as Request & { cf?: Record<string, unknown> }).cf || null;
-    const clientInfo = await lookupIpFull(visitorIp, cf, true);
+    const clientInfo = localizeLookup(await lookupIpFull(visitorIp, cf, true), lang);
 
     const rawResolvers = Array.isArray(body.resolvers) ? body.resolvers.slice(0, 12) : [];
     const enriched = await Promise.all(
@@ -37,7 +51,7 @@ export const POST: APIRoute = async ({ request }) => {
         const parsed = parseIp(item.ip || '');
         if (!parsed) return null;
         try {
-          const info = await lookupIpFull(parsed.normalized, null, false);
+          const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), lang);
           const provider = (info.asn && PUBLIC_DNS_PROVIDERS[info.asn]) || '';
           let resolverType = 'hosting';
           if (provider && /(Google|Cloudflare|Quad9|OpenDNS|阿里公共|DNSPod|百度公共)/.test(provider)) {
@@ -51,7 +65,7 @@ export const POST: APIRoute = async ({ request }) => {
             country: info.countryZh,
             asn: info.asn ? `AS${info.asn}` : '',
             isp: info.isp,
-            provider,
+            provider: (lang === 'en' && info.asn && PROVIDERS_EN[info.asn]) || provider,
             type: resolverType,
             queries: Math.max(1, Number(item.queries) || 1),
             ecs: item.ecs || '',
