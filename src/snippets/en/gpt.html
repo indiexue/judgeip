@@ -1,0 +1,352 @@
+<section class="hero">
+  <h1 class="hero__title">GPT · Codex check</h1>
+  <p class="hero__lede">Checks the exit and availability of ChatGPT web, sign-in, the mobile app and the Codex / API endpoint separately. When the web app works but Codex does not, the cause is usually here.</p>
+</section>
+
+<div class="probe ai"
+     id="ai"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-vendors="{&quot;openai&quot;:{&quot;name&quot;:&quot;OpenAI&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;]},&quot;deepseek&quot;:{&quot;name&quot;:&quot;DeepSeek&quot;,&quot;basis&quot;:&quot;reference&quot;,&quot;denied&quot;:[]}}"
+     data-tz="{&quot;US&quot;:[-600,-240],&quot;CA&quot;:[-480,-150],&quot;MX&quot;:[-480,-300],&quot;BR&quot;:[-300,-120],&quot;AR&quot;:[-180,-180],&quot;CL&quot;:[-360,-180],&quot;CO&quot;:[-300,-300],&quot;PE&quot;:[-300,-300],&quot;VE&quot;:[-240,-240],&quot;EC&quot;:[-360,-300],&quot;UY&quot;:[-180,-180],&quot;PA&quot;:[-300,-300],&quot;CR&quot;:[-360,-360],&quot;GB&quot;:[0,60],&quot;IE&quot;:[0,60],&quot;PT&quot;:[-60,60],&quot;IS&quot;:[0,0],&quot;ES&quot;:[0,120],&quot;FR&quot;:[60,120],&quot;DE&quot;:[60,120],&quot;NL&quot;:[60,120],&quot;BE&quot;:[60,120],&quot;LU&quot;:[60,120],&quot;CH&quot;:[60,120],&quot;AT&quot;:[60,120],&quot;IT&quot;:[60,120],&quot;SE&quot;:[60,120],&quot;NO&quot;:[60,120],&quot;DK&quot;:[60,120],&quot;PL&quot;:[60,120],&quot;CZ&quot;:[60,120],&quot;SK&quot;:[60,120],&quot;HU&quot;:[60,120],&quot;SI&quot;:[60,120],&quot;HR&quot;:[60,120],&quot;RS&quot;:[60,120],&quot;MT&quot;:[60,120],&quot;FI&quot;:[120,180],&quot;EE&quot;:[120,180],&quot;LV&quot;:[120,180],&quot;LT&quot;:[120,180],&quot;RO&quot;:[120,180],&quot;BG&quot;:[120,180],&quot;GR&quot;:[120,180],&quot;CY&quot;:[120,180],&quot;UA&quot;:[120,180],&quot;MD&quot;:[120,180],&quot;TR&quot;:[180,180],&quot;BY&quot;:[180,180],&quot;RU&quot;:[120,720],&quot;IL&quot;:[120,180],&quot;AE&quot;:[240,240],&quot;SA&quot;:[180,180],&quot;QA&quot;:[180,180],&quot;BH&quot;:[180,180],&quot;KW&quot;:[180,180],&quot;OM&quot;:[240,240],&quot;IR&quot;:[210,210],&quot;EG&quot;:[120,180],&quot;ZA&quot;:[120,120],&quot;NG&quot;:[60,60],&quot;KE&quot;:[180,180],&quot;MA&quot;:[0,60],&quot;IN&quot;:[330,330],&quot;PK&quot;:[300,300],&quot;BD&quot;:[360,360],&quot;LK&quot;:[330,330],&quot;NP&quot;:[345,345],&quot;KZ&quot;:[300,300],&quot;UZ&quot;:[300,300],&quot;GE&quot;:[240,240],&quot;AM&quot;:[240,240],&quot;AZ&quot;:[240,240],&quot;TH&quot;:[420,420],&quot;VN&quot;:[420,420],&quot;KH&quot;:[420,420],&quot;LA&quot;:[420,420],&quot;MM&quot;:[390,390],&quot;ID&quot;:[420,540],&quot;MY&quot;:[480,480],&quot;SG&quot;:[480,480],&quot;PH&quot;:[480,480],&quot;BN&quot;:[480,480],&quot;CN&quot;:[480,480],&quot;HK&quot;:[480,480],&quot;MO&quot;:[480,480],&quot;TW&quot;:[480,480],&quot;MN&quot;:[420,480],&quot;JP&quot;:[540,540],&quot;KR&quot;:[540,540],&quot;AU&quot;:[480,660],&quot;NZ&quot;:[720,780]}"
+     data-lanes="4"
+     data-trace-timeout="8000"
+     data-optional-timeout="5000"
+     data-timing-timeout="6000"
+     data-rounds="3"
+     data-fast="250"
+     data-slow="500">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-ai-run>Run again</button>
+    <span class="probe__hint" data-ai-progress>Starts when the page opens: your browser requests 8 endpoints directly, 4 at a time, reads the exit each one sees, then measures latency three times and takes the median.</span>
+  </div>
+
+  <div class="verdict" data-ai-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ai-verdict-title></p>
+      <div class="ainotes" data-ai-verdict-notes></div>
+    </div>
+  </div>
+
+  <div class="fixnote" data-ai-v6 hidden>
+    <p class="fixnote__title">Your browser reaches OpenAI over IPv6. This is not recommended</p>
+    <p class="fixnote__note" data-ai-v6-note></p>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">ChatGPT web and app</h2>
+      <div class="rows aitable" role="table" aria-label="ChatGPT web and app: exits and availability">
+        <div class="airow airow--head" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="chatgpt"
+             data-name="ChatGPT web"
+             data-vendor="openai"
+             data-trace="chatgpt.com"
+             data-optional="0"
+             data-timing="https://chatgpt.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">ChatGPT web</span>
+            </span>
+            <span class="airow__how">Reads the chatgpt.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-auth"
+             data-name="Sign-in and auth"
+             data-vendor="openai"
+             data-trace="auth.openai.com"
+             data-optional="0"
+             data-timing="https://auth.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Sign-in and auth</span>
+              <span class="tag tag--name">Sign-in</span>
+            </span>
+            <span class="airow__how">Reads the auth.openai.com trace · used by web sign-in and codex login</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-static"
+             data-name="Web static assets"
+             data-vendor="openai"
+             data-trace="cdn.oaistatic.com"
+             data-optional="0"
+             data-timing="https://cdn.oaistatic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Web static assets</span>
+              <span class="tag tag--name">CDN</span>
+            </span>
+            <span class="airow__how">Reads the cdn.oaistatic.com trace · if blocked, the page loads blank or unstyled</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-ios"
+             data-name="Mobile app"
+             data-vendor="openai"
+             data-trace="ios.chat.openai.com"
+             data-optional="0"
+             data-timing="https://ios.chat.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Mobile app</span>
+              <span class="tag tag--name">App</span>
+            </span>
+            <span class="airow__how">Reads the ios.chat.openai.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Codex and API</h2>
+      <div class="rows aitable" role="table" aria-label="Codex and API: exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-api"
+             data-name="Codex / OpenAI API"
+             data-vendor="openai"
+             data-trace="api.openai.com"
+             data-optional="0"
+             data-timing="https://api.openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Codex / OpenAI API</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">Reads the api.openai.com trace · used by Codex CLI, IDE extensions and API calls</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai"
+             data-name="OpenAI website"
+             data-vendor="openai"
+             data-trace="openai.com"
+             data-optional="0"
+             data-timing="https://openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI website</span>
+              <span class="tag tag--name">Website</span>
+            </span>
+            <span class="airow__how">Reads the openai.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="sora"
+             data-name="Sora"
+             data-vendor="openai"
+             data-trace="sora.com"
+             data-optional="0"
+             data-timing="https://sora.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Sora</span>
+              <span class="tag tag--name">Video</span>
+            </span>
+            <span class="airow__how">Reads the sora.com trace · available in fewer regions than ChatGPT</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">China reference</h2>
+      <div class="rows aitable" role="table" aria-label="China reference: exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="deepseek"
+             data-name="DeepSeek"
+             data-vendor="deepseek"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://www.deepseek.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">DeepSeek</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="airow__how">Latency only: www.deepseek.com</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Exit vs. environment</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Exit seen by OpenAI</div>
+          <div class="row__value" data-ai-sum-exit><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Address seen by this site</div>
+          <div class="row__value aisum">
+            <span class="mono">__VISITOR_IP__</span>
+            <span class="aisum__tags" data-ai-sum-self></span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Browser time zone</div>
+          <div class="row__value aisum" data-ai-sum-tz><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Browser language</div>
+          <div class="row__value aisum" data-ai-sum-lang><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Related checks</div>
+          <div class="row__value ailinks">
+            <a href="/en/ai">AI access check</a><span class="dim">: exits for Claude, Gemini, Grok and other AI services</span><br>
+            <a href="/en/claude">Claude check</a><span class="dim">: browser environment score from 10 signals (time zone, language, fonts…)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">OpenAI supported regions</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">OpenAI</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">Not available in:</span>
+            <span class="tags">
+              <span class="tag tag--muted">Mainland China</span>
+              <span class="tag tag--muted">Hong Kong</span>
+              <span class="tag tag--muted">Macau</span>
+              <span class="tag tag--muted">Russia</span>
+              <span class="tag tag--muted">Belarus</span>
+              <span class="tag tag--muted">Iran</span>
+              <span class="tag tag--muted">North Korea</span>
+              <span class="tag tag--muted">Syria</span>
+              <span class="tag tag--muted">Cuba</span>
+              <span class="tag tag--muted">Venezuela</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://developers.openai.com/api/docs/supported-countries" target="_blank" rel="noopener external">Official list</a> ·
+              ChatGPT, Codex, Sora and the API share this list. Sora is open in fewer regions; check the OpenAI help center.
+            </span>
+          </div>
+        </div>
+      </div>
+      <p class="ailist__foot">List compiled on 2026-10-26, same as on the AI access check page. The official page takes precedence.</p>
+    </section>
+  </div>
+
+  <section class="group history" data-history="judgeip:history:gpt" hidden>
+    <h2 class="group__title">Check history <button class="history__clear" type="button" data-history-clear hidden>Clear</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">Stored only in this browser (localStorage), up to 20 entries, never sent to this site.</p>
+  </section>
+  <noscript>
+    <p class="notice" role="alert">
+      <span>The GPT · Codex check needs your browser to contact each OpenAI endpoint directly. JavaScript is disabled, so this page can only show the endpoint list and notes, not results.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>Why test ChatGPT and Codex separately</h2>
+  <p>
+    ChatGPT web, sign-in, static assets, the mobile app and Codex / API use different OpenAI domains:
+    the web app is <span class="mono">chatgpt.com</span>, sign-in goes through <span class="mono">auth.openai.com</span>,
+    scripts and styles come from <span class="mono">cdn.oaistatic.com</span>,
+    and Codex CLI, IDE extensions and API calls all request <span class="mono">api.openai.com</span>.
+    When a proxy routes by domain, one missing rule is enough to get half-broken setups: "web works, Codex reports a network error", or "Codex works, web sign-in keeps spinning".
+  </p>
+  <p>
+    This page reads Cloudflare's <span class="mono">/cdn-cgi/trace</span> once per endpoint to get the exit IP, country and colo that endpoint sees,
+    then measures latency three times and takes the median. If endpoints exit in different countries or one fails, the verdict names it.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>ChatGPT web works, Codex / API fails</strong>: <span class="mono">api.openai.com</span> is not covered by your proxy rules, or is blocked on its own.
+        Add it to the same rule as <span class="mono">chatgpt.com</span>, pointing at the same node.</li>
+    <li><strong>Sign-in and auth fails</strong>: the web app gets stuck on the sign-in page and <span class="mono">codex login</span> cannot complete browser authorization.</li>
+    <li><strong>Web static assets fail</strong>: <span class="mono">chatgpt.com</span> itself connects, but the page is blank and buttons do nothing.</li>
+    <li><strong>Endpoints exit in different countries</strong>: web and Codex requests from one account arrive from two countries, one of the most common risk-control triggers.</li>
+    <li><strong>IPv6 notice</strong>: when OpenAI sees an IPv6 exit, a separate notice appears at the top. Geolocation data for IPv6 is generally less accurate than for IPv4,
+        and proxy IPv6 exits are often whole hosting ranges. Disable IPv6 for OpenAI domains or make the system prefer IPv4.</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>Codex reports a network error but ChatGPT web works. Is OpenAI down?</dt>
+    <dd>Check the "Codex / OpenAI API" row first. If it fails while ChatGPT web works, your local routing rules almost certainly don't cover api.openai.com. If both rows are fine, check the service status page for an OpenAI outage.</dd>
+    <dt>If my exit is in a supported region, is my account safe?</dt>
+    <dd>Not necessarily. Hosting IPs, frequent node switching, a browser time zone that doesn't match the exit, and payment details that don't match the exit can all trigger risk controls. To see whether the exit IP is residential or hosting and has proxy history, paste it into the lookup on the home page.</dd>
+    <dt>Does this site record the results?</dt>
+    <dd>Nothing is sent back to this site. All requests go straight from your browser to each OpenAI endpoint, without cookies or a referrer. The "Check history" at the bottom of the page lives only in your browser's localStorage (exit address, country and verdict, up to 20 entries); click "Clear" to delete it.</dd>
+  </dl>
+</article>

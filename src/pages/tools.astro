@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/tools.html?raw";
+import zhHtml from "../snippets/tools.html?raw";
+import enHtml from "../snippets/en/tools.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="全部工具 · JudgeIP"
-  description="JudgeIP 的全部 IP 查询、泄露检测、分流与节点测试工具列表。"
+  title={pick(lang, '全部工具 · JudgeIP', 'All tools · JudgeIP')}
+  description={pick(lang, 'JudgeIP 的全部 IP 查询、泄露检测、分流与节点测试工具列表。', 'Every JudgeIP tool: IP lookup, leak tests, split routing and edge node checks.')}
   canonicalPath="/tools"
   bodyClass="page-tools"
-  currentLabel="全部工具"
+  currentLabel={pick(lang, '全部工具', 'All tools')}
   activeNav="/tools"
   extraCss={[]}
   extraJs={[]}

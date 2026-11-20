@@ -1,0 +1,569 @@
+
+<section class="hero">
+  <h1 class="hero__title">AI access check</h1>
+  <p class="hero__lede">Checks whether ChatGPT, Claude and other AI services are reachable, and whether the region they see for your exit is supported.</p>
+</section>
+
+<div class="probe ai"
+     id="ai"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-vendors="{&quot;openai&quot;:{&quot;name&quot;:&quot;OpenAI&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;]},&quot;anthropic&quot;:{&quot;name&quot;:&quot;Anthropic&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;,&quot;AF&quot;,&quot;MM&quot;,&quot;YE&quot;,&quot;XK&quot;]},&quot;google&quot;:{&quot;name&quot;:&quot;Google Gemini&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;xai&quot;:{&quot;name&quot;:&quot;xAI (Grok)&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;perplexity&quot;:{&quot;name&quot;:&quot;Perplexity&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;mistral&quot;:{&quot;name&quot;:&quot;Mistral AI&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;poe&quot;:{&quot;name&quot;:&quot;Poe&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;deepseek&quot;:{&quot;name&quot;:&quot;DeepSeek&quot;,&quot;basis&quot;:&quot;reference&quot;,&quot;denied&quot;:[]}}"
+     data-tz="{&quot;US&quot;:[-600,-240],&quot;CA&quot;:[-480,-150],&quot;MX&quot;:[-480,-300],&quot;BR&quot;:[-300,-120],&quot;AR&quot;:[-180,-180],&quot;CL&quot;:[-360,-180],&quot;CO&quot;:[-300,-300],&quot;PE&quot;:[-300,-300],&quot;VE&quot;:[-240,-240],&quot;EC&quot;:[-360,-300],&quot;UY&quot;:[-180,-180],&quot;PA&quot;:[-300,-300],&quot;CR&quot;:[-360,-360],&quot;GB&quot;:[0,60],&quot;IE&quot;:[0,60],&quot;PT&quot;:[-60,60],&quot;IS&quot;:[0,0],&quot;ES&quot;:[0,120],&quot;FR&quot;:[60,120],&quot;DE&quot;:[60,120],&quot;NL&quot;:[60,120],&quot;BE&quot;:[60,120],&quot;LU&quot;:[60,120],&quot;CH&quot;:[60,120],&quot;AT&quot;:[60,120],&quot;IT&quot;:[60,120],&quot;SE&quot;:[60,120],&quot;NO&quot;:[60,120],&quot;DK&quot;:[60,120],&quot;PL&quot;:[60,120],&quot;CZ&quot;:[60,120],&quot;SK&quot;:[60,120],&quot;HU&quot;:[60,120],&quot;SI&quot;:[60,120],&quot;HR&quot;:[60,120],&quot;RS&quot;:[60,120],&quot;MT&quot;:[60,120],&quot;FI&quot;:[120,180],&quot;EE&quot;:[120,180],&quot;LV&quot;:[120,180],&quot;LT&quot;:[120,180],&quot;RO&quot;:[120,180],&quot;BG&quot;:[120,180],&quot;GR&quot;:[120,180],&quot;CY&quot;:[120,180],&quot;UA&quot;:[120,180],&quot;MD&quot;:[120,180],&quot;TR&quot;:[180,180],&quot;BY&quot;:[180,180],&quot;RU&quot;:[120,720],&quot;IL&quot;:[120,180],&quot;AE&quot;:[240,240],&quot;SA&quot;:[180,180],&quot;QA&quot;:[180,180],&quot;BH&quot;:[180,180],&quot;KW&quot;:[180,180],&quot;OM&quot;:[240,240],&quot;IR&quot;:[210,210],&quot;EG&quot;:[120,180],&quot;ZA&quot;:[120,120],&quot;NG&quot;:[60,60],&quot;KE&quot;:[180,180],&quot;MA&quot;:[0,60],&quot;IN&quot;:[330,330],&quot;PK&quot;:[300,300],&quot;BD&quot;:[360,360],&quot;LK&quot;:[330,330],&quot;NP&quot;:[345,345],&quot;KZ&quot;:[300,300],&quot;UZ&quot;:[300,300],&quot;GE&quot;:[240,240],&quot;AM&quot;:[240,240],&quot;AZ&quot;:[240,240],&quot;TH&quot;:[420,420],&quot;VN&quot;:[420,420],&quot;KH&quot;:[420,420],&quot;LA&quot;:[420,420],&quot;MM&quot;:[390,390],&quot;ID&quot;:[420,540],&quot;MY&quot;:[480,480],&quot;SG&quot;:[480,480],&quot;PH&quot;:[480,480],&quot;BN&quot;:[480,480],&quot;CN&quot;:[480,480],&quot;HK&quot;:[480,480],&quot;MO&quot;:[480,480],&quot;TW&quot;:[480,480],&quot;MN&quot;:[420,480],&quot;JP&quot;:[540,540],&quot;KR&quot;:[540,540],&quot;AU&quot;:[480,660],&quot;NZ&quot;:[720,780]}"
+     data-lanes="4"
+     data-trace-timeout="8000"
+     data-optional-timeout="5000"
+     data-timing-timeout="6000"
+     data-rounds="3"
+     data-fast="250"
+     data-slow="500">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-ai-run>Run again</button>
+    <span class="probe__hint" data-ai-progress>Starts when the page opens: your browser requests 13 endpoints directly, 4 at a time. For services behind Cloudflare it first reads the exit they see, then measures latency three times per endpoint and takes the median. Results usually arrive within 10–20 seconds.</span>
+  </div>
+
+  <div class="verdict" data-ai-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ai-verdict-title></p>
+      <div class="ainotes" data-ai-verdict-notes></div>
+    </div>
+  </div>
+
+  <div class="fixnote" data-ai-v6 hidden>
+    <p class="fixnote__title">Your browser reaches AI services over IPv6. This is not recommended</p>
+    <p class="fixnote__note" data-ai-v6-note></p>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">OpenAI</h2>
+      <div class="rows aitable" role="table" aria-label="OpenAI exits and availability">
+        <div class="airow airow--head" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="chatgpt"
+             data-name="ChatGPT"
+             data-vendor="openai"
+             data-trace="chatgpt.com"
+             data-optional="0"
+             data-timing="https://chatgpt.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">ChatGPT</span>
+            </span>
+            <span class="airow__how">Reads the chatgpt.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai"
+             data-name="OpenAI website"
+             data-vendor="openai"
+             data-trace="openai.com"
+             data-optional="0"
+             data-timing="https://openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI website</span>
+              <span class="tag tag--name">Website</span>
+            </span>
+            <span class="airow__how">Reads the openai.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="sora"
+             data-name="Sora"
+             data-vendor="openai"
+             data-trace="sora.com"
+             data-optional="0"
+             data-timing="https://sora.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Sora</span>
+              <span class="tag tag--name">Video</span>
+            </span>
+            <span class="airow__how">Reads the sora.com trace · available in fewer regions than ChatGPT</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-api"
+             data-name="OpenAI API / Codex"
+             data-vendor="openai"
+             data-trace="api.openai.com"
+             data-optional="1"
+             data-timing="https://api.openai.com/">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI API / Codex</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">Tries the api.openai.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Anthropic</h2>
+      <div class="rows aitable" role="table" aria-label="Anthropic exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="claude"
+             data-name="Claude"
+             data-vendor="anthropic"
+             data-trace="claude.ai"
+             data-optional="0"
+             data-timing="https://claude.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Claude</span>
+            </span>
+            <span class="airow__how">Reads the claude.ai trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="anthropic"
+             data-name="Anthropic website"
+             data-vendor="anthropic"
+             data-trace="www.anthropic.com"
+             data-optional="0"
+             data-timing="https://www.anthropic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Anthropic website</span>
+              <span class="tag tag--name">Website</span>
+            </span>
+            <span class="airow__how">Reads the www.anthropic.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="claude-api"
+             data-name="Claude API / Claude Code"
+             data-vendor="anthropic"
+             data-trace="api.anthropic.com"
+             data-optional="0"
+             data-timing="https://api.anthropic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Claude API / Claude Code</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">Reads the api.anthropic.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Google</h2>
+      <div class="rows aitable" role="table" aria-label="Google exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="gemini"
+             data-name="Gemini / Gemini API"
+             data-vendor="google"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://generativelanguage.googleapis.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Gemini / Gemini API</span>
+            </span>
+            <span class="airow__how">Latency only: generativelanguage.googleapis.com</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Other AI services</h2>
+      <div class="rows aitable" role="table" aria-label="Other AI services: exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="grok"
+             data-name="Grok"
+             data-vendor="xai"
+             data-trace="grok.com"
+             data-optional="0"
+             data-timing="https://grok.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Grok</span>
+              <span class="tag tag--name">xAI</span>
+            </span>
+            <span class="airow__how">Reads the grok.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="perplexity"
+             data-name="Perplexity"
+             data-vendor="perplexity"
+             data-trace="www.perplexity.ai"
+             data-optional="0"
+             data-timing="https://www.perplexity.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Perplexity</span>
+              <span class="tag tag--name">Search</span>
+            </span>
+            <span class="airow__how">Reads the www.perplexity.ai trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="mistral"
+             data-name="Mistral Le Chat"
+             data-vendor="mistral"
+             data-trace="mistral.ai"
+             data-optional="0"
+             data-timing="https://mistral.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Mistral Le Chat</span>
+              <span class="tag tag--name">Europe</span>
+            </span>
+            <span class="airow__how">Reads the mistral.ai trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="poe"
+             data-name="Poe"
+             data-vendor="poe"
+             data-trace="poe.com"
+             data-optional="0"
+             data-timing="https://poe.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Poe</span>
+              <span class="tag tag--name">Quora</span>
+            </span>
+            <span class="airow__how">Reads the poe.com trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">China reference</h2>
+      <div class="rows aitable" role="table" aria-label="China reference: exits and availability">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">Service</span>
+          <span role="columnheader">Exit IP</span>
+          <span role="columnheader">CF colo</span>
+          <span role="columnheader">Latency</span>
+          <span role="columnheader">Region</span>
+          <span class="airow__state" role="columnheader">Status</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="deepseek"
+             data-name="DeepSeek"
+             data-vendor="deepseek"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://www.deepseek.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">DeepSeek</span>
+              <span class="tag tag--cn">China</span>
+            </span>
+            <span class="airow__how">Latency only: www.deepseek.com</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">Pending</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">Exit vs. environment</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Exit seen by AI services</div>
+          <div class="row__value" data-ai-sum-exit><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Address seen by this site</div>
+          <div class="row__value aisum">
+            <span class="mono">__VISITOR_IP__</span>
+            <span class="aisum__tags" data-ai-sum-self></span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Browser time zone</div>
+          <div class="row__value aisum" data-ai-sum-tz><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Browser language</div>
+          <div class="row__value aisum" data-ai-sum-lang><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Related checks</div>
+          <div class="row__value ailinks">
+            <a href="/en/claude">Claude check</a><span class="dim">: browser environment score from 10 signals (time zone, language, fonts…)</span><br>
+            <a href="/en/split">Split routing test</a><span class="dim">: the exit seen by dozens of sites in and outside China</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">Supported regions by vendor</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">OpenAI</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">Not available in:</span>
+            <span class="tags">
+              <span class="tag tag--muted">Mainland China</span>
+              <span class="tag tag--muted">Hong Kong</span>
+              <span class="tag tag--muted">Macau</span>
+              <span class="tag tag--muted">Russia</span>
+              <span class="tag tag--muted">Belarus</span>
+              <span class="tag tag--muted">Iran</span>
+              <span class="tag tag--muted">North Korea</span>
+              <span class="tag tag--muted">Syria</span>
+              <span class="tag tag--muted">Cuba</span>
+              <span class="tag tag--muted">Venezuela</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://developers.openai.com/api/docs/supported-countries" target="_blank" rel="noopener external">Official list</a> ·
+              ChatGPT, Sora and the API share this list. Sora is open in fewer regions; check the OpenAI help center.            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Anthropic</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">Not available in:</span>
+            <span class="tags">
+              <span class="tag tag--muted">Mainland China</span>
+              <span class="tag tag--muted">Hong Kong</span>
+              <span class="tag tag--muted">Macau</span>
+              <span class="tag tag--muted">Russia</span>
+              <span class="tag tag--muted">Belarus</span>
+              <span class="tag tag--muted">Iran</span>
+              <span class="tag tag--muted">North Korea</span>
+              <span class="tag tag--muted">Syria</span>
+              <span class="tag tag--muted">Cuba</span>
+              <span class="tag tag--muted">Venezuela</span>
+              <span class="tag tag--muted">Afghanistan</span>
+              <span class="tag tag--muted">Myanmar</span>
+              <span class="tag tag--muted">Yemen</span>
+              <span class="tag tag--muted">Kosovo</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://www.anthropic.com/legal/supported-regions" target="_blank" rel="noopener external">Official list</a> ·
+              Claude on the web, Claude Code and the API share this list. Occupied regions of Ukraine are also excluded, but a web page cannot tell them apart.            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Google Gemini</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">Not available in:</span>
+            <span class="tags">
+              <span class="tag tag--muted">Mainland China</span>
+              <span class="tag tag--muted">Hong Kong</span>
+              <span class="tag tag--muted">Macau</span>
+              <span class="tag tag--muted">Russia</span>
+              <span class="tag tag--muted">Belarus</span>
+              <span class="tag tag--muted">Iran</span>
+              <span class="tag tag--muted">North Korea</span>
+              <span class="tag tag--muted">Syria</span>
+              <span class="tag tag--muted">Cuba</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://ai.google.dev/gemini-api/docs/available-regions" target="_blank" rel="noopener external">Official list</a> ·
+              Google is not behind Cloudflare, so a web page cannot read the exit it sees. This vendor is listed for reference only.            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Other AI services</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">xAI (Grok), Perplexity, Mistral AI and Poe publish no per-country list. Inferred from commonly restricted regions:</span>
+            <span class="tags">
+              <span class="tag tag--muted">Mainland China</span>
+              <span class="tag tag--muted">Russia</span>
+              <span class="tag tag--muted">Belarus</span>
+              <span class="tag tag--muted">Iran</span>
+              <span class="tag tag--muted">North Korea</span>
+              <span class="tag tag--muted">Syria</span>
+              <span class="tag tag--muted">Cuba</span>
+            </span>
+            <span class="ailist__src">Regions under comprehensive US/EU sanctions or widely cut off, plus mainland China, where no foreign generative AI service is licensed. A match is shown as "may be restricted", never as "not supported".</span>
+          </div>
+        </div>
+      </div>
+      <p class="ailist__foot">Lists compiled on 2026-10-26. Only countries and regions missing from the official allow lists are shown (overseas territories of listed countries are supported). Vendors change their lists; the official pages take precedence.</p>
+    </section>
+  </div>
+
+  <section class="group history" data-history="judgeip:history:ai" hidden>
+    <h2 class="group__title">Check history <button class="history__clear" type="button" data-history-clear hidden>Clear</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">Stored only in this browser (localStorage), up to 20 entries, never sent to this site.</p>
+  </section>
+  <noscript>
+    <p class="notice" role="alert">
+      <span>The AI access check needs your browser to contact each service directly. JavaScript is disabled, so this page can only show the service list, region lists and notes, not results.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What the AI access check is</h2>
+  <p>
+    ChatGPT, Claude and Gemini decide your region from your IP. OpenAI, Anthropic and Google each publish a list of supported regions;
+    mainland China, Hong Kong, Macau, Russia, Iran and others are not on it. Access from those regions ranges from blocked pages and repeated verification
+    to failed sign-ups, declined payments and suspended accounts. "Access" here means these services see an exit in a supported region.
+  </p>
+  <p>
+    The catch: <strong>the exit you expect is not always the exit they see</strong>. With a proxy in rule mode, each domain follows its own rule:
+    chatgpt.com may go through a US node while api.openai.com connects directly because a rule is missing; claude.ai may exit in Japan and api.anthropic.com in Hong Kong.
+    This site's server only sees the route you use to reach it, so each service has to report where it sees you coming from.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>For services behind Cloudflare, read their <span class="mono">/cdn-cgi/trace</span>. Cloudflare's edge exposes this diagnostic path on every site it serves.
+        It returns plain text: <span class="mono">ip</span> is the exit IP the service sees, <span class="mono">loc</span> is the country Cloudflare assigns,
+        and <span class="mono">colo</span> is the data center you hit. This is the same information the service uses to decide your region.</li>
+    <li>Send three more timing-only requests to the same URL and use the median as latency. The first request usually includes DNS resolution and the TLS handshake, so a single measurement reads high.</li>
+    <li>Google and DeepSeek are not behind Cloudflare, so the page cannot read the exit they see; it only measures whether they connect and how fast.
+        DeepSeek is the China reference: if every foreign AI service fails but DeepSeek works, the network itself is fine and the problem is the proxy or a block.</li>
+    <li>Compare each row's <span class="mono">loc</span> with the vendor's supported-region list below, compare your browser time zone and language with the exit country,
+        and show the address this site sees next to the exits the AI services see.</li>
+  </ol>
+  <p>
+    All requests go straight from your browser, without cookies or a referrer, and results are not sent back to this site. A summary of each run's exits is saved in this browser's "Check history" and can be cleared at any time.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>Region "Supported"</strong>: the exit this service sees is in its official supported regions. This is a precondition for normal use, not a guarantee.
+        To see whether the exit IP is residential or hosting and has proxy history, paste it into the lookup on the home page.</li>
+    <li><strong>Region "Not supported"</strong>: the exit is outside the official list. Don't sign in from it; route this vendor's domains to a node in a supported region first.</li>
+    <li><strong>Region "May be restricted"</strong>: the vendor publishes no per-country list and the exit is in a commonly restricted region (sanctioned regions or mainland China). Informational only.</li>
+    <li><strong>Exit countries differ</strong>: your routing rules send AI services to different nodes. Differences between vendors matter little.
+        Differences between one vendor's own endpoints (web and API) are worth fixing: requests from one account switching between two countries is one of the most common risk-control triggers.</li>
+    <li><strong>"Time zone does not match exit"</strong>: your browser time zone differs from the exit country's by more than an hour. Web pages and desktop clients can both read the system time zone,
+        which makes it the cheapest proxy signal. Neighboring regions (for example Shanghai and Singapore) do not trigger this.</li>
+    <li><strong>"Unreachable"</strong>: the request timed out or was refused. If only a few services fail, their domains are probably not covered by your proxy rules,
+        or the service is having an outage; check the <a href="/en/status">service status</a> page.</li>
+  </ul>
+  <p class="prose__note">
+    The region lists are compiled by hand from each vendor's official pages and change with policy; the official pages take precedence.
+    Cloudflare's <span class="mono">loc</span> occasionally differs from a vendor's own geolocation data, especially for recently reassigned IP ranges. Treat results as risk hints, not a final verdict on your account.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>If the region shows "Not supported", will my account be banned?</dt>
+    <dd>Not necessarily, but the risk is real. OpenAI, Anthropic and Google all publish supported-region lists and do not serve regions outside them. Signing up or signing in from such an exit commonly leads to repeated verification, failed payments and limited features, and in serious cases a suspended account. Conversely, an exit in a supported region is not automatically safe: hosting IPs, frequent node switching, or payment details that don't match the exit can also draw risk-control attention. This page gives risk hints, not a final verdict on your account.</dd>
+    <dt>Why do ChatGPT and Claude show different exit IPs?</dt>
+    <dd>Because your proxy routes by rule: different domains match different rules and leave through different nodes. Each row's exit is reported by that service's own Cloudflare edge in /cdn-cgi/trace, so it is the address the service actually sees. Different exits across vendors matter little. Different exits across one vendor's endpoints (for example chatgpt.com and api.openai.com, or claude.ai and api.anthropic.com) are worth fixing: requests from one account arriving from the US one moment and Japan the next is one of the most common risk-control triggers.</dd>
+    <dt>Why is there no exit for Gemini?</dt>
+    <dd>Google's services are not behind Cloudflare, and Google has no public endpoint that both allows cross-origin reads and echoes the visitor's IP, so the browser can only tell whether it connects and how fast. This page will not substitute another service's exit for the one Google sees. To check which exit Google traffic uses, look in your proxy's connection log for the rules matched by generativelanguage.googleapis.com and gemini.google.com.</dd>
+    <dt>What happens if my time zone does not match the exit?</dt>
+    <dd>Web pages and clients can read the system time zone directly. "IP in the US, time zone UTC+8" is one of the most common and cheapest signals for spotting a proxy, and according to public reverse-engineering, Claude Code reads the system time zone specifically. This page only flags a clear mismatch (more than an hour apart, with the exit country in the lookup table); neighboring regions are not flagged. For the full browser environment check (time zone, language, fonts, WebRTC and more, 10 signals), see the Claude check on this site.</dd>
+    <dt>Does this site record the results?</dt>
+    <dd>No. All requests go straight from your browser to each service, without cookies or a referrer, and results are not sent back to this site. The "Check history" at the bottom of the page lives only in your browser's localStorage (exit address, country and verdict, up to 20 entries); click "Clear" to delete it. The "address seen by this site" shown on the page is the source address of the HTTP connection that loaded it, which is why this page is never cached.</dd>
+  </dl>
+</article>

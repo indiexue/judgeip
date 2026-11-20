@@ -1,18 +1,22 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/gpt.html?raw";
+import zhHtml from "../snippets/gpt.html?raw";
+import enHtml from "../snippets/en/gpt.html?raw";
+import { getLang, pick } from "../lib/i18n";
 import { extractVisitorIp } from "../lib/ip-utils";
 
+const lang = getLang(Astro.locals);
+
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="GPT · Codex 检测 — ChatGPT 网页与 Codex / API 出口分别检测 · JudgeIP"
-  description="分别检测 chatgpt.com、auth.openai.com 与 api.openai.com 的出口 IP、地区与可用性，排查网页能用但 Codex 连不上的问题。"
+  title={pick(lang, 'GPT · Codex 检测 — ChatGPT 网页与 Codex / API 出口分别检测 · JudgeIP', 'GPT · Codex check: ChatGPT web and Codex / API exits · JudgeIP')}
+  description={pick(lang, '分别检测 chatgpt.com、auth.openai.com 与 api.openai.com 的出口 IP、地区与可用性，排查网页能用但 Codex 连不上的问题。', 'Checks the exit IP, region and availability of chatgpt.com, auth.openai.com and api.openai.com separately, to find out why the web app works but Codex does not.')}
   canonicalPath="/gpt"
   bodyClass="page-ai page-gpt"
-  currentLabel="GPT · Codex 检测"
+  currentLabel={pick(lang, 'GPT · Codex 检测', 'GPT · Codex check')}
   activeNav="/gpt"
   extraCss={["/assets/css/ai.css"]}
   extraJs={["/assets/js/probe.js", "/assets/js/history.js", "/assets/js/ai.js"]}

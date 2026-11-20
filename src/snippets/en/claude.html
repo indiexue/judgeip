@@ -1,0 +1,324 @@
+
+<section class="hero">
+  <h1 class="hero__title">Claude check</h1>
+  <p class="hero__lede">Estimates, from browser signals such as time zone, language and fonts, how likely Claude is to classify you as a user in China.</p>
+</section>
+
+<div class="probe"
+     id="claude"
+     data-visible-ip="__VISITOR_IP__"
+     data-stun="stun:cn.stun.im:3478 stun:jp.stun.im:3478">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-claude-run>Start</button>
+    <span class="probe__hint" data-claude-progress>Checks 10 signals one by one, entirely in your browser. Results take a few seconds.</span>
+  </div>
+
+  <div class="verdict" data-claude-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-claude-verdict-title></p>
+      <p class="verdict__note" data-claude-verdict-note></p>
+    </div>
+  </div>
+
+    <div class="fixnote" data-claude-fix hidden>
+    <p class="fixnote__title">Start with the two heaviest signals</p>
+    <p class="fixnote__note">
+      System time zone and browser language together account for 42 points and are the easiest to change: switch the system time zone to one outside China,
+      move zh-CN off the top of your browser language list, then run the check again. The other signals are covered below.
+    </p>
+    <a class="fixnote__link" href="#claude-reduce">How to lower each signal ↓</a>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">Summary</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Risk score</div>
+          <div class="row__value" data-claude-score><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Risk level</div>
+          <div class="row__value" data-claude-band><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Matched signals</div>
+          <div class="row__value" data-claude-hits><span class="dim">Not checked yet</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">Signals</h2>
+      <div class="rows">
+        <div class="sig"
+             data-signal="timezone"
+             data-name="System time zone"
+             data-weight="24">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">System time zone</span>
+              <span class="tag tag--name">Weight 24</span>
+              <span class="tag tag--claude" title="This is the signal read by Claude Code's disclosed mechanism">Same as Claude</span>
+            </div>
+            <p class="sig__desc">Intl.DateTimeFormat returns the same OS time zone that Claude Code reads. It is compared with China time zones such as Asia/Shanghai and Asia/Urumqi; Hong Kong and Macau time zones count as partial risk.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="language"
+             data-name="Browser language"
+             data-weight="18">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Browser language</span>
+              <span class="tag tag--name">Weight 18</span>
+            </div>
+            <p class="sig__desc">The order of navigator.languages: zh-CN / Simplified Chinese first scores highest, Traditional Chinese (Hong Kong, Macau) counts half, zh-TW does not count.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="fonts"
+             data-name="Chinese fonts installed"
+             data-weight="14">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Chinese fonts installed</span>
+              <span class="tag tag--name">Weight 14</span>
+            </div>
+            <p class="sig__desc">Measures glyph widths on a canvas to detect whether Simplified or Traditional Chinese fonts such as Microsoft YaHei, PingFang or Source Han Sans are installed.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="vendorFonts"
+             data-name="Chinese vendor fonts"
+             data-weight="10">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Chinese vendor fonts</span>
+              <span class="tag tag--name">Weight 10</span>
+            </div>
+            <p class="sig__desc">The same method detects fonts shipped by Chinese vendors and software, such as MiSans, HarmonyOS Sans, OPPO Sans and the Founder fonts bundled with WPS. A match is a strong signal.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="webrtcLeak"
+             data-name="WebRTC IP leak"
+             data-weight="10">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">WebRTC IP leak</span>
+              <span class="tag tag--name">Weight 10</span>
+            </div>
+            <p class="sig__desc">Has RTCPeerConnection gather ICE candidates from a STUN server once, to see whether the browser reveals a local or public address. Full score if the public address differs from the one this site sees.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="cnBrowser"
+             data-name="Chinese browser / WebView"
+             data-weight="8">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Chinese browser / WebView</span>
+              <span class="tag tag--name">Weight 8</span>
+            </div>
+            <p class="sig__desc">Matches UA and UA-CH brands against Chinese browsers and in-app WebViews: WeChat, QQ, Quark, UC, Baidu, 360, Sogou, Douyin and others.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="deviceVendor"
+             data-name="Chinese-brand device"
+             data-weight="6">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Chinese-brand device</span>
+              <span class="tag tag--name">Weight 6</span>
+            </div>
+            <p class="sig__desc">Matches the UA-CH device model (navigator.userAgentData) and UA against Chinese brands such as HarmonyOS, Huawei, Xiaomi, OPPO and vivo.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="intlLocale"
+             data-name="Intl locale"
+             data-weight="4">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Intl locale</span>
+              <span class="tag tag--name">Weight 4</span>
+            </div>
+            <p class="sig__desc">The locale the browser uses for date and number formatting. It usually follows the system region.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="timezoneOffset"
+             data-name="Time zone offset"
+             data-weight="3">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Time zone offset</span>
+              <span class="tag tag--name">Weight 3</span>
+            </div>
+            <p class="sig__desc">Whether getTimezoneOffset() is UTC+8. Singapore, Malaysia and Western Australia share this offset, so the weight is kept low.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="sig"
+             data-signal="emoji"
+             data-name="Emoji style"
+             data-weight="3">
+          <div class="sig__main">
+            <div class="sig__head">
+              <span class="sig__name">Emoji style</span>
+              <span class="tag tag--name">Weight 3</span>
+            </div>
+            <p class="sig__desc">The emoji vendor (Apple / Google / Microsoft…) inferred from the platform and UA. Weak supporting evidence only.</p>
+          </div>
+          <div class="sig__result" data-sig-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="group history" data-history="judgeip:history:claude" hidden>
+    <h2 class="group__title">Check history <button class="history__clear" type="button" data-history-clear hidden>Clear</button></h2>
+    <div class="rows" data-history-list></div>
+    <p class="history__foot">Stores only the score, level and names of matched signals in this browser (localStorage), up to 20 entries, never sent to this site. Useful for comparing runs after you change settings.</p>
+  </section>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Time zone, language and font signals can only be read in the browser. JavaScript is disabled, so this page can only show the signal list and notes, not results.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What "China user" detection in Claude means</h2>
+  <p>
+    Anthropic does not serve mainland China, and its official endpoints block access by region. Being flagged while still able to connect matters more than being blocked.
+    Public reverse-engineering found that when Claude Code is pointed at an unofficial relay via <span class="mono">ANTHROPIC_BASE_URL</span>,
+    it reads the <strong>OS time zone</strong> and the <strong>relay hostname</strong>,
+    then encodes the result steganographically in the "Today's date is …" line of the system prompt:
+    with a China time zone, the date separator changes from <span class="mono">-</span> to <span class="mono">/</span>;
+    the apostrophe switches between four visually near-identical Unicode variants to encode whether the hostname matched a domain list or AI-lab keywords.
+    These markers go to the server with every request and are invisible to the eye.
+  </p>
+  <p>
+    Detection is not a single switch; it adds up several weak signals into a probability. The system time zone weighs the most:
+    it accompanies every request and is hard to fake by accident. Language, fonts, device brand and network exit add weight on top.
+    A US time zone combined with a full set of Chinese fonts and a WeChat WebView still reads as suspicious.
+    The browser reveals this much because regional settings reach into many places:
+    the system time zone drives <span class="mono">Intl</span> and <span class="mono">Date</span>,
+    language preferences drive <span class="mono">navigator.languages</span> and the Accept-Language header,
+    and installed system fonts can be measured pixel by pixel on a canvas.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>Read the system time zone resolved by <span class="mono">Intl.DateTimeFormat</span>.
+        It is the only signal where a web page and Claude Code read the same value, so it has the highest weight (24 points).</li>
+    <li>Check the regional settings in turn: browser language list, Intl locale and UTC offset.</li>
+    <li>Measure glyph widths on a canvas to detect Chinese and Chinese-vendor fonts. Whether a font is installed shows up directly in the rendered width.</li>
+    <li>Identify Chinese browsers, in-app WebViews and device brands from the UA and UA-CH.</li>
+    <li>Have WebRTC gather ICE candidates from a STUN server once to see whether it reveals a local or public address, and compare it with the address this site sees at the HTTP layer.</li>
+    <li>Each signal gets a "China similarity" between 0 and 1, multiplied by its weight and summed. The 10 weights add up to 100, so the total is the risk score.</li>
+  </ol>
+  <p>
+    Every probe only reads browser APIs, and the values never leave this page. Signals light up one at a time instead of all at once
+    so you can see which ones raise the score, and know which to change first.
+  </p>
+
+  <p class="prose__note">
+    This page only looks at the browser environment. To see which country Claude and ChatGPT actually see your exit IP in, and whether it is a supported region, use
+    <a href="/en/ai">AI access check</a>. To see which exit every site uses, use <a href="/en/split">Split routing test</a>.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>0–30 low risk</strong>: no obvious China traces in the visible browser fingerprint.
+        This does not mean the account is safe: exit IP, payment method and account behavior are outside what this page can see.</li>
+    <li><strong>31–60 medium risk</strong>: several fingerprints point to a Chinese environment,
+        enough together to put risk controls on alert. Usually either time zone or language matches, plus some fonts.</li>
+    <li><strong>61–100 high risk</strong>: several high-weight signals match at once.
+        Under the disclosed mechanism, such an environment marks every request as "looks like a China user".</li>
+    <li><strong>Colors per signal</strong>: a score ≥ 0.25 counts as a match (amber), ≥ 0.6 as a strong match (red).
+        The "+N" on the right is the points that signal actually contributes: similarity × weight.</li>
+  </ul>
+  <p class="prose__note">
+    Taiwan is not on Anthropic's restricted list, so the <span class="mono">Asia/Taipei</span> time zone and zh-TW language / locale
+    <strong>score nothing</strong>, and Traditional Chinese fonts keep only a very small score (Taiwan cannot be told apart from Hong Kong and Macau).
+    Hong Kong and Macau are restricted regions, so related signals keep a partial score.
+  </p>
+
+  <h2 id="claude-reduce">How to lower the risk score</h2>
+  <p>Ordered by weight, highest first. Each step maps to one signal above; run the check again after each step:</p>
+  <ol>
+    <li><strong>Change the system time zone.</strong> Switch the OS time zone to one outside China (for example America/New_York or Europe/London),
+        and confirm <span class="mono">getTimezoneOffset()</span> is no longer UTC+8. This single step has the largest effect.
+        If you run Claude Code through a relay on a host in China, also override it with the <span class="mono">TZ</span> environment variable.</li>
+    <li><strong>Reorder languages.</strong> Remove zh-CN / zh-Hans from the top of your browser and system language lists
+        so that <span class="mono">navigator.languages</span> and Accept-Language start with English or another non-Chinese locale.</li>
+    <li><strong>Isolate Chinese and vendor fonts.</strong> Fonts such as Microsoft YaHei, PingFang, MiSans and HarmonyOS Sans are measurable on a canvas as soon as they are installed.
+        Running Claude in a clean browser profile or a separate system environment is more practical than uninstalling fonts one by one.</li>
+    <li><strong>Block WebRTC and use a residential exit.</strong> First confirm in this site's WebRTC leak test that your real address does not leak;
+        prefer a residential IP over a data-center IP so the network exit does not undo an otherwise clean environment.</li>
+    <li><strong>Relay hostname.</strong> When Claude Code goes through a relay,
+        the hostname in <span class="mono">ANTHROPIC_BASE_URL</span> is the second of the two signals it reads.
+        A web page cannot see it, so this check does not score it.</li>
+  </ol>
+  <p>
+    One more point: <strong>disguising every signal to the extreme is itself a fingerprint</strong>.
+    An English time zone with a full set of Chinese fonts, or a browser with a single language in its list,
+    is just as rare statistically. The goal is to look like an ordinary user outside China, not to show nothing at all.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>Does Claude really read my time zone?</dt>
+    <dd>According to public reverse-engineering, when Claude Code is pointed at an unofficial endpoint via ANTHROPIC_BASE_URL, it reads the OS time zone and the relay hostname, then hides the result in the "Today&#039;s date" line of the system prompt using a few visually near-identical Unicode characters. The time zone this page reads through Intl.DateTimeFormat is that same system time zone.</dd>
+    <dt>Is this score Claude's actual verdict?</dt>
+    <dd>No. Of the ten signals, only the system time zone maps directly to the disclosed mechanism; the other nine are related "Chinese environment" fingerprints. Anthropic's actual risk controls also look at the exit IP's owner, payment method, account age and usage patterns, none of which a web page can see. The score is an estimate, not a conclusion.</dd>
+    <dt>Does a low score mean I won't be banned?</dt>
+    <dd>No guarantee. This page only measures fingerprints visible to the browser; a data-center exit or a high-risk virtual card can still get an account flagged. A low score removes obvious tells in your local environment, not all risk. Use the IP check on the home page to see whether the exit address is residential and whether it has proxy history.</dd>
+    <dt>Will the score change if I switch IPs or use a VPN?</dt>
+    <dd>Mostly not. Time zone, language, fonts and device model come from the OS and browser, not the network exit, which is why many "clean" VPN setups still score high here. Only the WebRTC signal depends on the network.</dd>
+    <dt>Does this site store the results?</dt>
+    <dd>No. Every check runs in your browser, and the detected time zone, language, fonts and device details are not sent back to this site. The WebRTC signal sends one request to a STUN server; the address it returns stays on this page and disappears when you close it. The "Check history" at the bottom of the page stores only the score, level and names of matched signals in your browser, none of the detected values; click "Clear" to delete it.</dd>
+  </dl>
+
+  <p class="prose__note">
+    The signal list, weights and scoring rules on this page come from the open-source project
+    <a href="https://github.com/LinXiaoTao/FuckClaude" target="_blank" rel="noopener external">FuckClaude</a> (MIT license, © LinXiaoTao),
+    reimplemented under this site's no-build, no-framework approach. Results are for reference only and are based on public reverse-engineering of early Claude Code relay fingerprinting;
+    they are not an official statement from Anthropic and are not advice.
+  </p>
+</article>

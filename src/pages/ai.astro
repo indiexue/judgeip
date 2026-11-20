@@ -1,18 +1,22 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/ai.html?raw";
+import zhHtml from "../snippets/ai.html?raw";
+import enHtml from "../snippets/en/ai.html?raw";
+import { getLang, pick } from "../lib/i18n";
 import { extractVisitorIp } from "../lib/ip-utils";
 
+const lang = getLang(Astro.locals);
+
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="AI 解锁检测 — ChatGPT、Claude、Gemini、Grok 能不能用 · JudgeIP"
-  description="检测 ChatGPT、Claude、Gemini、Grok、Perplexity 等主流 AI 服务可达性与地区限制。"
+  title={pick(lang, 'AI 解锁检测 — ChatGPT、Claude、Gemini、Grok 能不能用 · JudgeIP', 'AI access check: can you use ChatGPT, Claude, Gemini, Grok · JudgeIP')}
+  description={pick(lang, '检测 ChatGPT、Claude、Gemini、Grok、Perplexity 等主流 AI 服务可达性与地区限制。', 'Checks whether ChatGPT, Claude, Gemini, Grok, Perplexity and other AI services are reachable from your network and whether your exit region is supported.')}
   canonicalPath="/ai"
   bodyClass="page-ai"
-  currentLabel="AI 解锁检测"
+  currentLabel={pick(lang, 'AI 解锁检测', 'AI access check')}
   activeNav="/ai"
   extraCss={["/assets/css/ai.css"]}
   extraJs={["/assets/js/probe.js", "/assets/js/history.js", "/assets/js/ai.js"]}

@@ -1,4 +1,6 @@
 ---
+import { getLang, localePath, splitLocale, type Lang } from '../lib/i18n';
+
 interface Props {
   title: string;
   description: string;
@@ -23,22 +25,105 @@ const {
   wideWrap = true,
 } = Astro.props;
 
-const canonicalUrl = `https://judgeip.com${canonicalPath}`;
+const lang: Lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+/* canonicalPath 由各页按中文路径给出；英文页的 canonical 自动挂到 /en 下，两种语言互相用 hreflang 指向 */
+const basePath = splitLocale(canonicalPath).path;
+const zhUrl = `https://judgeip.com${basePath}`;
+const enUrl = `https://judgeip.com${localePath(basePath, 'en')}`;
+const canonicalUrl = en ? enUrl : zhUrl;
+/* 语言切换保留当前页与查询参数 */
+const search = Astro.url.search || '';
+const switchHref = (en ? basePath : localePath(basePath, 'en')) + search;
+
 const isLeakActive = ['/webrtc', '/dnsleak', '/fingerprint', '/headers'].includes(activeNav);
 const isNetActive = ['/connectivity', '/cloudflare', '/cdn', '/split', '/ping'].includes(activeNav);
 const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/status'].includes(activeNav);
+
+const topNav = [
+  { path: '/', label: t('IP 检视', 'My IP') },
+  { path: '/check', label: t('环境体检', 'Checkup') },
+  { path: '/claude', label: t('Claude 检测', 'Claude Check') },
+  { path: '/ai', label: t('AI 解锁', 'AI Access') },
+  { path: '/gpt', label: t('GPT 检测', 'GPT Check') },
+];
+
+const navGroups = [
+  {
+    label: t('泄露与指纹', 'Leaks'),
+    path: '/webrtc',
+    active: isLeakActive,
+    items: [
+      { path: '/webrtc', label: t('WebRTC 泄露检测', 'WebRTC Leak Test') },
+      { path: '/dnsleak', label: t('DNS 泄露检测', 'DNS Leak Test') },
+      { path: '/fingerprint', label: t('浏览器指纹检测', 'Browser Fingerprint') },
+      { path: '/headers', label: t('HTTP 请求头 / UA', 'HTTP Headers / UA') },
+    ],
+  },
+  {
+    label: t('节点与分流', 'Routing'),
+    path: '/connectivity',
+    active: isNetActive,
+    items: [
+      { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
+      { path: '/split', label: t('网站分流测试', 'Split Routing Test') },
+      { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
+      { path: '/cdn', label: t('CDN 命中节点', 'CDN Edge Nodes') },
+      { path: '/ping', label: t('全球 Ping 测试', 'Global Ping') },
+    ],
+  },
+  {
+    label: t('查询工具', 'Tools'),
+    path: '/tools',
+    active: isToolsActive,
+    items: [
+      { path: '/whois', label: t('Whois / RDAP 查询', 'Whois / RDAP') },
+      { path: '/dns-tools', label: t('DNS 解析与黑名单', 'DNS & Blocklists') },
+      { path: '/ip-calc', label: t('CIDR 子网计算器', 'CIDR Calculator') },
+      { path: '/card', label: t('IP 分享卡片', 'IP Card') },
+      { path: '/status', label: t('全球服务状态', 'Service Status') },
+      { path: '/tools', label: t('全部工具 ›', 'All tools ›') },
+    ],
+  },
+];
+
+const footLinks = [
+  { path: '/', label: t('IP 检视', 'My IP') },
+  { path: '/check', label: t('环境体检', 'Checkup') },
+  { path: '/claude', label: t('Claude 检测', 'Claude Check') },
+  { path: '/ai', label: t('AI 解锁检测', 'AI Access Check') },
+  { path: '/gpt', label: t('GPT · Codex 检测', 'GPT · Codex Check') },
+  { path: '/webrtc', label: t('WebRTC 泄露', 'WebRTC Leak') },
+  { path: '/dnsleak', label: t('DNS 泄露检测', 'DNS Leak') },
+  { path: '/split', label: t('网站分流测试', 'Split Routing') },
+  { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
+  { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
+  { path: '/cdn', label: t('CDN 命中节点', 'CDN Edge Nodes') },
+  { path: '/ping', label: t('全球 Ping', 'Global Ping') },
+  { path: '/whois', label: 'Whois / RDAP' },
+  { path: '/dns-tools', label: t('DNS / 黑名单', 'DNS / Blocklists') },
+  { path: '/ip-calc', label: t('CIDR 计算器', 'CIDR Calculator') },
+  { path: '/headers', label: t('HTTP 请求头', 'HTTP Headers') },
+  { path: '/card', label: t('IP 分享卡片', 'IP Card') },
+];
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang={en ? 'en' : 'zh-CN'}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="keywords" content="IP查询,IP纯净度检测,本机IP,原生IP,ASN查询,DNS泄露检测,WebRTC泄露,Whois查询,JudgeIP" />
+    <meta name="keywords" content={t('IP查询,IP纯净度检测,本机IP,原生IP,ASN查询,DNS泄露检测,WebRTC泄露,Whois查询,JudgeIP', 'IP lookup,IP reputation,my IP,residential IP,ASN lookup,DNS leak test,WebRTC leak,Whois,JudgeIP')} />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang="zh-CN" href={zhUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={zhUrl} />
     <meta name="author" content="JudgeIP" />
     <meta name="color-scheme" content="only light" data-light="only light" data-dark="dark" />
     <meta name="theme-color" content="#f8fafc" data-light="#f8fafc" data-dark="#0b1120" />
@@ -50,7 +135,8 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content="https://judgeip.com/logo.svg" />
-    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale" content={en ? 'en_US' : 'zh_CN'} />
+    <meta property="og:locale:alternate" content={en ? 'zh_CN' : 'en_US'} />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
@@ -60,7 +146,7 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
     <link rel="stylesheet" href="/assets/vendor/open-props.min.css" />
     <link rel="stylesheet" href="/assets/vendor/normalize.min.css" />
     <link rel="stylesheet" href="/assets/css/app.css" />
-    {extraCss.map((href) => <link rel="stylesheet" href={href} />)}
+    {extraCss.map((cssHref) => <link rel="stylesheet" href={cssHref} />)}
     <script is:inline src="/assets/js/boot.js"></script>
     <script is:inline src="/assets/js/app.js" defer></script>
     {extraJs.map((src) => <script is:inline src={src} defer></script>)}
@@ -70,18 +156,18 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'JudgeIP',
-        url: 'https://judgeip.com/',
+        url: en ? 'https://judgeip.com/en' : 'https://judgeip.com/',
         description,
-        inLanguage: 'zh-CN',
+        inLanguage: en ? 'en' : 'zh-CN',
       })}
     />
   </head>
   <body class={bodyClass}>
-    <a class="skip-link" href="#main">跳到正文</a>
+    <a class="skip-link" href="#main">{t('跳到正文', 'Skip to content')}</a>
 
     <header class="navbar" data-navbar>
       <div class="navbar__inner">
-        <a class="brand" href="/" aria-label="JudgeIP 首页">
+        <a class="brand" href={href('/')} aria-label={t('JudgeIP 首页', 'JudgeIP home')}>
           <span class="brand__mark" aria-hidden="true">
             <svg viewBox="0 0 32 32" fill="none">
               <rect width="32" height="32" rx="8" fill="currentColor" />
@@ -106,49 +192,27 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
 
         <span class="navbar__current" aria-hidden="true">{currentLabel}</span>
 
-        <nav class="nav" id="site-nav" aria-label="主导航">
-          <a class={`nav__item${activeNav === '/' ? ' is-active' : ''}`} href="/" data-nav-label="IP 检视" aria-current={activeNav === '/' ? 'page' : undefined}>IP 检视</a>
-          <a class={`nav__item${activeNav === '/check' ? ' is-active' : ''}`} href="/check" data-nav-label="环境体检" aria-current={activeNav === '/check' ? 'page' : undefined}>环境体检</a>
-          <a class={`nav__item${activeNav === '/claude' ? ' is-active' : ''}`} href="/claude" data-nav-label="Claude 检测" aria-current={activeNav === '/claude' ? 'page' : undefined}>Claude 检测</a>
-          <a class={`nav__item${activeNav === '/ai' ? ' is-active' : ''}`} href="/ai" data-nav-label="AI 解锁" aria-current={activeNav === '/ai' ? 'page' : undefined}>AI 解锁</a>
-          <a class={`nav__item${activeNav === '/gpt' ? ' is-active' : ''}`} href="/gpt" data-nav-label="GPT 检测" aria-current={activeNav === '/gpt' ? 'page' : undefined}>GPT 检测</a>
+        <nav class="nav" id="site-nav" aria-label={t('主导航', 'Main navigation')}>
+          {topNav.map((item) => (
+            <a class={`nav__item${activeNav === item.path ? ' is-active' : ''}`} href={href(item.path)} data-nav-label={item.label} aria-current={activeNav === item.path ? 'page' : undefined}>{item.label}</a>
+          ))}
 
-          <div class="nav__group" data-nav-group>
-            <a class={`nav__item nav__item--group${isLeakActive ? ' is-active' : ''}`} href="/webrtc" aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>泄露与指纹</a>
-            <div class="nav__sub" role="group" aria-label="泄露与指纹">
-              <a class={`nav__subitem${activeNav === '/webrtc' ? ' is-active' : ''}`} href="/webrtc">WebRTC 泄露检测</a>
-              <a class={`nav__subitem${activeNav === '/dnsleak' ? ' is-active' : ''}`} href="/dnsleak">DNS 泄露检测</a>
-              <a class={`nav__subitem${activeNav === '/fingerprint' ? ' is-active' : ''}`} href="/fingerprint">浏览器指纹检测</a>
-              <a class={`nav__subitem${activeNav === '/headers' ? ' is-active' : ''}`} href="/headers">HTTP 请求头 / UA</a>
+          {navGroups.map((group) => (
+            <div class="nav__group" data-nav-group>
+              <a class={`nav__item nav__item--group${group.active ? ' is-active' : ''}`} href={href(group.path)} aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>{group.label}</a>
+              <div class="nav__sub" role="group" aria-label={group.label}>
+                {group.items.map((item) => (
+                  <a class={`nav__subitem${activeNav === item.path ? ' is-active' : ''}`} href={href(item.path)}>{item.label}</a>
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div class="nav__group" data-nav-group>
-            <a class={`nav__item nav__item--group${isNetActive ? ' is-active' : ''}`} href="/connectivity" aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>节点与分流</a>
-            <div class="nav__sub" role="group" aria-label="节点与分流">
-              <a class={`nav__subitem${activeNav === '/connectivity' ? ' is-active' : ''}`} href="/connectivity">网络连通性</a>
-              <a class={`nav__subitem${activeNav === '/split' ? ' is-active' : ''}`} href="/split">网站分流测试</a>
-              <a class={`nav__subitem${activeNav === '/cloudflare' ? ' is-active' : ''}`} href="/cloudflare">Cloudflare 节点</a>
-              <a class={`nav__subitem${activeNav === '/cdn' ? ' is-active' : ''}`} href="/cdn">CDN 命中节点</a>
-              <a class={`nav__subitem${activeNav === '/ping' ? ' is-active' : ''}`} href="/ping">全球 Ping 测试</a>
-            </div>
-          </div>
-
-          <div class="nav__group" data-nav-group>
-            <a class={`nav__item nav__item--group${isToolsActive ? ' is-active' : ''}`} href="/tools" aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>查询工具</a>
-            <div class="nav__sub" role="group" aria-label="查询工具">
-              <a class={`nav__subitem${activeNav === '/whois' ? ' is-active' : ''}`} href="/whois">Whois / RDAP 查询</a>
-              <a class={`nav__subitem${activeNav === '/dns-tools' ? ' is-active' : ''}`} href="/dns-tools">DNS 解析与黑名单</a>
-              <a class={`nav__subitem${activeNav === '/ip-calc' ? ' is-active' : ''}`} href="/ip-calc">CIDR 子网计算器</a>
-              <a class={`nav__subitem${activeNav === '/card' ? ' is-active' : ''}`} href="/card">IP 分享卡片</a>
-              <a class={`nav__subitem${activeNav === '/status' ? ' is-active' : ''}`} href="/status">全球服务状态</a>
-              <a class={`nav__subitem${activeNav === '/tools' ? ' is-active' : ''}`} href="/tools">全部工具总览 ›</a>
-            </div>
-          </div>
+          ))}
         </nav>
 
         <div class="navbar__actions">
-          <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换到深色模式" title="切换到深色模式">
+          <a class="lang-switch" href={switchHref} hreflang={en ? 'zh-CN' : 'en'} lang={en ? 'zh-CN' : 'en'} title={en ? '切换到中文' : 'Switch to English'}>{en ? '中文' : 'EN'}</a>
+
+          <button class="theme-toggle" type="button" data-theme-toggle aria-label={t('切换到深色模式', 'Switch to dark mode')} title={t('切换到深色模式', 'Switch to dark mode')}>
             <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M20.2 14.1A8.4 8.4 0 0 1 9.9 3.8a8.4 8.4 0 1 0 10.3 10.3z"></path>
             </svg>
@@ -158,7 +222,7 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
             </svg>
           </button>
 
-          <button class="navbar__toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="打开导航菜单">
+          <button class="navbar__toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label={t('打开导航菜单', 'Open menu')}>
             <svg class="navbar__icon navbar__icon--open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
               <path d="M4 7h16M4 12h16M4 17h16"></path>
             </svg>
@@ -178,7 +242,7 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
       <footer class="foot">
         <div class="foot__grid">
           <div class="foot__col foot__col--brand">
-            <a class="brand brand--foot" href="/" aria-label="JudgeIP 首页">
+            <a class="brand brand--foot" href={href('/')} aria-label={t('JudgeIP 首页', 'JudgeIP home')}>
               <span class="brand__mark" aria-hidden="true">
                 <svg viewBox="0 0 32 32" fill="none">
                   <rect width="32" height="32" rx="8" fill="currentColor" />
@@ -199,49 +263,36 @@ const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/
                 </svg>
               </span>
               <span class="brand__word">Judge<span class="brand__accent">IP</span></span>
+              <span class="brand__word">Judge<span class="brand__accent">IP</span></span>
             </a>
-            <p class="foot__about">高效纯粹的 IP 纯净度、RIR 原生血统、BGP/RPKI 路由与网络环境诊断工作台。</p>
+            <p class="foot__about">{t('查本机 IP、IP 类型与风险、AI 服务出口、DNS / WebRTC 泄露和路由信息。', 'Check your IP, its type and risk signals, AI service exits, DNS / WebRTC leaks and routing data.')}</p>
             <div class="foot__meta">
               <span>CLI：<span class="mono">curl -sL judgeip.com</span></span>
-              <span>联系：<span class="mono">hi@judgeip.com</span></span>
+              <span>{t('联系', 'Contact')}：<span class="mono">hi@judgeip.com</span></span>
             </div>
           </div>
 
           <nav class="foot__col" aria-labelledby="foot-legal">
-            <h2 class="foot__title" id="foot-legal">说明与协议</h2>
+            <h2 class="foot__title" id="foot-legal">{t('说明与协议', 'About')}</h2>
             <ul class="foot__list">
-              <li><a class="foot__link" href="/tools">全部工具索引</a></li>
-              <li><a class="foot__link" href="/status">全球服务状态</a></li>
-              <li><a class="foot__link" href="/privacy">隐私政策</a></li>
-              <li><a class="foot__link" href="/terms">服务条款</a></li>
+              <li><a class="foot__link" href={href('/tools')}>{t('全部工具', 'All tools')}</a></li>
+              <li><a class="foot__link" href={href('/status')}>{t('服务状态', 'Service status')}</a></li>
+              <li><a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a></li>
+              <li><a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a></li>
             </ul>
           </nav>
 
           <nav class="foot__col foot__col--products" aria-labelledby="foot-products">
-            <h2 class="foot__title" id="foot-products">核心检测模块</h2>
+            <h2 class="foot__title" id="foot-products">{t('检测工具', 'Checks')}</h2>
             <ul class="foot__list foot__list--grid">
-              <li><a class="foot__link" href="/">IP 纯净度检视</a></li>
-              <li><a class="foot__link" href="/check">6 维环境体检</a></li>
-              <li><a class="foot__link" href="/claude">Claude 风险检测</a></li>
-              <li><a class="foot__link" href="/ai">AI 地区解锁</a></li>
-              <li><a class="foot__link" href="/gpt">GPT · Codex 检测</a></li>
-              <li><a class="foot__link" href="/webrtc">WebRTC 泄露</a></li>
-              <li><a class="foot__link" href="/dnsleak">DNS 泄露检测</a></li>
-              <li><a class="foot__link" href="/split">网站分流测试</a></li>
-              <li><a class="foot__link" href="/connectivity">网络连通性</a></li>
-              <li><a class="foot__link" href="/cloudflare">Cloudflare 节点</a></li>
-              <li><a class="foot__link" href="/cdn">CDN 命中节点</a></li>
-              <li><a class="foot__link" href="/ping">全球 Ping</a></li>
-              <li><a class="foot__link" href="/whois">Whois / RDAP</a></li>
-              <li><a class="foot__link" href="/dns-tools">DNS / 黑名单</a></li>
-              <li><a class="foot__link" href="/ip-calc">CIDR 计算器</a></li>
-              <li><a class="foot__link" href="/headers">HTTP 请求头</a></li>
-              <li><a class="foot__link" href="/card">IP 分享卡片</a></li>
+              {footLinks.map((item) => (
+                <li><a class="foot__link" href={href(item.path)}>{item.label}</a></li>
+              ))}
             </ul>
           </nav>
         </div>
 
-        <p class="foot__copy">© 2026 JudgeIP.com · Edge Network Diagnostics</p>
+        <p class="foot__copy">© 2026 JudgeIP.com</p>
       </footer>
     </div>
   </body>

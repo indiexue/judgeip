@@ -1,18 +1,22 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/claude.html?raw";
+import zhHtml from "../snippets/claude.html?raw";
+import enHtml from "../snippets/en/claude.html?raw";
+import { getLang, pick } from "../lib/i18n";
 import { extractVisitorIp } from "../lib/ip-utils";
 
+const lang = getLang(Astro.locals);
+
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="Claude 检测 — 你的环境会被 Claude 判成中国用户吗 · JudgeIP"
-  description="根据时区、语言、字体等浏览器信号，估算 Claude 把你判为中国用户的风险。"
+  title={pick(lang, 'Claude 检测 — 你的环境会被 Claude 判成中国用户吗 · JudgeIP', 'Claude check: will your browser be classified as a China user · JudgeIP')}
+  description={pick(lang, '根据时区、语言、字体等浏览器信号，估算 Claude 把你判为中国用户的风险。', 'Estimates from browser signals such as time zone, language and fonts how likely Claude is to classify you as a user in China.')}
   canonicalPath="/claude"
   bodyClass="page-claude"
-  currentLabel="Claude 检测"
+  currentLabel={pick(lang, 'Claude 检测', 'Claude check')}
   activeNav="/claude"
   extraCss={[]}
   extraJs={["/assets/js/history.js", "/assets/js/claude.js"]}

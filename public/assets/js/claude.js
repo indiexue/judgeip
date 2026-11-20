@@ -11,6 +11,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('claude');
   if (!root) return;
 
@@ -65,41 +67,41 @@
 
   /* 国产浏览器与应用内 WebView，同时匹配 UA 与 UA-CH brands */
   var CN_BROWSERS = [
-    [/micromessenger|wxwork/i, '微信'],
-    [/mqqbrowser|qqbrowser|\bqq\//i, 'QQ 浏览器'],
-    [/quark/i, '夸克'],
-    [/ucbrowser|ucweb/i, 'UC 浏览器'],
-    [/baiduboxapp|bidubrowser|baidubrowser/i, '百度'],
-    [/miuibrowser|xiaomi\/|mibrowser/i, '小米浏览器'],
-    [/huaweibrowser/i, '华为浏览器'],
-    [/heytapbrowser|oppobrowser/i, 'HeyTap（OPPO）'],
-    [/vivobrowser/i, 'vivo 浏览器'],
-    [/sogoumobilebrowser|\bmetasr\b|\bse 2\.x\b/i, '搜狗'],
-    [/maxthon/i, '傲游'],
-    [/360se|360ee|qihoobrowser|\bqhbrowser\b/i, '360 浏览器'],
+    [/micromessenger|wxwork/i, T('微信', 'WeChat')],
+    [/mqqbrowser|qqbrowser|\bqq\//i, T('QQ 浏览器', 'QQ Browser')],
+    [/quark/i, T('夸克', 'Quark')],
+    [/ucbrowser|ucweb/i, T('UC 浏览器', 'UC Browser')],
+    [/baiduboxapp|bidubrowser|baidubrowser/i, T('百度', 'Baidu')],
+    [/miuibrowser|xiaomi\/|mibrowser/i, T('小米浏览器', 'Xiaomi Browser')],
+    [/huaweibrowser/i, T('华为浏览器', 'Huawei Browser')],
+    [/heytapbrowser|oppobrowser/i, T('HeyTap（OPPO）', 'HeyTap (OPPO)')],
+    [/vivobrowser/i, T('vivo 浏览器', 'vivo Browser')],
+    [/sogoumobilebrowser|\bmetasr\b|\bse 2\.x\b/i, T('搜狗', 'Sogou')],
+    [/maxthon/i, T('傲游', 'Maxthon')],
+    [/360se|360ee|qihoobrowser|\bqhbrowser\b/i, T('360 浏览器', '360 Browser')],
     [/2345explorer|2345browser/i, '2345'],
-    [/lbbrowser/i, '猎豹'],
-    [/theworld/i, '世界之窗'],
-    [/aweme|bytedancewebview|newsarticle|toutiaomicroapp/i, '抖音 / 头条'],
-    [/alipayclient/i, '支付宝'],
-    [/dingtalk/i, '钉钉'],
-    [/weibo/i, '微博'],
-    [/xiaohongshu|xhsminiapp/i, '小红书'],
+    [/lbbrowser/i, T('猎豹', 'Cheetah Browser')],
+    [/theworld/i, T('世界之窗', 'TheWorld')],
+    [/aweme|bytedancewebview|newsarticle|toutiaomicroapp/i, T('抖音 / 头条', 'Douyin / Toutiao')],
+    [/alipayclient/i, T('支付宝', 'Alipay')],
+    [/dingtalk/i, T('钉钉', 'DingTalk')],
+    [/weibo/i, T('微博', 'Weibo')],
+    [/xiaohongshu|xhsminiapp/i, T('小红书', 'Xiaohongshu')],
     [/\bbilibili\b/i, 'Bilibili']
   ];
 
   /* 国产品牌设备。鸿蒙是决定性的；在海外也卖的品牌打低一点 */
   var CN_DEVICES = [
     [/harmonyos|openharmony/i, 'HarmonyOS', 1],
-    [/huawei|\bhonor\b/i, '华为 / 荣耀', 0.8],
-    [/meizu/i, '魅族', 0.8],
-    [/nubia|\bzte\b/i, '中兴 / 努比亚', 0.7],
-    [/xiaomi|redmi|\bpoco\b|\bm2\d{3}[a-z0-9]+\b/i, '小米', 0.6],
+    [/huawei|\bhonor\b/i, T('华为 / 荣耀', 'Huawei / Honor'), 0.8],
+    [/meizu/i, T('魅族', 'Meizu'), 0.8],
+    [/nubia|\bzte\b/i, T('中兴 / 努比亚', 'ZTE / nubia'), 0.7],
+    [/xiaomi|redmi|\bpoco\b|\bm2\d{3}[a-z0-9]+\b/i, T('小米', 'Xiaomi'), 0.6],
     [/oppo|\bpd[a-z]m\d{2}\b/i, 'OPPO', 0.6],
     [/vivo|\bv2\d{3}[a-z]{1,2}\b/i, 'vivo', 0.6],
     [/realme|\brmx\d{4}\b/i, 'realme', 0.6],
-    [/oneplus/i, '一加', 0.6],
-    [/\blenovo\b|\bzuk\b/i, '联想', 0.5]
+    [/oneplus/i, T('一加', 'OnePlus'), 0.6],
+    [/\blenovo\b|\bzuk\b/i, T('联想', 'Lenovo'), 0.5]
   ];
 
   /* ---------------------------------------------------------------- 工具 */
@@ -153,7 +155,7 @@
     var score = CN_TIMEZONES.indexOf(tz) !== -1 ? 1
               : GREATER_CN_TIMEZONES.indexOf(tz) !== -1 ? 0.6
               : 0;
-    return outcome(tz || '未知', score);
+    return outcome(tz || T('未知', 'Unknown'), score);
   }
 
   function detectTimezoneOffset() {
@@ -212,7 +214,7 @@
     var langs = (navigator.languages && navigator.languages.length)
       ? Array.prototype.slice.call(navigator.languages)
       : [navigator.language];
-    return outcome(langs.join(', ') || '未知', scoreLanguages(langs));
+    return outcome(langs.join(', ') || T('未知', 'Unknown'), scoreLanguages(langs));
   }
 
   function detectIntlLocale() {
@@ -225,7 +227,7 @@
     var score = 0;
     if (l.indexOf('zh-cn') === 0 || l.indexOf('hans') !== -1 || l === 'zh') score = 1;
     else if (l.indexOf('zh') === 0 && l.indexOf('zh-tw') !== 0) score = 0.5;
-    return outcome(locale || '未知', score);
+    return outcome(locale || T('未知', 'Unknown'), score);
   }
 
   /* canvas 量字宽：指定字体画出来的宽度和回退字体不一样，说明这个字体真的装着 */
@@ -251,12 +253,12 @@
   }
 
   function summarize(hit, limit) {
-    return hit.slice(0, limit).join(', ') + (hit.length > limit ? '…（共 ' + hit.length + ' 种）' : '');
+    return hit.slice(0, limit).join(', ') + (hit.length > limit ? T('…（共 ', '… (') + hit.length + T(' 种）', ' total)') : '');
   }
 
   function detectFonts() {
     var ctx = fontContext();
-    if (!ctx) return outcome('canvas 不可用', 0);
+    if (!ctx) return outcome(T('canvas 不可用', 'Canvas unavailable'), 0);
 
     var sc = probeFonts(ctx, FONTS_SC);
     var tc = probeFonts(ctx, FONTS_TC);
@@ -267,17 +269,17 @@
     else if (tc.length) score = 0.2;
 
     var hit = sc.concat(tc);
-    return outcome(hit.length ? summarize(hit, 4) : '未检出', score);
+    return outcome(hit.length ? summarize(hit, 4) : T('未检出', 'None detected'), score);
   }
 
   function detectVendorFonts() {
     var ctx = fontContext();
-    if (!ctx) return outcome('canvas 不可用', 0);
+    if (!ctx) return outcome(T('canvas 不可用', 'Canvas unavailable'), 0);
 
     var hit = probeFonts(ctx, FONTS_CN_VENDOR);
     /* 一种厂商字体就几乎定案，两种以上不再有疑问 */
     var score = hit.length >= 2 ? 1 : hit.length === 1 ? 0.8 : 0;
-    return outcome(hit.length ? summarize(hit, 3) : '未检出', score);
+    return outcome(hit.length ? summarize(hit, 3) : T('未检出', 'None detected'), score);
   }
 
   function detectCnBrowser() {
@@ -285,7 +287,7 @@
     for (var i = 0; i < CN_BROWSERS.length; i++) {
       if (CN_BROWSERS[i][0].test(probe)) return outcome(CN_BROWSERS[i][1], 1);
     }
-    return outcome('未检出', 0);
+    return outcome(T('未检出', 'None detected'), 0);
   }
 
   /* UA 缩减之后 Android 的机型只剩 "K"，真正的型号要向 UA-CH 要高熵值；拿不到就退回纯 UA */
@@ -306,7 +308,7 @@
       for (var i = 0; i < CN_DEVICES.length; i++) {
         if (CN_DEVICES[i][0].test(probe)) return outcome(CN_DEVICES[i][1], CN_DEVICES[i][2]);
       }
-      return outcome('未检出', 0);
+      return outcome(T('未检出', 'None detected'), 0);
     });
   }
 
@@ -318,10 +320,11 @@
                : /android/.test(p) ? 'Google'
                : /win/.test(p) ? 'Microsoft'
                : /cros/.test(p) ? 'Google'
-               : /linux/.test(p) ? 'Linux / 其他'
-               : '未知';
-    var SCORES = { 'Apple': 0.25, 'Google': 0.35, 'Microsoft': 0.4, 'Linux / 其他': 0.5, '未知': 0.4 };
-    return outcome(vendor + ' 风格', SCORES[vendor]);
+               : /linux/.test(p) ? 'Linux'
+               : '';
+    var SCORES = { 'Apple': 0.25, 'Google': 0.35, 'Microsoft': 0.4, 'Linux': 0.5, '': 0.4 };
+    var label = vendor === 'Linux' ? T('Linux / 其他', 'Linux / other') : vendor || T('未知', 'Unknown');
+    return outcome(label + T(' 风格', ' style'), SCORES[vendor]);
   }
 
   function sameFamily(a, b) {
@@ -336,7 +339,7 @@
     return new Promise(function (resolve) {
       var PeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
       if (!PeerConnection || !stunUrls.length) {
-        resolve(outcome('浏览器不支持 WebRTC', 0));
+        resolve(outcome(T('浏览器不支持 WebRTC', 'WebRTC not supported by this browser'), 0));
         return;
       }
 
@@ -356,20 +359,20 @@
         var leaked = comparable.filter(function (a) { return a !== visibleIp; });
 
         if (leaked.length) {
-          resolve(outcome('公网地址 ' + leaked.join('、') + ' 与本站看到的 ' + visibleIp + ' 不一致', 1));
+          resolve(outcome(T('公网地址 ', 'Public address ') + leaked.join(T('、', ', ')) + T(' 与本站看到的 ', ' does not match ') + visibleIp + T(' 不一致', ' seen by this site'), 1));
         } else if (publics.length) {
-          resolve(outcome('探到公网地址 ' + publics.join('、') + (comparable.length ? '，与本站看到的一致' : ''), 0.5));
+          resolve(outcome(T('探到公网地址 ', 'Found public address ') + publics.join(T('、', ', ')) + (comparable.length ? T('，与本站看到的一致', ', same as this site sees') : ''), 0.5));
         } else if (locals.length) {
-          resolve(outcome('探到内网地址 ' + locals.join('、'), 0.5));
+          resolve(outcome(T('探到内网地址 ', 'Found local address ') + locals.join(T('、', ', ')), 0.5));
         } else {
-          resolve(outcome('未探到任何地址', 0));
+          resolve(outcome(T('未探到任何地址', 'No address found'), 0));
         }
       }
 
       try {
         pc = new PeerConnection({ iceServers: [{ urls: stunUrls }] });
       } catch (e) {
-        resolve(outcome('无法建立探测连接', 0));
+        resolve(outcome(T('无法建立探测连接', 'Could not open a probe connection'), 0));
         return;
       }
 
@@ -440,22 +443,22 @@
 
   var BANDS = {
     low: {
-      badge: 'green', score: 'good', tone: 'is-good', name: '低风险',
-      title: '低风险：浏览器环境不像中国用户',
-      note: '从浏览器可见的这几项指纹看，你的环境没有明显的中国痕迹。注意这只是本地环境的判断——'
-          + '出口 IP 的归属、支付方式与账号行为都不在本页的观察范围内。'
+      badge: 'green', score: 'good', tone: 'is-good', name: T('低风险', 'Low risk'),
+      title: T('低风险：浏览器环境不像中国用户', 'Low risk: the browser environment does not look like a user in China'),
+      note: T('从浏览器可见的这几项指纹看，你的环境没有明显的中国痕迹。这只是对本地环境的判断，', 'Based on these browser-visible fingerprints, your environment shows no obvious China traces. This only covers the local environment;')
+          + T('出口 IP 的归属、支付方式与账号行为都不在本页的观察范围内。', 'the exit IP\'s owner, payment method and account behavior are outside what this page can see.')
     },
     medium: {
-      badge: 'amber', score: 'warn', tone: 'is-warn', name: '中等风险',
-      title: '中等风险：部分信号指向中国环境',
-      note: '有几项指纹指向中国环境，叠在一起已经足以让风控系统提高警惕。'
-          + '时区与语言权重最高、也最容易改，先从它们下手，改完回到本页重测。'
+      badge: 'amber', score: 'warn', tone: 'is-warn', name: T('中等风险', 'Medium risk'),
+      title: T('中等风险：部分信号指向中国环境', 'Medium risk: some signals point to a Chinese environment'),
+      note: T('有几项指纹指向中国环境，叠在一起已经足以让风控系统提高警惕。', 'Several fingerprints point to a Chinese environment, enough together to put risk controls on alert. ')
+          + T('时区与语言权重最高、也最容易改，先从它们下手，改完回到本页重测。', 'Time zone and language weigh the most and are the easiest to change. Start with them, then run the check again.')
     },
     high: {
-      badge: 'red', score: 'bad', tone: 'is-bad', name: '高风险',
-      title: '高风险：很可能被判为中国用户',
-      note: '多项高权重信号同时命中。以 Claude Code 已披露的机制看，这样的环境每一次请求都会带上「像中国用户」的标记。'
-          + '按下文的清单逐项处理，尤其是系统时区。'
+      badge: 'red', score: 'bad', tone: 'is-bad', name: T('高风险', 'High risk'),
+      title: T('高风险：很可能被判为中国用户', 'High risk: likely to be classified as a user in China'),
+      note: T('多项高权重信号同时命中。以 Claude Code 已披露的机制看，这样的环境每一次请求都会带上「像中国用户」的标记。', 'Several high-weight signals match at once. Under the mechanism disclosed for Claude Code, such an environment marks every request as "looks like a China user". ')
+          + T('按下文的清单逐项处理，尤其是系统时区。', 'Work through the list below, starting with the system time zone.')
     }
   };
 
@@ -479,7 +482,7 @@
     var band = bandOf(total);
     var wrap = el('span', 'score score--' + band.score);
     var bar = svg('svg', { 'class': 'score__bar', viewBox: '0 0 100 6', role: 'img',
-                           'aria-label': '风险分 ' + total + ' 分，满分 100 分' });
+                           'aria-label': T('风险分 ', 'Risk score ') + total + T(' 分，满分 100 分', ' out of 100') });
     bar.appendChild(svg('rect', { 'class': 'score__track', x: 0, y: 0, width: 100, height: 6, rx: 3 }));
     if (total > 0) {
       bar.appendChild(svg('rect', { 'class': 'score__fill', x: 0, y: 0, width: total, height: 6, rx: 3 }));
@@ -513,30 +516,30 @@
 
     fill(scoreCell, [scoreNode(total)]);
     fill(bandCell, [el('span', 'badge badge--' + band.badge, band.name)]);
-    fill(hitsCell, hits.length ? [hitsNode(hits)] : [el('span', 'tag tag--ok', '无')]);
+    fill(hitsCell, hits.length ? [hitsNode(hits)] : [el('span', 'tag tag--ok', T('无', 'None'))]);
 
     verdict.className = 'verdict ' + band.tone;
     verdict.hidden = false;
     verdictTitle.textContent = total + ' / 100 · ' + band.title;
     verdictNote.textContent = band.note + (hits.length
-      ? '命中 ' + hits.length + ' 项：' + hits.map(function (hit) { return hit.name + '（+' + hit.points + '）'; }).join('、') + '。'
-      : '没有命中任何信号。');
+      ? T('命中 ', 'Matched ') + hits.length + T(' 项：', ': ') + hits.map(function (hit) { return hit.name + T('（+', ' (+') + hit.points + T('）', ')'); }).join(T('、', ', ')) + T('。', '.')
+      : T('没有命中任何信号。', 'No signals matched.'));
 
     if (history) {
       history.add({
         main: total + ' / 100',
         tone: HISTORY_TONE[band.badge] || 'muted',
         label: band.name,
-        note: hits.length ? '命中：' + hits.map(function (hit) { return hit.name; }).join('、') : '没有命中任何信号'
+        note: hits.length ? T('命中：', 'Matched: ') + hits.map(function (hit) { return hit.name; }).join(T('、', ', ')) : T('没有命中任何信号', 'No signals matched')
       });
     }
 
     /* 低风险的人不需要被塞一份整改清单 */
     if (fixNote) fixNote.hidden = band === BANDS.low;
 
-    progress.textContent = '检测完成，共 ' + rows.length + ' 项信号，命中 ' + hits.length + ' 项。';
+    progress.textContent = T('检测完成，共 ', 'Done: ') + rows.length + T(' 项信号，命中 ', ' signals, ') + hits.length + T(' 项。', ' matched.');
     runButton.disabled = false;
-    runButton.textContent = '重新检测';
+    runButton.textContent = T('重新检测', 'Run again');
   }
 
   /* ---------------------------------------------------------------- 主流程 */
@@ -548,11 +551,11 @@
 
     rows.forEach(function (row) {
       row.classList.remove('is-active', 'is-done');
-      fill(row.querySelector('[data-sig-result]'), [el('span', 'dim', '待检测')]);
+      fill(row.querySelector('[data-sig-result]'), [el('span', 'dim', T('待检测', 'Pending'))]);
     });
     fill(scoreCell, [scoreNode(0)]);
-    fill(bandCell, [el('span', 'dim', '检测中…')]);
-    fill(hitsCell, [el('span', 'dim', '检测中…')]);
+    fill(bandCell, [el('span', 'dim', T('检测中…', 'Checking…'))]);
+    fill(hitsCell, [el('span', 'dim', T('检测中…', 'Checking…'))]);
 
     var total = 0;
     var hits = [];
@@ -574,12 +577,12 @@
       var started = now();
 
       row.classList.add('is-active');
-      fill(cell, [el('span', 'dim', '检测中…')]);
-      progress.textContent = '正在检测第 ' + (index + 1) + ' / ' + rows.length + ' 项：' + name + '…';
+      fill(cell, [el('span', 'dim', T('检测中…', 'Checking…'))]);
+      progress.textContent = T('正在检测第 ', 'Checking ') + (index + 1) + ' / ' + rows.length + T(' 项：', ': ') + name + '…';
 
       Promise.resolve()
-        .then(function () { return detector ? detector() : outcome('未实现', 0); })
-        .catch(function () { return outcome('检测失败', 0); })
+        .then(function () { return detector ? detector() : outcome(T('未实现', 'Not implemented'), 0); })
+        .catch(function () { return outcome(T('检测失败', 'Check failed'), 0); })
         .then(function (result) {
           /* 探测本身几毫秒就完，补足到 STEP_MS 再落地，节奏才看得见 */
           window.setTimeout(function () {

@@ -10,6 +10,8 @@
 (function (window, document) {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var P = {};
 
   P.now = function () {
@@ -240,19 +242,21 @@
     var key = String(code || '').toUpperCase().trim();
     var row = colos && colos[key];
     if (!row) return { code: key, city: key, cityEn: '', cc: '', lat: null, lon: null, known: false };
-    return { code: key, city: row[0] || row[1] || key, cityEn: row[1] || '', cc: row[2] || '', lat: row[3], lon: row[4], known: true };
+    /* 英文页 city 直接给英文城市名，调用方不必区分语言 */
+    var city = window.I18N && I18N.lang === 'en' ? (row[1] || row[0] || key) : (row[0] || row[1] || key);
+    return { code: key, city: city, cityEn: row[1] || '', cc: row[2] || '', lat: row[3], lon: row[4], known: true };
   };
 
   /* ------------------------------------------------------------ 国家 / 国旗 / 距离 */
 
   var regionNames = null;
   try {
-    if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+    if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames([window.I18N ? I18N.locale : 'zh-CN'], { type: 'region' });
   } catch (e) { regionNames = null; }
 
   /* 这四个不用 Intl 的名字：完整 ICU 给 HK 的是「中国香港特别行政区」，太长，塞不进窄列；
      给 TW 的是不带「中国」的「台湾」，与同页其余写法不一致。全站统一成下面这一套，各页面不再各自覆盖。 */
-  var SHORT_NAMES = { CN: '中国大陆', HK: '中国香港', MO: '中国澳门', TW: '中国台湾' };
+  var SHORT_NAMES = { CN: T('中国大陆', 'Mainland China'), HK: T('中国香港', 'Hong Kong'), MO: T('中国澳门', 'Macau'), TW: T('中国台湾', 'Taiwan') };
 
   P.flag = function (cc) {
     if (!/^[A-Za-z]{2}$/.test(cc || '') || !String.fromCodePoint) return '';
@@ -330,10 +334,10 @@
 
   /* 各档的文字与语气（对应 .tag--ok / --muted / --warn），各页统一用这一套 */
   P.DISTANCE_LABELS = {
-    near: ['就近接入', 'ok'],
-    region: ['区域内', 'muted'],
-    far: ['跨区接入', 'warn'],
-    unknown: ['已识别', 'muted']
+    near: [T('就近接入', 'Nearby'), 'ok'],
+    region: [T('区域内', 'In region'), 'muted'],
+    far: [T('跨区接入', 'Cross-region'), 'warn'],
+    unknown: [T('已识别', 'Identified'), 'muted']
   };
 
   /* ------------------------------------------------------------ IP */
@@ -390,9 +394,9 @@
 
   /* 失败原因的中文说明，三处共用同一套措辞 */
   P.failureText = function (kind) {
-    if (kind === 'csp') return 'CSP 未放行';
-    if (kind === 'timeout') return '超时';
-    return '连接失败';
+    if (kind === 'csp') return T('CSP 未放行', 'Blocked by CSP');
+    if (kind === 'timeout') return T('超时', 'Timed out');
+    return T('连接失败', 'Connection failed');
   };
 
   window.IpcxProbe = P;

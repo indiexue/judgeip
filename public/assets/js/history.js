@@ -11,6 +11,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var MAX = 20;
 
   function read(key) {
@@ -61,21 +63,21 @@
       list.textContent = '';
       if (!items.length) {
         var empty = el('div', 'row');
-        empty.appendChild(el('div', 'row__label', '暂无记录'));
-        empty.appendChild(el('div', 'row__value dim', '检测完成后会在这里记一条，方便对比出口有没有变。'));
+        empty.appendChild(el('div', 'row__label', T('暂无记录', 'No entries yet')));
+        empty.appendChild(el('div', 'row__value dim', T('检测完成后会在这里记一条，方便对比出口有没有变。', 'Each completed check is recorded here so you can see whether the exit changed.')));
         list.appendChild(empty);
       }
       items.forEach(function (item, i) {
         var older = items[i + 1];
         var row = el('div', 'row history__row');
         var label = el('div', 'row__label mono', when(item.t));
-        label.title = new Date(item.t).toLocaleString();
+        label.title = new Date(item.t).toLocaleString(window.I18N ? I18N.locale : undefined);
         var value = el('div', 'row__value history__value');
         value.appendChild(el('span', 'mono history__main', item.main || '—'));
         if (item.label) value.appendChild(el('span', 'tag tag--' + (item.tone || 'muted'), item.label));
         if (item.key && older && older.key && older.key !== item.key) {
-          var changed = el('span', 'tag tag--warn', '出口变了');
-          changed.title = '上一次是 ' + (older.main || '—');
+          var changed = el('span', 'tag tag--warn', T('出口变了', 'Exit changed'));
+          changed.title = T('上一次是 ', 'Previous: ') + (older.main || '—');
           value.appendChild(changed);
         }
         if (item.note) value.appendChild(el('span', 'dim history__note', item.note));
