@@ -16,6 +16,11 @@ export interface RiskCheckItem {
   detail?: string;
 }
 
+export interface DnsblCheck {
+  name: string;
+  status: 'listed' | 'not_listed' | 'unknown';
+}
+
 export interface HomeIpLookupResult {
   ip: string;
   version: 4 | 6;
@@ -29,24 +34,24 @@ export interface HomeIpLookupResult {
   org: string;
   asn: number | null;
   asnCode: string;
-  humanPct: string;
-  botPct: string;
   domain: string;
   rirName: string;
   rirCountry: string;
-  isNative: boolean;
-  isDatacenter: boolean;
-  hasThreat: boolean;
+  isNative: boolean | null;
+  isDatacenter: boolean | null;
+  hasThreat: boolean | null;
   threatLabel: string;
-  isProxy: boolean;
+  isProxy: boolean | null;
   proxyLabel: string;
-  score: number;
+  score: number | null;
   grade: string; // A+ / A / B / C / D / F (cleanip style)
-  scoreTone: 'good' | 'warn' | 'bad';
+  scoreTone: 'good' | 'warn' | 'bad' | 'muted';
+  lookupStatus: 'complete' | 'partial' | 'unavailable';
+  portsKnown: boolean;
 
   // Technical & Routing Indicators (from cleanip.io)
   bgpPrefix: string;
-  rpkiStatus: 'valid' | 'invalid' | 'unknown';
+  rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown';
   rpkiLabel: string;
   ptrRecord: string;
   openPorts: number[];
@@ -54,6 +59,7 @@ export interface HomeIpLookupResult {
   vulnsCount: number;
   dnsblListed: string[];
   dnsblTotal: number;
+  dnsblChecks: DnsblCheck[];
   abuseEmail: string;
 
   // CleanIP Scene Fit & Risk Breakdown
@@ -193,7 +199,7 @@ async function fetchRirAndRouting(ip: string): Promise<{
   rirCountry?: string;
   bgpPrefix?: string;
   bgpAsn?: number;
-  rpkiStatus?: 'valid' | 'invalid' | 'unknown';
+  rpkiStatus?: 'valid' | 'invalid' | 'not_found' | 'unknown';
   ptrRecord?: string;
   abuseEmail?: string;
 }> {
@@ -254,7 +260,7 @@ async function fetchRirAndRouting(ip: string): Promise<{
   const bgpAsn = netResp?.data?.asns?.[0] ? Number(netResp.data.asns[0]) : undefined;
   const ptrRecord = rdnsResp?.data?.result?.[0] || '';
 
-  let rpkiStatus: 'valid' | 'invalid' | 'unknown' = 'unknown';
+  let rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown' = 'unknown';
   if (bgpPrefix && bgpAsn) {
     const rpkiResp = await fetchJson<RipeRpki>(
       `https://stat.ripe.net/data/rpki-validation/data.json?resource=${bgpAsn}&prefix=${encodeURIComponent(bgpPrefix)}`,
@@ -263,32 +269,35 @@ async function fetchRirAndRouting(ip: string): Promise<{
     const st = (rpkiResp?.data?.status || '').toLowerCase();
     if (st === 'valid') rpkiStatus = 'valid';
     else if (st.startsWith('invalid')) rpkiStatus = 'invalid';
+    else if (st === 'unknown') rpkiStatus = 'not_found';
   }
 
   return { rirName, rirCountry, bgpPrefix, bgpAsn, rpkiStatus, ptrRecord, abuseEmail };
 }
 
-export async function checkIpv4Dnsbl(ipv4: string): Promise<string[]> {
-  const octets = ipv4.split('.');
-  if (octets.length !== 4) return [];
-  const reversed = octets.slice().reverse().join('.');
-
-  const hits = await Promise.all(
-    DNSBL_ZONES.map(async ({ zone, name }) => {
-      const qname = `${reversed}.${zone}`;
-      const res = await fetchJson<{ Status?: number; Answer?: Array<{ type?: number; data?: string }> }>(
-        `https://1.1.1.1/dns-query?name=${encodeURIComponent(qname)}&type=A`,
-        1600,
-        { Accept: 'application/dns-json' }
-      );
-      if (res && res.Status === 0 && Array.isArray(res.Answer)) {
-        const listed = res.Answer.some((a) => a.type === 1 && String(a.data || '').startsWith('127.0.0.'));
-        if (listed) return name;
-      }
-      return null;
-    })
-  );
-  return hits.filter((x): x is string => Boolean(x));
+export async function checkIpv4Dnsbl(ipv4: string): Promise<DnsblCheck[]> {
+  const parsed = parseIp(ipv4);
+  if (!parsed || parsed.version !== 4 || parsed.isBogon) {
+    return DNSBL_ZONES.map(({ name }) => ({ name, status: 'unknown' }));
+  }
+  const reversed = parsed.normalized.split('.').reverse().join('.');
+  return Promise.all(DNSBL_ZONES.map(async ({ zone, name }): Promise<DnsblCheck> => {
+    const res = await fetchJson<{
+      Status?: number;
+      Answer?: Array<{ type?: number; data?: string }>;
+      Authority?: Array<{ type?: number }>;
+    }>(`https://1.1.1.1/dns-query?name=${encodeURIComponent(`${reversed}.${zone}`)}&type=A`, 1600, { Accept: 'application/dns-json' });
+    const answers = Array.isArray(res?.Answer) ? res.Answer.filter((a) => a?.type === 1).map((a) => String(a.data || '')) : [];
+    // Public-resolver refusals and provider error codes are not clean results.
+    if (res?.Status === 0 && answers.length) {
+      if (answers.some((a) => /^127\.0\.0\.[1-9]\d{0,2}$/.test(a))) return { name, status: 'listed' };
+      return { name, status: 'unknown' };
+    }
+    if (res?.Answer && !Array.isArray(res.Answer)) return { name, status: 'unknown' };
+    const authoritativeNegative = (res?.Status === 3 || res?.Status === 0)
+      && answers.length === 0 && Array.isArray(res?.Authority) && res.Authority.some((a) => a?.type === 6);
+    return { name, status: authoritativeNegative ? 'not_listed' : 'unknown' };
+  }));
 }
 
 function buildSceneFitMatrix(opts: {
@@ -390,20 +399,20 @@ export async function lookupIpFull(
       org: '本地 / 内网保留网段',
       asn: null,
       asnCode: '—',
-      humanPct: '—',
-      botPct: '—',
       domain: '—',
       rirName: 'IANA',
       rirCountry: '',
-      isNative: false,
-      isDatacenter: false,
-      hasThreat: false,
-      threatLabel: '无威胁记录',
-      isProxy: false,
-      proxyLabel: '非代理',
-      score: 100,
-      grade: 'A+',
-      scoreTone: 'good',
+      isNative: null,
+      isDatacenter: null,
+      hasThreat: null,
+      threatLabel: '不适用',
+      isProxy: null,
+      proxyLabel: '不适用',
+      score: null,
+      grade: '—',
+      scoreTone: 'muted',
+      lookupStatus: 'unavailable',
+      portsKnown: false,
       bgpPrefix: '—',
       rpkiStatus: 'unknown',
       rpkiLabel: '不适用',
@@ -413,6 +422,7 @@ export async function lookupIpFull(
       vulnsCount: 0,
       dnsblListed: [],
       dnsblTotal: DNSBL_ZONES.length,
+      dnsblChecks: [],
       abuseEmail: '—',
       scenes: [],
       riskChecks: [],
@@ -423,8 +433,8 @@ export async function lookupIpFull(
       city: '—',
       latitude: null,
       longitude: null,
-      timezone: 'UTC',
-      localTimeHm: formatLocalTime('UTC'),
+      timezone: '—',
+      localTimeHm: '',
       continentZh: '—',
     };
   }
@@ -474,7 +484,7 @@ export async function lookupIpFull(
     vulns?: string[];
   }
 
-  const [ipWho, ipApi, shodan, routing, dnsblListed] = await Promise.all([
+  const [ipWhoRaw, ipApiRaw, shodanRaw, routing, dnsblChecks] = await Promise.all([
     fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=zh-CN`, 2300),
     fetchJson<IpApiResp>(
       `http://ip-api.com/json/${encodeURIComponent(parsed.normalized)}?lang=zh-CN&fields=status,continentCode,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as,mobile,proxy,hosting`,
@@ -487,16 +497,24 @@ export async function lookupIpFull(
     parsed.version === 4 ? checkIpv4Dnsbl(parsed.normalized) : Promise.resolve([]),
   ]);
 
+  // HTTP 200 with an error payload or an empty object is still missing data.
+  const ipWho = ipWhoRaw?.success === true ? ipWhoRaw : null;
+  const ipApi = ipApiRaw?.status === 'success' ? ipApiRaw : null;
+  const shodan = shodanRaw && Array.isArray(shodanRaw.ports) && Array.isArray(shodanRaw.tags)
+    && Array.isArray(shodanRaw.vulns) ? shodanRaw : null;
+  const dnsblListed = dnsblChecks.filter((c) => c.status === 'listed').map((c) => c.name);
+  const dnsblComplete = parsed.version === 4 && dnsblChecks.length === DNSBL_ZONES.length
+    && dnsblChecks.every((c) => c.status !== 'unknown');
   const cf = isSelf && cfMeta ? cfMeta : null;
-  const countryCode = ((cf?.country as string) || ipWho?.country_code || ipApi?.countryCode || 'US').toUpperCase();
-  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || ipApi?.continentCode || 'AS').toUpperCase();
+  const countryCode = ((cf?.country as string) || ipWho?.country_code || ipApi?.countryCode || '').toUpperCase();
+  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || ipApi?.continentCode || '').toUpperCase();
   const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipApi?.country || countryCode);
   const flagEmoji = isoToFlag(countryCode);
   const region = ipApi?.regionName || ipWho?.region || (cf?.region as string) || '—';
   const city = ipApi?.city || ipWho?.city || (cf?.city as string) || '—';
   const latitude = ipWho?.latitude ?? ipApi?.lat ?? (cf?.latitude ? Number(cf.latitude) : null);
   const longitude = ipWho?.longitude ?? ipApi?.lon ?? (cf?.longitude ? Number(cf.longitude) : null);
-  const timezone = ipWho?.timezone?.id || ipApi?.timezone || (cf?.timezone as string) || 'UTC';
+  const timezone = ipWho?.timezone?.id || ipApi?.timezone || (cf?.timezone as string) || '—';
 
   const asFromApi = ipApi?.as ? Number((ipApi.as.match(/^AS(\d+)/i) || [])[1]) || null : null;
   const asn = (cf?.asn ? Number(cf.asn) : null) || ipWho?.connection?.asn || asFromApi || routing.bgpAsn || null;
@@ -517,9 +535,12 @@ export async function lookupIpFull(
 
   const upstreamHosting = Boolean(ipWho?.security?.hosting || ipApi?.hosting);
   const upstreamMobile = Boolean(ipApi?.mobile);
-  const usage = classifyIspAndAsn(asn, `${isp} ${org}`, upstreamHosting, upstreamMobile);
+  const classifiedUsage = classifyIspAndAsn(asn, `${isp} ${org}`, upstreamHosting, upstreamMobile);
+  const residentialEvidence = profile?.type === 'residential' || /telecom|broadband|cable|communications|fiber|fios/i.test(`${isp} ${org}`);
+  const usage = classifiedUsage === 'residential' && !residentialEvidence ? 'unknown' : classifiedUsage;
 
-  const isDatacenter = usage === 'hosting' || usage === 'cdn';
+  const networkKnown = usage !== 'unknown' && Boolean(asn || (isp !== '未知' && isp !== '—'));
+  const isDatacenter = networkKnown ? usage === 'hosting' || usage === 'cdn' : null;
   let ipTypeLabel = '家庭宽带';
   let ipTypeTone: 'green' | 'amber' | 'danger' | 'gray' = 'green';
   if (usage === 'hosting') {
@@ -539,17 +560,11 @@ export async function lookupIpFull(
     ipTypeTone = 'gray';
   }
 
-  const seed = (asn || 12345) % 97;
-  let humanNum = 86.4;
-  if (usage === 'hosting') humanNum = Number((6.5 + (seed % 140) / 10).toFixed(1));
-  else if (usage === 'cdn') humanNum = Number((38.0 + (seed % 180) / 10).toFixed(1));
-  else if (usage === 'mobile') humanNum = Number((91.0 + (seed % 70) / 10).toFixed(1));
-  else humanNum = Number((82.0 + (seed % 140) / 10).toFixed(1));
-  const botNum = Number((100 - humanNum).toFixed(1));
+  if (!networkKnown) { ipTypeLabel = '未知'; ipTypeTone = 'gray'; }
 
-  const rirName = routing.rirName || guessRirByContinentOrCountry(continentCode, countryCode);
-  const rirCountry = (routing.rirCountry || profile?.registeredCountry || countryCode).toUpperCase();
-  const isNative = usage !== 'cdn' && rirCountry === countryCode;
+  const rirName = routing.rirName || '—';
+  const rirCountry = (routing.rirCountry || '').toUpperCase();
+  const isNative = countryCode && rirCountry ? usage !== 'cdn' && rirCountry === countryCode : null;
 
   const tags = (shodan?.tags || []).map((t) => t.toLowerCase());
   const vulnsCount = shodan?.vulns?.length || 0;
@@ -559,64 +574,69 @@ export async function lookupIpFull(
 
   const hasScanner = tags.includes('scanner');
   const hasCompromised = tags.includes('compromised') || tags.includes('malware');
-  const hasThreat = Boolean(hasCompromised || hasScanner || vulnsCount >= 3 || dnsblListed.length > 0);
-  const threatLabel =
-    dnsblListed.length > 0
-      ? `命中黑名单 (${dnsblListed.join(', ')})`
-      : hasScanner
-        ? '扫描活动记录'
-        : hasCompromised
-          ? '存在风险记录'
-          : '无威胁记录';
+  const threatFound = Boolean(hasCompromised || hasScanner || vulnsCount > 0 || dnsblListed.length > 0);
+  const hasThreat = threatFound ? true : shodan && dnsblComplete ? false : null;
+  const threatLabel = dnsblListed.length ? `命中黑名单 (${dnsblListed.join(', ')})`
+    : hasScanner ? '扫描活动记录' : hasCompromised ? '存在风险记录'
+      : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE`
+        : hasThreat === false ? '已查来源未见威胁' : '威胁数据不完整';
 
   const isTor = Boolean(ipWho?.security?.tor || tags.includes('tor'));
   const isVpn = Boolean(ipWho?.security?.vpn || tags.includes('vpn') || (profile && profile.riskModifier <= -60));
-  const isProxy = Boolean(isTor || isVpn || ipWho?.security?.proxy || ipApi?.proxy || proxyPorts.length > 0);
-  const proxyLabel = isTor ? 'Tor 出口' : isVpn ? 'VPN 节点' : isProxy ? '公开代理' : '非代理';
+  const proxyFound = Boolean(isTor || isVpn || ipWho?.security?.proxy || ipApi?.proxy || proxyPorts.length > 0);
+  const securityKnown = ipApi && typeof ipApi.proxy === 'boolean'
+    || ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean');
+  const isProxy = proxyFound ? true : securityKnown ? false : null;
+  const proxyLabel = isTor ? 'Tor 出口' : isVpn ? 'VPN 节点' : isProxy === true ? '公开代理'
+    : isProxy === false ? '已查来源未见代理' : '代理状态未知';
 
-  let score = 95;
-  if (usage === 'hosting') score -= 33;
-  else if (usage === 'cdn') score -= 25;
-  else if (usage === 'mobile') score += 2;
+  let computedScore = 95;
+  if (usage === 'hosting') computedScore -= 33;
+  else if (usage === 'cdn') computedScore -= 25;
+  else if (usage === 'mobile') computedScore += 2;
 
-  if (!isNative && usage !== 'cdn') score -= 12;
-  if (isProxy) score -= 24;
-  if (dnsblListed.length > 0) score -= 18;
-  else if (hasThreat) score -= 18;
-  if (openPorts.length > 6) score -= 5;
-  score = Math.max(5, Math.min(99, Math.round(score)));
+  if (!isNative && usage !== 'cdn') computedScore -= 12;
+  if (isProxy) computedScore -= 24;
+  if (dnsblListed.length > 0) computedScore -= 18;
+  else if (hasThreat) computedScore -= 18;
+  if (openPorts.length > 6) computedScore -= 5;
+  computedScore = Math.max(5, Math.min(99, Math.round(computedScore)));
 
-  const scoreTone: 'good' | 'warn' | 'bad' = score >= 78 ? 'good' : score >= 50 ? 'warn' : 'bad';
-  const grade = scoreToCleanGrade(score);
+  const scoreReady = networkKnown && Boolean(countryCode) && isNative !== null && isProxy !== null
+    && hasThreat !== null && Boolean(shodan) && dnsblComplete;
+  const score = scoreReady ? computedScore : null;
+  const scoreTone = score === null ? 'muted' : score >= 78 ? 'good' : score >= 50 ? 'warn' : 'bad';
+  const grade = score === null ? '—' : scoreToCleanGrade(score);
+  const lookupStatus = scoreReady ? 'complete' : networkKnown || countryCode || routing.bgpPrefix || shodan || dnsblComplete ? 'partial' : 'unavailable';
 
   const rpkiStatus = routing.rpkiStatus || 'unknown';
-  const rpkiLabel = rpkiStatus === 'valid' ? 'RPKI 有效 (Valid)' : rpkiStatus === 'invalid' ? 'RPKI 异常 (Invalid)' : '未签发 ROA';
+  const rpkiLabel = rpkiStatus === 'valid' ? 'RPKI 有效 (Valid)' : rpkiStatus === 'invalid' ? 'RPKI 异常 (Invalid)' : rpkiStatus === 'not_found' ? '未签发 ROA' : 'RPKI 状态未知';
 
-  const scenes = buildSceneFitMatrix({
+  const scenes = score !== null ? buildSceneFitMatrix({
     usage,
-    isNative,
-    isProxy,
-    hasThreat,
+    isNative: isNative === true,
+    isProxy: isProxy === true,
+    hasThreat: hasThreat === true,
     dnsblCount: dnsblListed.length,
     countryCode,
     score,
-  });
+  }) : [];
 
   const riskChecks: RiskCheckItem[] = [
     {
       label: '代理 / VPN 隧道',
-      status: isVpn ? '命中 VPN' : isProxy ? '疑似代理' : '未发现',
-      tone: isProxy ? 'leak' : 'ok',
+      status: isProxy === null ? '查询未完成' : isVpn ? '命中 VPN' : isProxy ? '疑似代理' : '未发现',
+      tone: isProxy === null ? 'muted' : isProxy ? 'leak' : 'ok',
     },
     {
       label: 'Tor 匿名节点',
-      status: isTor ? 'Tor 出口' : '未发现',
-      tone: isTor ? 'leak' : 'ok',
+      status: isTor ? 'Tor 出口' : !securityKnown ? '查询未完成' : '未发现',
+      tone: isTor ? 'leak' : !securityKnown ? 'muted' : 'ok',
     },
     {
       label: '代理特征端口',
-      status: parsed.version === 6 ? '仅支持 IPv4' : proxyPorts.length > 0 ? `暴露 (${proxyPorts.join(', ')})` : '无暴露',
-      tone: parsed.version === 6 ? 'muted' : proxyPorts.length > 0 ? 'leak' : 'ok',
+      status: parsed.version === 6 ? '仅支持 IPv4' : !shodan ? '查询未完成' : proxyPorts.length > 0 ? `暴露 (${proxyPorts.join(', ')})` : '无暴露',
+      tone: parsed.version === 6 || !shodan ? 'muted' : proxyPorts.length > 0 ? 'leak' : 'ok',
     },
     {
       label: 'DNSBL 邮件/垃圾黑名单',
@@ -625,18 +645,18 @@ export async function lookupIpFull(
           ? '仅支持 IPv4'
           : dnsblListed.length > 0
             ? `命中 ${dnsblListed.length}/${DNSBL_ZONES.length} (${dnsblListed.join(', ')})`
-            : `0/${DNSBL_ZONES.length} 全部通过`,
-      tone: parsed.version === 6 ? 'muted' : dnsblListed.length > 0 ? 'leak' : 'ok',
+            : !dnsblComplete ? '查询未完成' : `0/${DNSBL_ZONES.length} 全部通过`,
+      tone: dnsblListed.length > 0 ? 'leak' : parsed.version === 6 || !dnsblComplete ? 'muted' : 'ok',
     },
     {
       label: '扫描器与自动化标记',
-      status: hasScanner ? '存在扫描行为' : '无记录',
-      tone: hasScanner ? 'warn' : 'ok',
+      status: !shodan ? '查询未完成' : hasScanner ? '存在扫描行为' : '无记录',
+      tone: !shodan ? 'muted' : hasScanner ? 'warn' : 'ok',
     },
     {
       label: '失陷主机 / 漏洞暴露',
-      status: hasCompromised ? '失陷标记' : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE` : '正常',
-      tone: hasCompromised ? 'leak' : vulnsCount > 0 ? 'warn' : 'ok',
+      status: !shodan ? '查询未完成' : hasCompromised ? '失陷标记' : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE` : '正常',
+      tone: !shodan ? 'muted' : hasCompromised ? 'leak' : vulnsCount > 0 ? 'warn' : 'ok',
     },
   ];
 
@@ -650,8 +670,6 @@ export async function lookupIpFull(
     org,
     asn,
     asnCode: asn ? `AS${asn}` : '—',
-    humanPct: `${humanNum}%`,
-    botPct: `${botNum}%`,
     domain: domain || '—',
     rirName,
     rirCountry,
@@ -664,6 +682,8 @@ export async function lookupIpFull(
     score,
     grade,
     scoreTone,
+    lookupStatus,
+    portsKnown: Boolean(shodan),
     bgpPrefix: routing.bgpPrefix || '—',
     rpkiStatus,
     rpkiLabel,
@@ -673,6 +693,7 @@ export async function lookupIpFull(
     vulnsCount,
     dnsblListed,
     dnsblTotal: DNSBL_ZONES.length,
+    dnsblChecks,
     abuseEmail: routing.abuseEmail || '—',
     scenes,
     riskChecks,
@@ -685,13 +706,13 @@ export async function lookupIpFull(
     longitude: longitude !== null && !Number.isNaN(longitude) ? Number(longitude.toFixed(3)) : null,
     timezone,
     localTimeHm: formatLocalTime(timezone),
-    continentZh: CONTINENT_ZH[continentCode] || '其他',
+    continentZh: CONTINENT_ZH[continentCode] || '未知',
   };
 
   if (memCache.size > 400) {
     const first = memCache.keys().next().value;
     if (first) memCache.delete(first);
   }
-  memCache.set(cacheKey, { exp: Date.now() + 20 * 60 * 1000, data: result });
+  memCache.set(cacheKey, { exp: Date.now() + (lookupStatus === 'complete' ? 20 * 60 * 1000 : 30 * 1000), data: result });
   return result;
 }

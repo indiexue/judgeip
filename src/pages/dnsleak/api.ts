@@ -53,10 +53,10 @@ export const POST: APIRoute = async ({ request, url }) => {
         try {
           const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), lang);
           const provider = (info.asn && PUBLIC_DNS_PROVIDERS[info.asn]) || '';
-          let resolverType = 'hosting';
+          let resolverType = info.isDatacenter === null ? 'unknown' : 'hosting';
           if (provider && /(Google|Cloudflare|Quad9|OpenDNS|阿里公共|DNSPod|百度公共)/.test(provider)) {
             resolverType = 'public';
-          } else if (!info.isDatacenter) {
+          } else if (info.isDatacenter === false) {
             resolverType = 'isp';
           }
           return {

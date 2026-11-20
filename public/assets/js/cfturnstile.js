@@ -179,7 +179,7 @@
     }
     if (card.code) rows.push([T('前端错误码', 'Client error code'), card.code]);
 
-    if (d && d.ok === true) {
+    if (d && d.ok === true && typeof d.pass === 'boolean') {
       rows.push(['hostname', show(d.hostname) + (d.hostname_ok === true ? T('（与本站一致）', ' (matches this site)')
         : d.hostname_ok === false ? T('（应为 ', ' (expected ') + show(d.hostname_expected) + T('）', ')') : '')]);
       rows.push(['challenge_ts', show(d.challenge_ts)]);
@@ -637,7 +637,7 @@
     var d = answer.data;
 
     /* siteverify 的耗时只在它真的回答了时才显示；没连上时那个数只是「多久之后放弃」，摆出来反而像是它回答过 */
-    if (d && d.ok === true) {
+    if (d && d.ok === true && typeof d.pass === 'boolean') {
       var ms = typeof d.verify_ms === 'number' ? P.el('span', 'tsaside', 'siteverify ' + d.verify_ms + ' ms') : null;
       fill(card.server, [line([tag(d.pass ? 'PASS' : 'FAIL', d.pass ? 'ok' : 'leak'), ms]), d.pass ? null : note(show(d.message))]);
       return;
@@ -656,7 +656,7 @@
 
   function conclude(card) {
     var d = card.result && card.result.data;
-    var checked = !!(d && d.ok === true);
+    var checked = !!(d && d.ok === true && typeof d.pass === 'boolean');
 
     if (checked && !d.pass) {
       setVerdict(card, 'is-bad', T('服务端复核未通过', 'Server verification failed'), T('前端拿到了 token，但复核没有通过：', 'The page received a token, but verification failed: ') + show(d.message));

@@ -114,6 +114,9 @@ const encodedIp = encodeURIComponent(info.ip);
       <div class="row">
         <span class="row__label">{t('评分', 'Score')}</span>
         <span class="row__value" data-field="score">
+          {info.score === null ? (
+            <span class="geo__note">{t('数据不足，暂不评分', 'Insufficient data to score')}</span>
+          ) : (
           <span class={`score score--${info.scoreTone}`}>
             <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={(lang === 'en' ? `IP score ${info.score} out of 100` : `IP 评分 ${info.score} 分，满分 100 分`)}>
               <rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>
@@ -126,6 +129,7 @@ const encodedIp = encodeURIComponent(info.ip);
               {info.grade}
             </span>
           </span>
+          )}
         </span>
       </div>
       <div class="row">
@@ -133,8 +137,8 @@ const encodedIp = encodeURIComponent(info.ip);
         <span class="row__value" data-field="ipType">
           <span class={`badge badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
           {!info.isBogon && (
-            <span class={`badge badge--${info.isNative ? 'green' : 'amber'}`} style="margin-left:6px;">
-              {info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP')}
+            <span class={`badge badge--${info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber'}`} style="margin-left:6px;">
+              {info.isNative === null ? t('原生属性未知', 'IP origin unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP')}
             </span>
           )}
         </span>
@@ -155,13 +159,6 @@ const encodedIp = encodeURIComponent(info.ip);
               <a class="asn-link mono" href={lp(`/whois?q=${info.asnCode}`)} title={(lang === 'en' ? `View registration data for ${info.asnCode}` : `查看 ${info.asnCode} 注册信息`)}>
                 {info.asnCode}
               </a>
-              <span class="botratio">
-                <span class="botratio__bracket">[</span>
-                <span class="botratio__human">Human {info.humanPct}</span>
-                <span class="botratio__sep">|</span>
-                <span class="botratio__bot">Bot {info.botPct}</span>
-                <span class="botratio__bracket">]</span>
-              </span>
             </>
           ) : (
             <span class="mono">—</span>
@@ -179,21 +176,21 @@ const encodedIp = encodeURIComponent(info.ip);
       <div class="row">
         <span class="row__label">{t('IDC 机房托管', 'Hosting / IDC')}</span>
         <span class="row__value" data-field="datacenter">
-          <span class={`badge badge--${info.isDatacenter ? 'danger' : 'green'}`}>
-            {info.isDatacenter ? t('是', 'Yes') : t('否', 'No')}
+          <span class={`badge badge--${info.isDatacenter === null ? 'gray' : info.isDatacenter ? 'danger' : 'green'}`}>
+            {info.isDatacenter === null ? t('未知', 'Unknown') : info.isDatacenter ? t('是', 'Yes') : t('否', 'No')}
           </span>
         </span>
       </div>
       <div class="row">
         <span class="row__label">{t('代理与匿名', 'Proxy and anonymity')}</span>
         <span class="row__value" data-field="proxy">
-          <span class={`badge badge--${info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
+          <span class={`badge badge--${info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
         </span>
       </div>
       <div class="row">
         <span class="row__label">{t('威胁与黑名单', 'Threats and blocklists')}</span>
         <span class="row__value" data-field="threat">
-          <span class={`badge badge--${info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
+          <span class={`badge badge--${info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
         </span>
       </div>
     </div>
@@ -296,10 +293,11 @@ const encodedIp = encodeURIComponent(info.ip);
   </div>
 
   <!-- Full-Width Span: 8-Category Compact Scene Fit Grid -->
-  {!info.isBogon && info.scenes.length > 0 && (
+  {!info.isBogon && (
     <section class="group group--span2" id="scene-fit">
       <h2 class="group__title">{t('用途适配', 'Fit by use case')}</h2>
       <div class="scene-grid" data-field="scenes">
+        {info.scenes.length === 0 && <p class="geo__note">{t('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates')}</p>}
         {info.scenes.map((sc) => (
           <div class="scene-card">
             <div class="scene-card__top">
@@ -356,7 +354,7 @@ const encodedIp = encodeURIComponent(info.ip);
             {info.openPorts.length > 0 ? (
               <span class="mono">{info.openPorts.join(', ')}</span>
             ) : (
-              <span class="geo__note">{info.version === 4 ? t('未发现公网开放端口', 'No open ports found') : t('IPv6 免被动扫描', 'IPv6 is not passively scanned')}</span>
+              <span class="geo__note">{info.version !== 4 ? t('仅支持 IPv4', 'IPv4 only') : !info.portsKnown ? t('端口数据未取得', 'Port data unavailable') : t('已查来源未见开放端口', 'No open ports in checked source')}</span>
             )}
           </span>
         </div>

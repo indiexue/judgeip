@@ -288,7 +288,7 @@
           'ipType',
           '<span class="badge badge--' + esc(info.ipTypeTone) + '">' + esc(info.ipTypeLabel) + '</span>' +
           (!info.isBogon
-            ? '<span class="badge badge--' + (info.isNative ? 'green' : 'amber') + '" style="margin-left:6px;">' + (info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced IP')) + '</span>'
+            ? '<span class="badge badge--' + (info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber') + '" style="margin-left:6px;">' + (info.isNative === null ? T('原生属性未知', 'IP origin unknown') : info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced IP')) + '</span>'
             : '')
         );
         setFieldText('isp', info.isp);
@@ -296,26 +296,31 @@
         if (info.asn) {
           setFieldHtml(
             'asn',
-            '<a class="asn-link mono" href="' + lp('/whois') + '?q=' + esc(info.asnCode) + T('" title="查看 ', '" title="View registration data for ') + esc(info.asnCode) + T(' 注册信息">', '">') + esc(info.asnCode) + '</a>' +
-            '<span class="botratio"><span class="botratio__bracket">[</span><span class="botratio__human">Human ' + esc(info.humanPct) + '</span><span class="botratio__sep">|</span><span class="botratio__bot">Bot ' + esc(info.botPct) + '</span><span class="botratio__bracket">]</span></span>'
+            '<a class="asn-link mono" href="' + lp('/whois') + '?q=' + esc(info.asnCode) + T('" title="查看 ', '" title="View registration data for ') + esc(info.asnCode) + T(' 注册信息">', '">') + esc(info.asnCode) + '</a>'
           );
+        } else {
+          setFieldText('asn', '—');
         }
         setFieldText('domain', info.domain);
         setFieldText('rirName', info.rirName);
-        setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter ? T('是', 'Yes') : T('否', 'No')) + '</span>');
-        setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
-        setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
+        setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter === null ? 'gray' : info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter === null ? T('未知', 'Unknown') : info.isDatacenter ? T('是', 'Yes') : T('否', 'No')) + '</span>');
+        setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
+        setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
         var gradeBadgeTone = info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger';
-        setFieldHtml(
-          'score',
-          '<span class="score score--' + esc(info.scoreTone) + '">' +
-          T('<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ', '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP score ') + Number(info.score) + T(' 分，满分 100 分">', ' out of 100">') +
-          '<rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>' +
-          '<rect class="score__fill" x="0" y="0" width="' + Number(info.score) + '" height="6" rx="3"></rect></svg>' +
-          '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span>' +
-          (info.grade ? '<span class="badge badge--' + gradeBadgeTone + '" style="margin-left:6px;">' + esc(info.grade) + '</span>' : '') +
-          '</span>'
-        );
+        if (typeof info.score !== 'number') {
+          setFieldText('score', T('数据不足，暂不评分', 'Insufficient data to score'));
+        } else {
+          setFieldHtml(
+            'score',
+            '<span class="score score--' + esc(info.scoreTone) + '">' +
+            T('<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ', '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP score ') + Number(info.score) + T(' 分，满分 100 分">', ' out of 100">') +
+            '<rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>' +
+            '<rect class="score__fill" x="0" y="0" width="' + Number(info.score) + '" height="6" rx="3"></rect></svg>' +
+            '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span>' +
+            (info.grade ? '<span class="badge badge--' + gradeBadgeTone + '" style="margin-left:6px;">' + esc(info.grade) + '</span>' : '') +
+            '</span>'
+          );
+        }
 
         setFieldHtml(
           'country',
@@ -336,13 +341,13 @@
         );
         setFieldText('continent', info.continentZh);
 
-        if (Array.isArray(info.scenes) && info.scenes.length) {
+        if (Array.isArray(info.scenes)) {
           var scenesHtml = info.scenes.map(function (sc) {
             return '<div class="scene-card"><div class="scene-card__top"><span class="scene-card__name">' + esc(sc.label) + '</span>' +
               '<span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span></div>' +
               '<span class="scene-card__note">' + esc(sc.note) + '</span></div>';
           }).join('');
-          setFieldHtml('scenes', scenesHtml);
+          setFieldHtml('scenes', scenesHtml || '<p class="geo__note">' + T('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates') + '</p>');
         }
 
         if (Array.isArray(info.riskChecks)) {
@@ -356,7 +361,7 @@
           var rpkiTone = info.rpkiStatus === 'valid' ? 'ok' : info.rpkiStatus === 'invalid' ? 'leak' : 'muted';
           var portsCell = info.openPorts && info.openPorts.length > 0
             ? '<span class="mono">' + esc(info.openPorts.join(', ')) + '</span>'
-            : T('<span class="geo__note">未发现公网开放端口</span>', '<span class="geo__note">No open ports found</span>');
+            : '<span class="geo__note">' + (info.version !== 4 ? T('仅支持 IPv4', 'IPv4 only') : !info.portsKnown ? T('端口数据未取得', 'Port data unavailable') : T('已查来源未见开放端口', 'No open ports in checked source')) + '</span>';
           rtHtml +=
             T('<div class="row"><span class="row__label">BGP 路由前缀</span><span class="row__value">', '<div class="row"><span class="row__label">BGP prefix</span><span class="row__value">') + bgpCell + '</span></div>' +
             T('<div class="row"><span class="row__label">RPKI 路由授权</span><span class="row__value"><span class="tag tag--', '<div class="row"><span class="row__label">RPKI</span><span class="row__value"><span class="tag tag--') + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +

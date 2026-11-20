@@ -4,11 +4,15 @@ import zhHtml from "../snippets/cloudflare.html?raw";
 import enHtml from "../snippets/en/cloudflare.html?raw";
 import { getLang, pick } from "../lib/i18n";
 import { extractVisitorIp } from "../lib/ip-utils";
+import { TURNSTILE_WIDGETS } from "../lib/turnstile";
 
 const lang = getLang(Astro.locals);
 
 const visitorIp = extractVisitorIp(Astro.request);
-const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml)
+  .replaceAll("__VISITOR_IP__", visitorIp)
+  .replaceAll("__TURNSTILE_MG_SITEKEY__", TURNSTILE_WIDGETS.mg.sitekey)
+  .replaceAll("__TURNSTILE_NI_SITEKEY__", TURNSTILE_WIDGETS.ni.sitekey);
 ---
 
 <IpcxLayout

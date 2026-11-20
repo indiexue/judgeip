@@ -36,3 +36,12 @@ pnpm build
 Connected directly to Cloudflare Workers Builds (`indiexue/judgeip`):
 - **Build command**: `pnpm run build`
 - **Deploy command**: `npx wrangler deploy`
+
+### Turnstile runtime secrets
+
+The managed and non-interactive widgets use separate production keys. Configure these as **runtime Worker Secrets**, not build variables:
+
+- `TURNSTILE_SECRET_KEY_MANAGED`
+- `TURNSTILE_SECRET_KEY_NON_INTERACTIVE`
+
+Public sitekeys and expected actions are defined in `src/lib/turnstile.ts`. Missing secrets return an explicit configuration error; there is no test-key fallback. Never commit secret values or paste them into chat. Local tests use injected mock responses and do not require production secrets.

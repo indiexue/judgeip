@@ -1,7 +1,7 @@
 ---
 import IpcxLayout from '../layouts/IpcxLayout.astro';
 import { parseIp } from '../lib/ip-utils';
-import { checkIpv4Dnsbl } from '../lib/ipcx-lookup';
+import { checkIpv4Dnsbl, type DnsblCheck } from '../lib/ipcx-lookup';
 import { getLang, localePath } from '../lib/i18n';
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
@@ -56,7 +56,7 @@ async function queryDohType(name: string, rtype: string): Promise<DnsRecordItem[
 
 let mode: 'idle' | 'ip' | 'domain' | 'invalid' = 'idle';
 let records: DnsRecordItem[] = [];
-let dnsblHits: string[] = [];
+let dnsblChecks: DnsblCheck[] = [];
 let ptrDomain = '';
 
 if (queryTarget) {
@@ -69,7 +69,7 @@ if (queryTarget) {
       checkIpv4Dnsbl(parsedIp.normalized),
     ]);
     records = ptrRes;
-    dnsblHits = blRes;
+    dnsblChecks = blRes;
   } else if (/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(queryTarget)) {
     mode = 'domain';
     const all = await Promise.all(RECORD_TYPES.map((t) => queryDohType(queryTarget, t)));
@@ -193,12 +193,13 @@ if (queryTarget) {
         <h2 class="group__title">{t('DNSBL 黑名单检查', 'DNSBL check')}</h2>
         <div class="rows">
           {['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT'].map((blName) => {
-            const hit = dnsblHits.includes(blName);
+            const status = dnsblChecks.find((c) => c.name === blName)?.status || 'unknown';
+            const hit = status === 'listed';
             return (
               <div class="row">
                 <span class="row__label">{blName}</span>
                 <span class="row__value">
-                  <span class={`tag tag--${hit ? 'leak' : 'ok'}`}>{hit ? t('命中黑名单 (Listed)', 'Listed') : t('未收录 (Clean)', 'Not listed')}</span>
+                  <span class={`tag tag--${hit ? 'leak' : status === 'unknown' ? 'muted' : 'ok'}`}>{hit ? t('命中黑名单', 'Listed') : status === 'unknown' ? t('查询未完成', 'Check incomplete') : t('未收录', 'Not listed')}</span>
                 </span>
               </div>
             );

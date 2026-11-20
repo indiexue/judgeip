@@ -16,8 +16,8 @@ const targetIp = parsed ? parsed.normalized : visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
 const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
 
-const scoreColor = info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
-const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
+const scoreColor = info.score === null ? '#9ca3af' : info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
+const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative === null ? t('未知', 'Unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
 const locationText = [info.countryZh, info.region !== '—' ? info.region : '', info.city !== '—' ? info.city : '']
   .filter(Boolean)
   .filter((v, idx, arr) => arr.indexOf(v) === idx)
@@ -103,8 +103,8 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
         <!-- Score Box Right -->
         <rect x="536" y="34" width="148" height="96" rx="14" fill="#172033" stroke={scoreColor} stroke-opacity="0.45" stroke-width="1.5" />
         <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('纯净度评分', 'IP score')}</text>
-        <text x="610" y="96" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, monospace" font-size="34" font-weight="800" fill={scoreColor}>{info.score}</text>
-        <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>{t('等级', 'Grade')} {info.grade}</text>
+        <text x="610" y="96" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, monospace" font-size="34" font-weight="800" fill={scoreColor}>{info.score ?? '—'}</text>
+        <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>{info.score === null ? t('数据不足', 'Insufficient data') : `${t('等级', 'Grade')} ${info.grade}`}</text>
 
         <line x1="36" y1="150" x2="684" y2="150" stroke="#1f2937" stroke-width="1" />
 
@@ -114,25 +114,24 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
           <text x="135" y="184" fill="#f3f4f6" font-weight="600">{info.ipTypeLabel}</text>
 
           <text x="36" y="218" fill="#9ca3af">{t('IP 属性', 'IP origin')}</text>
-          <text x="135" y="218" fill={info.isNative ? '#34d399' : '#fbbf24'} font-weight="600">{nativeText}</text>
+          <text x="135" y="218" fill={info.isNative === null ? '#9ca3af' : info.isNative ? '#34d399' : '#fbbf24'} font-weight="600">{nativeText}</text>
 
           <text x="36" y="252" fill="#9ca3af">{t('注册机构', 'Registry')}</text>
-          <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName} ({info.rirCountry || info.countryCode})</text>
+          <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName}{info.rirCountry ? ` (${info.rirCountry})` : ''}</text>
 
           <text x="36" y="286" fill="#9ca3af">{t('路由前缀', 'Route prefix')}</text>
           <text x="135" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">{info.bgpPrefix}</text>
 
           <text x="376" y="184" fill="#9ca3af">{t('代理状态', 'Proxy')}</text>
-          <text x="476" y="184" fill={info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.proxyLabel}</text>
+          <text x="476" y="184" fill={info.isProxy === null ? '#9ca3af' : info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.isProxy === null ? t('未知', 'Unknown') : info.isProxy ? info.proxyLabel : t('未见标记', 'No flags')}</text>
 
           <text x="376" y="218" fill="#9ca3af">{t('威胁 / 黑名单', 'Threats / lists')}</text>
-          <text x="476" y="218" fill={info.hasThreat ? '#f87171' : '#34d399'} font-weight="600">{info.threatLabel}</text>
+          <text x="476" y="218" fill={info.hasThreat === null ? '#9ca3af' : info.hasThreat ? '#f87171' : '#34d399'} font-weight="600">{info.hasThreat === null ? t('数据不完整', 'Incomplete') : info.hasThreat ? t('存在记录', 'Records found') : t('未见记录', 'No records')}</text>
 
           <text x="376" y="252" fill="#9ca3af">{t('RPKI 授权', 'RPKI')}</text>
           <text x="476" y="252" fill={info.rpkiStatus === 'valid' ? '#34d399' : '#d1d5db'} font-weight="600">{info.rpkiLabel}</text>
 
-          <text x="376" y="286" fill="#9ca3af">{t('人机流量比', 'Human / bot')}</text>
-          <text x="476" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">Human {info.humanPct} / Bot {info.botPct}</text>
+
         </g>
 
         <line x1="36" y1="316" x2="684" y2="316" stroke="#1f2937" stroke-width="1" />
