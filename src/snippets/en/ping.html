@@ -1,0 +1,561 @@
+
+<section class="hero">
+  <h1 class="hero__title">Global ping</h1>
+  <p class="hero__lede">Ping an IP or domain from 13 regions at once and compare latency and packet loss.</p>
+</section>
+
+<div class="probe ping"
+     id="ping"
+     data-api="https://api.globalping.io/v1/measurements"
+     data-packets="3"
+     data-port="443"
+     data-poll-ms="1000"
+     data-poll-max="30">
+
+    <form class="pingform" action="/ping" method="get" novalidate data-ping-form>
+    <div class="query__line pingform__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono pingform__input"
+        type="text"
+        value=""
+        placeholder="IP or domain"
+        maxlength="255"
+        inputmode="url"
+        enterkeyhint="go"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="IP address or domain to ping"
+        data-ping-input>
+      <span class="pingform__proto">
+        <select class="pingform__select" aria-label="Method" data-ping-proto>
+          <option value="icmp" selected>ICMP</option>
+          <option value="tcp">TCP 443</option>
+        </select>
+        <svg class="pingform__chevron" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </span>
+      <button class="query__submit pingform__run" type="submit" data-ping-run>Start</button>
+    </div>
+
+    <p class="notice pingform__error" role="alert" data-ping-error hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7.5v5.2M12 16.3v.2"></path>
+      </svg>
+      <span data-ping-error-text></span>
+    </p>
+  </form>
+
+    <p class="probe__hint pingform__hint" data-ping-progress>Each run picks one probe in each of 13 regions and sends 3 packets from each; results usually take 5–10 seconds. Each probe uses one unit of Globalping's anonymous quota (counted per IP, about 250 per hour).</p>
+
+    <p class="pinglegend" aria-hidden="true">
+    <span class="pinglegend__item is-good"><i class="pinglegend__dot"></i>&lt;100 ms</span>
+    <span class="pinglegend__item is-ok"><i class="pinglegend__dot"></i>100–200</span>
+    <span class="pinglegend__item is-slow"><i class="pinglegend__dot"></i>200–350</span>
+    <span class="pinglegend__item is-bad"><i class="pinglegend__dot"></i>≥350</span>
+  </p>
+
+  <div class="verdict" data-ping-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ping-verdict-title></p>
+      <p class="verdict__note" data-ping-verdict-note></p>
+    </div>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">Summary</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Target</div>
+          <div class="row__value" data-ping-target><span class="dim">Not started</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Method</div>
+          <div class="row__value" data-ping-mode><span class="dim">Not started</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Resolved addresses</div>
+          <div class="row__value" data-ping-resolved><span class="dim">Not started</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Progress</div>
+          <div class="row__value" data-ping-status><span class="dim">Not started</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group" data-ping-region="asia">
+      <h2 class="group__title">Asia</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>Probe</span>
+          <span>Min / avg / max</span>
+          <span>Loss</span>
+          <span class="pinghead__bar">Avg latency</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="cn"
+             data-name="Mainland China"
+             data-cc="CN"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;CN&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇨🇳</span> Mainland China</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="hk"
+             data-name="Hong Kong"
+             data-cc="HK"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;HK&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇭🇰</span> Hong Kong</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="tw"
+             data-name="Taiwan"
+             data-cc="TW"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;TW&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇹🇼</span> Taiwan</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="tokyo"
+             data-name="Tokyo, Japan"
+             data-cc="JP"
+             data-region="asia"
+             data-city="Tokyo"
+             data-filter="{&quot;country&quot;:&quot;JP&quot;,&quot;magic&quot;:&quot;Tokyo&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇯🇵</span> Tokyo, Japan</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="seoul"
+             data-name="Seoul, South Korea"
+             data-cc="KR"
+             data-region="asia"
+             data-city="Seoul"
+             data-filter="{&quot;country&quot;:&quot;KR&quot;,&quot;magic&quot;:&quot;Seoul&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇰🇷</span> Seoul, South Korea</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="sg"
+             data-name="Singapore"
+             data-cc="SG"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;SG&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇸🇬</span> Singapore</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="mumbai"
+             data-name="Mumbai, India"
+             data-cc="IN"
+             data-region="asia"
+             data-city="Mumbai"
+             data-filter="{&quot;country&quot;:&quot;IN&quot;,&quot;magic&quot;:&quot;Mumbai&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇮🇳</span> Mumbai, India</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="europe">
+      <h2 class="group__title">Europe</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>Probe</span>
+          <span>Min / avg / max</span>
+          <span>Loss</span>
+          <span class="pinghead__bar">Avg latency</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="frankfurt"
+             data-name="Frankfurt, Germany"
+             data-cc="DE"
+             data-region="europe"
+             data-city="Frankfurt"
+             data-filter="{&quot;country&quot;:&quot;DE&quot;,&quot;magic&quot;:&quot;Frankfurt&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇩🇪</span> Frankfurt, Germany</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="london"
+             data-name="London, UK"
+             data-cc="GB"
+             data-region="europe"
+             data-city="London"
+             data-filter="{&quot;country&quot;:&quot;GB&quot;,&quot;magic&quot;:&quot;London&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇬🇧</span> London, UK</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="americas">
+      <h2 class="group__title">Americas</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>Probe</span>
+          <span>Min / avg / max</span>
+          <span>Loss</span>
+          <span class="pinghead__bar">Avg latency</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="losangeles"
+             data-name="Los Angeles, US"
+             data-cc="US"
+             data-region="americas"
+             data-city="Los Angeles"
+             data-filter="{&quot;country&quot;:&quot;US&quot;,&quot;magic&quot;:&quot;Los Angeles&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇺🇸</span> Los Angeles, US</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="ashburn"
+             data-name="Ashburn, US"
+             data-cc="US"
+             data-region="americas"
+             data-city="Ashburn"
+             data-filter="{&quot;country&quot;:&quot;US&quot;,&quot;magic&quot;:&quot;Ashburn&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇺🇸</span> Ashburn, US</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="saopaulo"
+             data-name="São Paulo, Brazil"
+             data-cc="BR"
+             data-region="americas"
+             data-city="Sao Paulo"
+             data-filter="{&quot;country&quot;:&quot;BR&quot;,&quot;magic&quot;:&quot;Sao Paulo&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇧🇷</span> São Paulo, Brazil</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="oceania">
+      <h2 class="group__title">Oceania</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>Probe</span>
+          <span>Min / avg / max</span>
+          <span>Loss</span>
+          <span class="pinghead__bar">Avg latency</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="sydney"
+             data-name="Sydney, Australia"
+             data-cc="AU"
+             data-region="oceania"
+             data-city="Sydney"
+             data-filter="{&quot;country&quot;:&quot;AU&quot;,&quot;magic&quot;:&quot;Sydney&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇦🇺</span> Sydney, Australia</span>
+            <span class="pingrow__probe" data-ping-probe>Waiting</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">Min / avg / max</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">Loss</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="other" hidden>
+      <h2 class="group__title">Other</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>Probe</span>
+          <span>Min / avg / max</span>
+          <span>Loss</span>
+          <span class="pinghead__bar">Avg latency</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Global ping runs in your browser by calling the Globalping API directly. JavaScript is disabled, so this page can only show the probe list and notes. You can also use Globalping's official CLI in a terminal: <span class="mono">globalping ping example.com from Tokyo</span>.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What global ping is</h2>
+  <p>
+    Ping is the oldest and most common network diagnostic: send an ICMP Echo request to a target and wait for an Echo reply.
+    The round trip is the latency (RTT), and the share of requests without a reply is the packet loss.
+    But running <span class="mono">ping</span> on your own computer only ever measures the one route <strong>from you</strong> to the target.
+  </p>
+  <p>
+    Global ping runs the same test from around the world: probes in different countries and ISP networks ping the same target at once,
+    and the results are shown side by side. Use it to check a server's latency to China and to your users before buying it,
+    to see whether visitors in different regions connect quickly after a site launches, to check that every region hits a nearby node after a CDN switch,
+    or just to tell whether the problem is your own network or the server is really down. A ping from your own machine can't answer any of these.
+  </p>
+  <p>
+    Probes on this page come from <a href="https://globalping.io" target="_blank" rel="noopener external">Globalping</a>,
+    a free, open-source probe network maintained by the jsDelivr team, with probes hosted by volunteers and organizations around the world.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>The input is checked in your browser: only public IPv4 / IPv6 addresses or dotted domain names are accepted; private, reserved and localhost addresses are rejected.
+        A full URL also works; the script takes the host name from it.</li>
+    <li>The browser submits one measurement to Globalping directly: 1 probe in each of 13 regions, 3 packets each;
+        with TCP, it does 3 handshakes with port 443 on the target instead.</li>
+    <li>Progress is fetched from Globalping once a second and each row fills in as its probe finishes; polling stops when all are done or after about 30 seconds.</li>
+    <li>The summary shows the number of reachable probes, the fastest and slowest regions, and the addresses the target resolved to in each region.</li>
+  </ol>
+  <p>
+    Domains are <strong>resolved locally by each probe</strong>, not on your computer before sending.
+    Sites that use GeoDNS or a CDN may resolve to different addresses in different regions.
+    The "Resolved addresses" field lists every address returned in this run, and rows that differ from most probes are marked.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>Avg latency</strong> is the mean of three round trips, colored in four tiers:
+        under 100 ms is good (same city or nearby regions usually take a few to a few dozen milliseconds), 100–200 ms is OK,
+        200–350 ms is slow (typical for intercontinental routes), and above 350 ms is poor.</li>
+    <li><strong>A large gap between min and max</strong> means noticeable jitter; latency-sensitive uses (gaming, voice, remote desktop) will feel it.</li>
+    <li><strong>Packet loss</strong> is marked when it is not 0. Losing 1 of 3 packets is 33%; a one-off is not a concern, but loss in several regions at once is worth investigating.</li>
+    <li><strong>Unreachable</strong> means this probe got no reply to any packet. In ICMP mode the most common cause is that the target blocks ping;
+        switch to TCP 443 and try again. Only if TCP also fails does it mean the target really can't be reached from that region.</li>
+    <li><strong>No probe available</strong> means Globalping has no probe online in that region right now. It has nothing to do with the target; try again later.</li>
+  </ul>
+  <p>
+    Each row shows the city, AS number and ISP of the probe that actually ran the measurement. The next run may use a different probe in the same region,
+    and the numbers will change with it. When comparing two runs, first check whether the ISP is the same.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>Why do some probes show "Unreachable" when the site opens fine?</dt>
+    <dd>ICMP ping and opening a website are different kinds of traffic. Many servers, cloud security groups and corporate firewalls drop ICMP by default, so every ping times out while ports 80 / 443 keep serving. In that case switch the method to "TCP 443" and test again: if TCP works, the server is online and just doesn't answer ping; if TCP fails too, the target really can't be reached from that region.</dd>
+    <dt>What's the difference between ICMP and TCP 443, and which should I use?</dt>
+    <dd>ICMP is classic ping and measures the network-layer round trip, which is good for judging the route itself. TCP 443 measures the time to complete a three-way handshake with port 443 on the target. It is not affected by ICMP filtering and is closer to the connection time when a browser opens an HTTPS site; values are usually similar to ICMP or slightly higher. Use ICMP for server routes, and TCP for websites or when you get "Unreachable".</dd>
+    <dt>What does "measurement quota used up" mean?</dt>
+    <dd>Globalping's anonymous API counts quota per exit IP, about 250 "probe runs" per hour. One run on this page uses 13 probes, so you get roughly a dozen or more runs per hour. The quota recovers on a rolling hourly basis, so wait a bit and try again. Requests go straight from your browser, so the quota is yours alone and other visitors can't use it up.</dd>
+    <dt>Why do mainland China probes often have no result, or a different city each time?</dt>
+    <dd>Globalping probes are hosted by volunteers and organizations, and there are few public probes in mainland China, often offline. Each measurement picks one of the probes online at that moment at random, so the city and ISP may change each time; go by the city and AS number shown in the row. When a region happens to have no probe online, its row shows "No probe available".</dd>
+    <dt>Does this site record the targets I ping?</dt>
+    <dd>No. Measurement requests go straight from your browser to Globalping (api.globalping.io); this site's server neither relays them nor receives the target you enter. After a measurement starts, the address bar changes to /ping#host=… so a reload or shared link is prefilled: the part after # is a URL fragment, which the browser does not send with requests, so it never appears in this site's access logs. The only exception is old links in the /ping?host=… form: the query string after the question mark is part of the request, so opening it once is recorded in the standard access log like any visit, and the page immediately rewrites the address to the # form. Note that Globalping, as a third party, receives the target you enter and your IP address; it keeps measurement results on its platform for a while under its own policy, and anyone with the measurement ID can view them.</dd>
+  </dl>
+</article>

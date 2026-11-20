@@ -16,6 +16,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('ping');
   if (!root) return;
 
@@ -27,7 +29,7 @@
     var missingBox = root.querySelector('[data-ping-error]');
     var missingText = root.querySelector('[data-ping-error-text]');
     var missingHint = root.querySelector('[data-ping-progress]');
-    var missingMessage = '检测脚本加载失败，请刷新页面重试。';
+    var missingMessage = T('检测脚本加载失败，请刷新页面重试。', 'Failed to load the check script. Reload the page and try again.');
     if (missingBox && missingText) {
       missingText.textContent = missingMessage;
       missingBox.hidden = false;
@@ -153,12 +155,12 @@
   }
 
   function seconds(msValue) {
-    return (msValue / 1000).toFixed(1) + ' 秒';
+    return (msValue / 1000).toFixed(1) + T(' 秒', ' s');
   }
 
   function humanWait(sec) {
-    if (sec < 60) return Math.max(1, Math.round(sec)) + ' 秒';
-    return Math.ceil(sec / 60) + ' 分钟';
+    if (sec < 60) return Math.max(1, Math.round(sec)) + T(' 秒', ' s');
+    return Math.ceil(sec / 60) + T(' 分钟', ' min');
   }
 
   /* 四档与图例、prose 里的说明一致 */
@@ -235,19 +237,19 @@
       name.appendChild(flagNode);
       name.appendChild(document.createTextNode(' '));
     }
-    var label = countryLabel(cc) || '未知地区';
+    var label = countryLabel(cc) || T('未知地区', 'Unknown region');
     name.appendChild(document.createTextNode(label));
     var probeLine = el('span', 'pingrow__probe');
     nodeCell.appendChild(name);
     nodeCell.appendChild(probeLine);
 
     var rttCell = el('div', 'pingrow__rtt');
-    rttCell.appendChild(el('span', 'pingrow__k', '最小 / 平均 / 最大'));
+    rttCell.appendChild(el('span', 'pingrow__k', T('最小 / 平均 / 最大', 'Min / avg / max')));
     var rtt = el('span', 'pingrow__v mono');
     rttCell.appendChild(rtt);
 
     var lossCell = el('div', 'pingrow__loss');
-    lossCell.appendChild(el('span', 'pingrow__k', '丢包'));
+    lossCell.appendChild(el('span', 'pingrow__k', T('丢包', 'Loss')));
     var loss = el('span', 'pingrow__v mono');
     lossCell.appendChild(loss);
 
@@ -308,8 +310,8 @@
 
   function normalizeTarget(raw) {
     var value = String(raw || '').trim();
-    if (!value) return invalid('请输入要 Ping 的 IP 地址或域名。');
-    if (/\s/.test(value)) return invalid('目标里不能有空格。');
+    if (!value) return invalid(T('请输入要 Ping 的 IP 地址或域名。', 'Enter an IP address or domain to ping.'));
+    if (/\s/.test(value)) return invalid(T('目标里不能有空格。', 'The target can\'t contain spaces.'));
 
     var url = /^[a-z][a-z0-9+.\-]*:\/\/([^\/?#]*)/i.exec(value);
     value = url ? url[1] : value.split(/[\/?#]/)[0];
@@ -317,7 +319,7 @@
 
     if (value.charAt(0) === '[') {
       var end = value.indexOf(']');
-      if (end < 0) return invalid('IPv6 地址格式不对。');
+      if (end < 0) return invalid(T('IPv6 地址格式不对。', 'Invalid IPv6 address.'));
       value = value.slice(1, end);
     } else if (/^[^:]+:\d+$/.test(value)) {
       value = value.replace(/:\d+$/, '');
@@ -328,12 +330,12 @@
       try {
         value = new URL('http://' + value + '/').hostname;
       } catch (e) {
-        return invalid('域名格式不对。');
+        return invalid(T('域名格式不对。', 'Invalid domain name.'));
       }
     }
 
     value = value.replace(/\.$/, '').toLowerCase();
-    if (!value) return invalid('请输入要 Ping 的 IP 地址或域名。');
+    if (!value) return invalid(T('请输入要 Ping 的 IP 地址或域名。', 'Enter an IP address or domain to ping.'));
 
     if (value.indexOf(':') !== -1) return checkIPv6(value);
     if (/^[0-9.]+$/.test(value)) return checkIPv4(value);
@@ -342,13 +344,13 @@
 
   function checkIPv4(value) {
     var parts = value.split('.');
-    if (parts.length !== 4) return invalid('IPv4 地址应为四段数字，例如 8.8.8.8。');
+    if (parts.length !== 4) return invalid(T('IPv4 地址应为四段数字，例如 8.8.8.8。', 'An IPv4 address has four numbers, for example 8.8.8.8.'));
 
     var octets = [];
     for (var i = 0; i < 4; i++) {
       /* 带前导零的写法（010）在不同实现里可能被当成八进制，直接拒绝，免得 Ping 到另一个地址 */
       if (!/^(0|[1-9]\d{0,2})$/.test(parts[i]) || Number(parts[i]) > 255) {
-        return invalid('IPv4 地址每段应为 0–255 的数字，例如 8.8.8.8。');
+        return invalid(T('IPv4 地址每段应为 0–255 的数字，例如 8.8.8.8。', 'Each part of an IPv4 address must be 0–255, for example 8.8.8.8.'));
       }
       octets.push(Number(parts[i]));
     }
@@ -359,7 +361,7 @@
       var base = ((b[0] * 256 + b[1]) * 256 + b[2]) * 256 + b[3];
       var size = Math.pow(2, 32 - V4_RESERVED[j][1]);
       if (Math.floor(n / size) === Math.floor(base / size)) {
-        return invalid(value + ' 是内网或保留地址，公网上的探针无法 Ping 到它。');
+        return invalid(value + T(' 是内网或保留地址，公网上的探针无法 Ping 到它。', ' is a private or reserved address; public probes can\'t ping it.'));
       }
     }
 
@@ -367,24 +369,24 @@
   }
 
   function checkIPv6(value) {
-    if (!/^[0-9a-f:]+$/.test(value)) return invalid('IPv6 地址格式不对（不支持带 % 的区域标识或内嵌 IPv4 的写法）。');
+    if (!/^[0-9a-f:]+$/.test(value)) return invalid(T('IPv6 地址格式不对（不支持带 % 的区域标识或内嵌 IPv4 的写法）。', 'Invalid IPv6 address (zone IDs with % and embedded IPv4 are not supported).'));
 
     var halves = value.split('::');
-    if (halves.length > 2) return invalid('IPv6 地址格式不对。');
+    if (halves.length > 2) return invalid(T('IPv6 地址格式不对。', 'Invalid IPv6 address.'));
     var head = halves[0] ? halves[0].split(':') : [];
     var tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
     var groups = head.concat(tail);
     for (var i = 0; i < groups.length; i++) {
-      if (!/^[0-9a-f]{1,4}$/.test(groups[i])) return invalid('IPv6 地址格式不对。');
+      if (!/^[0-9a-f]{1,4}$/.test(groups[i])) return invalid(T('IPv6 地址格式不对。', 'Invalid IPv6 address.'));
     }
-    if (halves.length === 1 ? groups.length !== 8 : groups.length > 7) return invalid('IPv6 地址格式不对。');
+    if (halves.length === 1 ? groups.length !== 8 : groups.length > 7) return invalid(T('IPv6 地址格式不对。', 'Invalid IPv6 address.'));
 
     /* 只放行全球单播 2000::/3，再扣掉两段文档示例地址：2001:db8::/32 与 3fff::/20 */
     var key = P.ipKey(value);
     var first = parseInt(key.slice(0, 4), 16);
     var second = parseInt(key.slice(5, 9), 16);
     if (first < 0x2000 || first > 0x3fff || (first === 0x2001 && second === 0x0db8) || (first === 0x3fff && second < 0x1000)) {
-      return invalid('这是内网、链路本地或保留的 IPv6 地址，公网上的探针无法 Ping 到它。');
+      return invalid(T('这是内网、链路本地或保留的 IPv6 地址，公网上的探针无法 Ping 到它。', 'This is a private, link-local or reserved IPv6 address; public probes can\'t ping it.'));
     }
 
     return { ok: true, value: value, kind: 'ipv6' };
@@ -392,22 +394,22 @@
 
   function checkHost(value) {
     if (value === 'localhost' || /\.localhost$/.test(value)) {
-      return invalid('localhost 指的是你自己的电脑，远方的探针 Ping 不到它。');
+      return invalid(T('localhost 指的是你自己的电脑，远方的探针 Ping 不到它。', 'localhost is your own computer; remote probes can\'t ping it.'));
     }
-    if (value.length > 253) return invalid('域名太长了（最多 253 个字符）。');
+    if (value.length > 253) return invalid(T('域名太长了（最多 253 个字符）。', 'The domain is too long (253 characters max).'));
 
     var labels = value.split('.');
-    if (labels.length < 2) return invalid('请输入完整的域名（例如 example.com），或公网 IP 地址。');
+    if (labels.length < 2) return invalid(T('请输入完整的域名（例如 example.com），或公网 IP 地址。', 'Enter a full domain (for example example.com) or a public IP address.'));
     for (var i = 0; i < labels.length; i++) {
       if (!/^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$/.test(labels[i])) {
-        return invalid('域名只能由字母、数字和连字符组成，每一段不能以连字符开头或结尾。');
+        return invalid(T('域名只能由字母、数字和连字符组成，每一段不能以连字符开头或结尾。', 'A domain can only contain letters, digits and hyphens, and no label can start or end with a hyphen.'));
       }
     }
 
     var tld = labels[labels.length - 1];
-    if (!/^(?:[a-z]{2,63}|xn--[a-z0-9\-]{1,59})$/.test(tld)) return invalid('域名后缀不对。');
+    if (!/^(?:[a-z]{2,63}|xn--[a-z0-9\-]{1,59})$/.test(tld)) return invalid(T('域名后缀不对。', 'Invalid top-level domain.'));
     if (RESERVED_TLDS.indexOf(tld) !== -1) {
-      return invalid('.' + tld + ' 是内网或保留用的后缀，公网上的探针解析不到它。');
+      return invalid('.' + tld + T(' 是内网或保留用的后缀，公网上的探针解析不到它。', ' is a private or reserved suffix; public probes can\'t resolve it.'));
     }
 
     return { ok: true, value: value, kind: 'host' };
@@ -476,10 +478,10 @@
   function failureReason(raw) {
     var line = String(raw || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean)[0] || '';
     if (/unknown host|not known|could not resolve|name resolution|enotfound|nxdomain|no address|failed to resolve|servfail/i.test(line)) {
-      return '域名解析失败';
+      return T('域名解析失败', 'DNS resolution failed');
     }
-    if (/private|reserved|not allowed/i.test(line)) return '目标解析到了内网或保留地址，探针拒绝测量';
-    if (!line) return '探针未返回原因';
+    if (/private|reserved|not allowed/i.test(line)) return T('目标解析到了内网或保留地址，探针拒绝测量', 'The target resolves to a private or reserved address; the probe refused to measure');
+    if (!line) return T('探针未返回原因', 'The probe gave no reason');
     return line.length > 100 ? line.slice(0, 100) + '…' : line;
   }
 
@@ -526,11 +528,11 @@
 
     var line = probeLine(item, primary);
     if (outcome.kind === 'error') line.push(el('span', 'pingrow__why', outcome.reason));
-    fill(row.probe, line.length ? line : [dim('探针信息缺失')]);
+    fill(row.probe, line.length ? line : [dim(T('探针信息缺失', 'Probe info missing'))]);
 
     if (outcome.kind === 'running') {
       setRowState(row, 'running');
-      fill(row.rtt, [el('span', 'pingrow__wait', '测量中…')]);
+      fill(row.rtt, [el('span', 'pingrow__wait', T('测量中…', 'Measuring…'))]);
       fill(row.loss, [dim('—')]);
       fill(row.barCell, [bar(null)]);
       return;
@@ -554,11 +556,11 @@
     }
 
     setRowState(row, outcome.kind === 'down' || outcome.kind === 'error' ? 'down' : 'none');
-    var label = outcome.kind === 'offline' ? tag('muted', '探针离线')
-      : outcome.kind === 'error' ? tag('leak', '探测失败')
-      : tag('leak', '不可达');
+    var label = outcome.kind === 'offline' ? tag('muted', T('探针离线', 'Probe offline'))
+      : outcome.kind === 'error' ? tag('leak', T('探测失败', 'Failed'))
+      : tag('leak', T('不可达', 'Unreachable'));
     if (outcome.kind === 'down') {
-      label.title = isTcp ? '3 次握手都没有收到回应' : '3 个包都没有收到回应：目标可能屏蔽了 ICMP，可以换 TCP 443 再测';
+      label.title = isTcp ? T('3 次握手都没有收到回应', 'No reply to any of the 3 handshakes') : T('3 个包都没有收到回应：目标可能屏蔽了 ICMP，可以换 TCP 443 再测', 'No reply to any of the 3 packets: the target may block ICMP; try TCP 443');
     }
     fill(row.rtt, [label]);
     fill(row.loss, [outcome.kind === 'down' ? tag('leak', '100%') : dim('—')]);
@@ -592,7 +594,7 @@
 
   function renderResolved(summary) {
     if (!summary.list.length) {
-      fill(resolvedCell, [dim('等待探针返回')]);
+      fill(resolvedCell, [dim(T('等待探针返回', 'Waiting for probes'))]);
       return;
     }
     var box = el('span', 'tags');
@@ -603,7 +605,7 @@
       node.title = addr;
       box.appendChild(node);
     });
-    if (summary.list.length > shown.length) box.appendChild(dim('等 ' + summary.list.length + ' 个'));
+    if (summary.list.length > shown.length) box.appendChild(dim(T('等 ', '') + summary.list.length + T(' 个', ' in total')));
     fill(resolvedCell, [box]);
   }
 
@@ -620,7 +622,7 @@
   }
 
   function rawLink(id) {
-    var link = el('a', 'pinglink', '原始数据');
+    var link = el('a', 'pinglink', T('原始数据', 'Raw data'));
     link.href = API + '/' + encodeURIComponent(id);
     link.target = '_blank';
     link.rel = 'noopener noreferrer external';
@@ -644,36 +646,36 @@
 
     /* 没出结果的几类分开说：「没分到探针」与目标无关，「超时」「离线」是探针那一侧的问题 */
     var gaps = [];
-    if (missing.noprobe) gaps.push(missing.noprobe + ' 个地区暂无可用探针');
-    if (missing.timeout) gaps.push(missing.timeout + ' 台探针未在时限内测完');
-    if (missing.offline) gaps.push(missing.offline + ' 台探针中途离线');
-    var tail = gaps.length ? '另有 ' + gaps.join('，') + '。' : '';
+    if (missing.noprobe) gaps.push(missing.noprobe + T(' 个地区暂无可用探针', ' regions had no probe available'));
+    if (missing.timeout) gaps.push(missing.timeout + T(' 台探针未在时限内测完', ' probes did not finish in time'));
+    if (missing.offline) gaps.push(missing.offline + T(' 台探针中途离线', ' probes went offline midway'));
+    var tail = gaps.length ? T('另有 ', ' Also: ') + gaps.join(T('，', ', ')) + T('。', '.') : '';
     var names = function (list) {
-      var picked = list.slice(0, 4).map(function (row) { return row.name; }).join('、');
-      return list.length > 4 ? picked + ' 等 ' + list.length + ' 个' : picked;
+      var picked = list.slice(0, 4).map(function (row) { return row.name; }).join(T('、', ', '));
+      return list.length > 4 ? picked + T(' 等 ', ' and others, ') + list.length + T(' 个', ' in total') : picked;
     };
 
     if (!ok.length && !down.length && !errors.length) {
-      showVerdict('is-warn', '没有拿到任何节点的结果',
+      showVerdict('is-warn', T('没有拿到任何节点的结果', 'No results from any probe'),
         timedOut
-          ? '探针没能在约 ' + Math.round(POLL_MAX * POLL_MS / 1000) + ' 秒内测完。Globalping 繁忙时偶尔会这样，稍等片刻再测一次。'
-          : '这一刻 Globalping 在所选地区都没有可用的探针，稍后再试。');
+          ? T('探针没能在约 ', 'The probes did not finish within about ') + Math.round(POLL_MAX * POLL_MS / 1000) + T(' 秒内测完。Globalping 繁忙时偶尔会这样，稍等片刻再测一次。', ' seconds. This happens now and then when Globalping is busy; wait a moment and try again.')
+          : T('这一刻 Globalping 在所选地区都没有可用的探针，稍后再试。', 'Globalping has no probe available in the selected regions right now. Try again later.'));
       return;
     }
 
     if (!ok.length && errors.length && !down.length) {
-      showVerdict('is-bad', '目标无法解析或探测失败',
-        '探针报告：' + errors[0].outcome.reason + '。请检查域名拼写，或确认它有公网的 A / AAAA 记录。');
+      showVerdict('is-bad', T('目标无法解析或探测失败', 'Target can\'t be resolved or the probe failed'),
+        T('探针报告：', 'Probe reported: ') + errors[0].outcome.reason + T('。请检查域名拼写，或确认它有公网的 A / AAAA 记录。', '. Check the spelling of the domain, or make sure it has public A / AAAA records.'));
       return;
     }
 
     if (!ok.length) {
-      showVerdict('is-bad', '所有节点都不可达',
+      showVerdict('is-bad', T('所有节点都不可达', 'No probe can reach the target'),
         state.tcp
-          ? '各地探针与目标 ' + PORT + ' 端口的握手都没有成功：这个端口可能没有开放，或者目标确实离线。'
-            + '如果目标是网站域名，确认它解析到的地址是否正确。'
-          : '很可能是目标屏蔽了 ICMP——云服务器的安全组、企业防火墙默认如此，并不代表服务不可用。'
-            + '把方式切到 TCP ' + PORT + ' 再测一次：TCP 也全部不通，才说明目标确实连不上。');
+          ? T('各地探针与目标 ', 'No probe completed a handshake with port ') + PORT + T(' 端口的握手都没有成功：这个端口可能没有开放，或者目标确实离线。', ' on the target: the port may be closed, or the target is really offline.')
+            + T('如果目标是网站域名，确认它解析到的地址是否正确。', ' If the target is a website, check that it resolves to the right address.')
+          : T('很可能是目标屏蔽了 ICMP：云服务器的安全组、企业防火墙默认如此，并不代表服务不可用。', 'Most likely the target blocks ICMP. Cloud security groups and corporate firewalls do this by default; it doesn\'t mean the service is down.')
+            + T('把方式切到 TCP ', ' Switch the method to TCP ') + PORT + T(' 再测一次：TCP 也全部不通，才说明目标确实连不上。', ' and test again. Only if TCP fails everywhere too is the target really unreachable.'));
       return;
     }
 
@@ -681,24 +683,24 @@
     var fastest = sorted[0];
     var slowest = sorted[sorted.length - 1];
     var median = P.median(ok.map(function (row) { return row.outcome.stats.avg; }));
-    var speed = '最快的是' + fastest.name + '（' + ms(fastest.outcome.stats.avg) + ' ms）'
-      + (sorted.length > 1 ? '，最慢的是' + slowest.name + '（' + ms(slowest.outcome.stats.avg) + ' ms）' : '')
-      + (sorted.length > 2 ? '，各地平均延迟的中位数约 ' + ms(median) + ' ms' : '') + '。';
+    var speed = T('最快的是', 'Fastest: ') + fastest.name + T('（', ' (') + ms(fastest.outcome.stats.avg) + T(' ms）', ' ms)')
+      + (sorted.length > 1 ? T('，最慢的是', ', slowest: ') + slowest.name + T('（', ' (') + ms(slowest.outcome.stats.avg) + T(' ms）', ' ms)') : '')
+      + (sorted.length > 2 ? T('，各地平均延迟的中位数约 ', ', median of regional averages about ') + ms(median) + ' ms' : '') + T('。', '.');
 
     if (down.length || errors.length) {
       var what = [];
-      if (down.length) what.push(names(down) + '没有收到回应');
-      if (errors.length) what.push(names(errors) + '探测失败（' + errors[0].outcome.reason + '）');
-      showVerdict('is-warn', ok.length + ' 个节点可达，' + (down.length + errors.length) + ' 个不可达',
-        what.join('，') + (!down.length ? '。'
+      if (down.length) what.push(names(down) + T('没有收到回应', ' got no reply'));
+      if (errors.length) what.push(names(errors) + T('探测失败（', ' failed (') + errors[0].outcome.reason + T('）', ')'));
+      showVerdict('is-warn', ok.length + T(' 个节点可达，', ' reachable, ') + (down.length + errors.length) + T(' 个不可达', ' unreachable'),
+        what.join(T('，', ', ')) + (!down.length ? T('。', '.')
           : state.tcp
-            ? '，可能是那一带到目标的线路有问题，或目标对部分地区做了封锁。'
-            : '。如果只是个别地区，可能是当地线路或防火墙过滤了 ICMP，可以换 TCP ' + PORT + ' 对照。')
+            ? T('，可能是那一带到目标的线路有问题，或目标对部分地区做了封锁。', '; the route from those areas to the target may have problems, or the target blocks some regions.')
+            : T('。如果只是个别地区，可能是当地线路或防火墙过滤了 ICMP，可以换 TCP ', '. If only a few regions, the local route or a firewall may be filtering ICMP; compare with TCP ') + PORT + T(' 对照。', '.'))
           + speed + tail);
       return;
     }
 
-    showVerdict('is-good', (tail ? '测到的 ' : '全部 ') + ok.length + ' 个节点均可达', speed + tail);
+    showVerdict('is-good', (tail ? T('测到的 ', 'All ') : T('全部 ', 'All ')) + ok.length + T(' 个节点均可达', ' probes reachable'), speed + tail);
   }
 
   /* ---------------------------------------------------------------- 主流程 */
@@ -716,7 +718,7 @@
   function setRunning(on) {
     running = on;
     runButton.disabled = on;
-    runButton.textContent = on ? '测量中' : '开始';
+    runButton.textContent = on ? T('测量中', 'Measuring') : T('开始', 'Start');
     if (proto) proto.disabled = on;
   }
 
@@ -729,10 +731,10 @@
   /* 创建失败、或轮询彻底失败且一条结果都没拿到：所有行回到「未测量」，结论写明原因 */
   function fail(state, title, note) {
     if (state.token !== token) return;
-    resetRows('未测量', null);
+    resetRows(T('未测量', 'Not measured'), null);
     showVerdict('is-bad', title, note);
-    setProgress('这一轮没有完成，原因见下方说明。');
-    fill(statusCell, state.id ? [dim('测量未完成 · '), rawLink(state.id)] : [dim('未能创建测量')]);
+    setProgress(T('这一轮没有完成，原因见下方说明。', 'This run did not finish; see the reason below.'));
+    fill(statusCell, state.id ? [dim(T('测量未完成 · ', 'Measurement incomplete · ')), rawLink(state.id)] : [dim(T('未能创建测量', 'Could not create a measurement'))]);
     fill(resolvedCell, [dim('—')]);
     setRunning(false);
   }
@@ -740,14 +742,14 @@
   function networkFailure(state, failure, during) {
     var kind = failure && failure.kind;
     if (kind === 'csp') {
-      fail(state, '浏览器拦下了对 Globalping 的请求',
-        '本页的内容安全策略（CSP）没有放行 api.globalping.io，这是本站的部署配置问题，不是你的网络问题。');
+      fail(state, T('浏览器拦下了对 Globalping 的请求', 'The browser blocked the request to Globalping'),
+        T('本页的内容安全策略（CSP）没有放行 api.globalping.io，这是本站的部署配置问题，不是你的网络问题。', 'This page\'s Content Security Policy (CSP) does not allow api.globalping.io. This is a deployment configuration issue on this site, not your network.'));
     } else if (kind === 'timeout') {
-      fail(state, '连接 Globalping 超时',
-        during + '时等待太久没有响应。api.globalping.io 在部分网络下访问不稳定，稍后重试，或换一个网络环境。');
+      fail(state, T('连接 Globalping 超时', 'Connection to Globalping timed out'),
+        during + T('时等待太久没有响应。api.globalping.io 在部分网络下访问不稳定，稍后重试，或换一个网络环境。', ' got no response for too long. api.globalping.io is unstable on some networks; try again later or from another network.'));
     } else {
-      fail(state, '无法连接 Globalping',
-        during + '失败：请求没能到达 api.globalping.io（可能被当前网络、代理规则或浏览器扩展拦截）。');
+      fail(state, T('无法连接 Globalping', 'Can\'t connect to Globalping'),
+        during + T('失败：请求没能到达 api.globalping.io（可能被当前网络、代理规则或浏览器扩展拦截）。', ' failed: the request did not reach api.globalping.io (it may be blocked by your network, proxy rules or a browser extension).'));
     }
   }
 
@@ -766,21 +768,21 @@
       try {
         wait = parseInt(headers.get('Retry-After') || headers.get('X-RateLimit-Reset') || '', 10);
       } catch (e) { wait = NaN; }
-      fail(state, '这一小时的测量额度用完了',
-        'Globalping 按你的出口 IP 限制匿名测量：每小时约 250 个「探针·次」，本页每轮消耗 ' + baseRows.length + ' 次。'
-        + (isNum(wait) && wait > 0 ? '额度约 ' + humanWait(wait) + '后恢复。' : '额度按小时滚动恢复，稍后再试。')
-        + '如果你和很多人共用同一个出口（公司网络、公共代理），额度可能已被别人用掉。');
+      fail(state, T('这一小时的测量额度用完了', 'Measurement quota used up for this hour'),
+        T('Globalping 按你的出口 IP 限制匿名测量：每小时约 250 个「探针·次」，本页每轮消耗 ', 'Globalping limits anonymous measurements by exit IP: about 250 "probe runs" per hour, and each run on this page uses ') + baseRows.length + T(' 次。', '.')
+        + (isNum(wait) && wait > 0 ? T('额度约 ', 'The quota recovers in about ') + humanWait(wait) + T('后恢复。', '.') : T('额度按小时滚动恢复，稍后再试。', 'The quota recovers on a rolling hourly basis; try again later.'))
+        + T('如果你和很多人共用同一个出口（公司网络、公共代理），额度可能已被别人用掉。', 'If you share an exit with many people (office network, public proxy), others may have used up the quota.'));
     } else if (status === 400) {
-      fail(state, 'Globalping 拒绝了这个目标',
-        '它认为这次测量的参数不合法' + (detail ? '：' + detail : '。') + ' 请确认目标是公网 IP 或可以公开解析的域名。');
+      fail(state, T('Globalping 拒绝了这个目标', 'Globalping rejected this target'),
+        T('它认为这次测量的参数不合法', 'It considers the measurement parameters invalid') + (detail ? T('：', ': ') + detail : T('。', '.')) + T(' 请确认目标是公网 IP 或可以公开解析的域名。', ' Make sure the target is a public IP or a publicly resolvable domain.'));
     } else if (status === 422) {
-      fail(state, '没有找到可用的探针',
-        'Globalping 这一刻在所选地区都找不到能执行这次测量的探针（IPv6 目标可用的探针更少），稍后再试。');
+      fail(state, T('没有找到可用的探针', 'No probe available'),
+        T('Globalping 这一刻在所选地区都找不到能执行这次测量的探针（IPv6 目标可用的探针更少），稍后再试。', 'Globalping can\'t find a probe in the selected regions that can run this measurement right now (fewer probes support IPv6 targets). Try again later.'));
     } else if (status >= 500) {
-      fail(state, 'Globalping 暂时不可用', '服务端返回了 HTTP ' + status + '，通常是临时故障，过几分钟再试。');
+      fail(state, T('Globalping 暂时不可用', 'Globalping is temporarily unavailable'), T('服务端返回了 HTTP ', 'The server returned HTTP ') + status + T('，通常是临时故障，过几分钟再试。', ', usually a temporary failure. Try again in a few minutes.'));
     } else {
-      fail(state, 'Globalping 返回了意外的响应',
-        'HTTP ' + status + (detail ? '：' + detail : '') + '。稍后再试。');
+      fail(state, T('Globalping 返回了意外的响应', 'Globalping returned an unexpected response'),
+        'HTTP ' + status + (detail ? T('：', ': ') + detail : '') + T('。稍后再试。', '. Try again later.'));
     }
   }
 
@@ -802,15 +804,15 @@
     setRunning(true);
     showError('');
     if (verdict) verdict.hidden = true;
-    resetRows('排队中', function () { return el('span', 'pingrow__wait', '等待分配探针…'); });
+    resetRows(T('排队中', 'Queued'), function () { return el('span', 'pingrow__wait', T('等待分配探针…', 'Waiting for probe assignment…')); });
 
     fill(targetCell, [el('span', 'mono', target.value)]);
     fill(modeCell, [document.createTextNode(tcp
-      ? 'TCP ' + PORT + ' · 每个节点握手 ' + PACKETS + ' 次'
-      : 'ICMP · 每个节点 ' + PACKETS + ' 个包')]);
-    fill(resolvedCell, [dim(target.kind === 'host' ? '等待探针解析' : '—')]);
-    fill(statusCell, [dim('正在提交')]);
-    setProgress('正在向 Globalping 提交测量…');
+      ? 'TCP ' + PORT + T(' · 每个节点握手 ', ' · ') + PACKETS + T(' 次', ' handshakes per probe')
+      : T('ICMP · 每个节点 ', 'ICMP · ') + PACKETS + T(' 个包', ' packets per probe'))]);
+    fill(resolvedCell, [dim(target.kind === 'host' ? T('等待探针解析', 'Waiting for probes to resolve') : '—')]);
+    fill(statusCell, [dim(T('正在提交', 'Submitting'))]);
+    setProgress(T('正在向 Globalping 提交测量…', 'Submitting the measurement to Globalping…'));
 
     /* 地址栏换成可以分享的 /ping#host=…：只预填、不自动测，转发给别人也不会替他消耗额度 */
     rememberTarget(target.value);
@@ -849,18 +851,18 @@
         /* 剩余额度只有在 Globalping 通过 Access-Control-Expose-Headers 暴露了这个头时才读得到；读不到就不提 */
         try { state.remaining = parseInt(reply.headers.get('X-RateLimit-Remaining') || '', 10); } catch (e) { state.remaining = NaN; }
         var count = isNum(reply.data.probesCount) ? reply.data.probesCount : baseRows.length;
-        setProgress('已分配 ' + count + ' 台探针，正在测量…');
-        fill(statusCell, [dim('测量中：0 / ' + count)]);
+        setProgress(T('已分配 ', 'Assigned ') + count + T(' 台探针，正在测量…', ' probes, measuring…'));
+        fill(statusCell, [dim(T('测量中：0 / ', 'Measuring: 0 / ') + count)]);
         window.setTimeout(function () { poll(state); }, Math.min(POLL_MS, 800));
         return;
       }
       if (reply.status >= 200 && reply.status < 300) {
-        fail(state, 'Globalping 返回了意外的响应', '创建测量成功，但响应里没有测量 ID。稍后再试。');
+        fail(state, T('Globalping 返回了意外的响应', 'Globalping returned an unexpected response'), T('创建测量成功，但响应里没有测量 ID。稍后再试。', 'The measurement was created, but the response had no measurement ID. Try again later.'));
         return;
       }
       createFailure(state, reply.status, reply.data, reply.headers);
     }, function (failure) {
-      networkFailure(state, failure, '提交测量');
+      networkFailure(state, failure, T('提交测量', 'Submitting the measurement'));
     });
   }
 
@@ -901,13 +903,13 @@
       var gone = failure && failure.kind === 'http' && failure.status === 404;
       if (gone || state.fails >= POLL_FAIL_MAX || state.polls >= POLL_MAX) {
         if (state.last) {
-          finish(state, true, '读取进度失败，下面是中断前拿到的部分结果。');
+          finish(state, true, T('读取进度失败，下面是中断前拿到的部分结果。', 'Failed to read progress; below are the partial results received before the interruption.'));
         } else if (gone) {
-          fail(state, '测量结果已不存在', 'Globalping 找不到这次测量（可能已过期），请重新开始。');
+          fail(state, T('测量结果已不存在', 'Measurement no longer exists'), T('Globalping 找不到这次测量（可能已过期），请重新开始。', 'Globalping can\'t find this measurement (it may have expired). Start again.'));
         } else if (failure && failure.kind === 'http') {
-          fail(state, '读取测量结果失败', 'Globalping 返回了 HTTP ' + failure.status + '，稍后重试。');
+          fail(state, T('读取测量结果失败', 'Failed to read the results'), T('Globalping 返回了 HTTP ', 'Globalping returned HTTP ') + failure.status + T('，稍后重试。', '. Try again later.'));
         } else {
-          networkFailure(state, failure, '读取测量结果');
+          networkFailure(state, failure, T('读取测量结果', 'Reading the results'));
         }
         return;
       }
@@ -929,8 +931,8 @@
     });
 
     renderResolved(summary);
-    fill(statusCell, [dim('测量中：' + done + ' / ' + results.length + ' · '), rawLink(state.id)]);
-    if (results.length) setProgress('正在测量：' + done + ' / ' + results.length + ' 个节点已完成…');
+    fill(statusCell, [dim(T('测量中：', 'Measuring: ') + done + ' / ' + results.length + ' · '), rawLink(state.id)]);
+    if (results.length) setProgress(T('正在测量：', 'Measuring: ') + done + ' / ' + results.length + T(' 个节点已完成…', ' probes done…'));
   }
 
   function finish(state, timedOut, note) {
@@ -939,23 +941,23 @@
     var measured = 0;
     rows.forEach(function (row) {
       if (row.index === null) {
-        closeRow(row, 'noprobe', '无探针', '这一地区暂无可用探针');
+        closeRow(row, 'noprobe', T('无探针', 'No probe'), T('这一地区暂无可用探针', 'No probe available in this region'));
       } else if (!row.outcome || row.outcome.kind === 'running') {
-        closeRow(row, 'timeout', timedOut ? '超时' : '未完成');
+        closeRow(row, 'timeout', timedOut ? T('超时', 'Timed out') : T('未完成', 'Incomplete'));
       } else {
         measured++;
       }
     });
 
     var elapsed = seconds(P.now() - state.started);
-    fill(statusCell, [document.createTextNode(measured + ' / ' + rows.length + ' 个节点完成 · 用时 ' + elapsed + ' · '), rawLink(state.id)]);
-    if (state.last && !resolvedSummary(state.last.results).list.length) fill(resolvedCell, [dim('未解析到地址')]);
+    fill(statusCell, [document.createTextNode(measured + ' / ' + rows.length + T(' 个节点完成 · 用时 ', ' probes done · took ') + elapsed + ' · '), rawLink(state.id)]);
+    if (state.last && !resolvedSummary(state.last.results).list.length) fill(resolvedCell, [dim(T('未解析到地址', 'No address resolved'))]);
 
     summarize(state, timedOut);
     if (note && verdictNote) verdictNote.textContent = note + ' ' + verdictNote.textContent;
 
-    setProgress('测量完成，用时 ' + elapsed + '。可以换个目标或方式再测一次——每轮消耗 ' + baseRows.length + ' 次 Globalping 额度'
-      + (isNum(state.remaining) && state.remaining >= 0 ? '，这一小时还剩约 ' + state.remaining + ' 次。' : '。'));
+    setProgress(T('测量完成，用时 ', 'Done in ') + elapsed + T('。可以换个目标或方式再测一次，每轮消耗 ', '. Try another target or method; each run uses ') + baseRows.length + T(' 次 Globalping 额度', ' Globalping quota units')
+      + (isNum(state.remaining) && state.remaining >= 0 ? T('，这一小时还剩约 ', ', remaining this hour: about ') + state.remaining + T(' 次。', '.') : T('。', '.')));
     setRunning(false);
   }
 
@@ -1008,7 +1010,7 @@
     if (!preset.value) return;
     input.value = preset.value;
     showError('');
-    setProgress('已填入 ' + preset.value + '，选择探测方式后点「开始」。每轮消耗 ' + baseRows.length + ' 次 Globalping 额度。');
+    setProgress(T('已填入 ', 'Filled in ') + preset.value + T('，选择探测方式后点「开始」。每轮消耗 ', '. Pick a method and click "Start". Each run uses ') + baseRows.length + T(' 次 Globalping 额度。', ' Globalping quota units.'));
   }
 
   applyPreset();
