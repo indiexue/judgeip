@@ -1,0 +1,190 @@
+
+<section class="hero">
+  <h1 class="hero__title">Privacy policy</h1>
+</section>
+
+<article class="prose prose--page">
+  <p class="prose__meta">Last updated: November 20, 2026</p>
+
+  <p>
+    judgeip.com ("this site") is an IP lookup and network testing tool. This policy explains what information this site processes when you use it,
+    why, how long it is kept and who receives it. This site has no accounts and does not ask for your name, email, phone number or any other identifying information.
+  </p>
+
+  <h2>1. Information this site processes</h2>
+
+  <h3>1. Your IP address and access logs</h3>
+  <p>
+    Showing your public IP is this site's core function, so the server sees your IP address whenever you open any page.
+    Like most websites, the web server keeps standard access logs (IP address, time, request path, browser User-Agent, referring page),
+    used only for troubleshooting and abuse prevention and deleted periodically under the server's log rotation policy.
+    When the server fails to look up an IP with an upstream provider, the error log also records that IP and the reason, with the same purpose and retention.
+  </p>
+
+  <h3>2. IP lookups</h3>
+  <p>
+    When you open the home page or look up an IP by hand, that IP address is sent to the IP data providers this site uses to obtain location, ASN, network type,
+    threat and proxy intelligence; a reverse DNS (PTR) lookup is also done. When you open the Cloudflare edge check or the CDN edge nodes page,
+    the page estimates how far nodes are from you using the approximate location of your IP, so the same lookup is done for your IP (without reverse DNS; see section 8).
+    To reduce repeated upstream requests, results are cached in the server's in-memory database keyed by IP address:
+    normal results for 24 hours, fallback copies used during upstream outages for 7 days, and reverse DNS results for 1–24 hours.
+    The human/bot traffic ratio for an ASN is queried from Cloudflare Radar by ASN (not by IP) and cached for 6 hours.
+  </p>
+
+  <h3>3. Multi-database location</h3>
+  <p>
+    The "Multi-database location" section on the home page lists the country, state/province and city that the IP2Location, DB-IP, MaxMind, IPinfo and Cloudflare location databases each give for the same IP.
+    Who fetches the data depends on the case:
+  </p>
+  <ul>
+    <li><strong>When viewing your own IP, your browser asks directly</strong>: the browser puts the IP shown on the page in the request URL
+        and sends it to the public lookup APIs of IP2Location (<span class="mono">api.ip2location.io</span>), DB-IP (<span class="mono">api.db-ip.com</span>) and IPinfo (<span class="mono">ipinfo.io</span>).
+        These three therefore see two things at once: <strong>the source address of the request</strong> (the exit your browser used to reach them)
+        and <strong>the IP being looked up</strong> (your address as this site sees it), plus the User-Agent and request time that every network request carries.
+        Usually the two addresses are the same. But with a split-routing proxy (this site and these three are reached through different exits), or on a dual-stack IPv4 / IPv6 network
+        (each side used a different address family), they differ, and <strong>these three can link your two addresses</strong>.
+        The requests carry no cookies and no Referer, but under the browser's cross-origin rules they include <span class="mono">Origin: https://judgeip.com</span>, so the providers know the request came from this site.
+        How they handle this information is governed by their own privacy policies, which this site does not control. If you don't want them to see this link, block the three domains above with a content blocker before opening the home page:
+        those rows will then be looked up by this site's server instead (see "What the browser couldn't fetch" below), and the providers will only see this site's server looking up the IP.</li>
+    <li><strong>The Cloudflare row</strong>: also only when viewing your own IP, the browser requests <span class="mono">/cdn-cgi/trace</span> from
+        <span class="mono">speed.cloudflare.com</span>. The request carries no IP; Cloudflare only sees the connection's source address, and the page only takes the country it reports.
+        If the address it sees differs from the IP on the page, the row shows no location. Results of these browser requests are shown only on the page and not sent back to this site.</li>
+    <li><strong>What the browser couldn't fetch is filled in by this site's server</strong>: when a provider is blocked, unreadable, returns an error or runs out of quota, the page asks this site's server to look up that provider with the IP; the MaxMind row (when shown) is always queried by the server.
+        In that case this site's server sends your IP address to the provider, which sees the request coming from this site's server rather than your browser.</li>
+    <li><strong>When looking up another IP by hand</strong>: everything is queried by this site's server, and the IP is sent to IP2Location, DB-IP, MaxMind and IPinfo; your browser does not contact them, and the Cloudflare row is not queried.</li>
+  </ul>
+  <p>
+    Results fetched by this site's server contain only country, state/province and city and are cached by IP: reused directly within 24 hours, then kept up to day 7 only as a fallback when a provider is temporarily unavailable;
+    failure markers are kept for 15 minutes, and a provider's rate-limit marker for 10 minutes (containing no IP).
+  </p>
+
+  <h3>4. Bot verification</h3>
+  <p>
+    Before you look up an arbitrary IP, this site uses Cloudflare Turnstile for bot verification. It runs automatically in the background, and a challenge appears only when Cloudflare decides one is needed.
+    During verification Cloudflare collects the browser and device signals it needs to decide whether you are human. Cloudflare handles that data under its own privacy policy; this site only receives a pass/fail result.
+  </p>
+  <p>
+    The "Turnstile verification" section on the Cloudflare edge check page (/cloudflare) is a test: when you open the page, your browser loads Turnstile from <span class="mono">challenges.cloudflare.com</span>
+    and runs verification once each with two widgets in different modes, so Cloudflare sees your IP address, User-Agent and the browser and device signals above.
+    The one-time token from each verification is sent by the page to this site's server, which submits it together with your IP address to Cloudflare's siteverify API
+    only to show you the result. Neither the token nor the result is stored; only a verification count per IP (per /64 for IPv6) is kept for rate limiting and expires after 1 hour.
+  </p>
+
+  <h3>5. Cookies and local storage</h3>
+  <p>
+    This site uses only one session cookie (<span class="mono">ipcx</span>), which expires when you close the browser. It is used to prevent cross-site request forgery (CSRF),
+    remember that you just passed bot verification (no re-verification for 10 minutes or 20 lookups), remember the last IP you looked up successfully, and authorize "Multi-database location" to ask this site's server about the IP you just saw on the page.
+    This site uses no advertising or cross-site tracking cookies.
+    Your browser's localStorage may hold two kinds of data, both kept only in your browser and never sent to this site's server:
+    first, after you click the light / dark toggle in the navigation bar, that choice (<span class="mono">ipcx-theme</span>) is stored there; nothing is written if you never click it, and it is removed when you switch back to the one matching your system setting;
+    second, the "Check history" on the AI access check, GPT · Codex check and Claude check pages (<span class="mono">judgeip:history:*</span>),
+    which records each run's exit address, country and verdict or risk score, up to 20 entries, deleted when you click "Clear" on that page.
+    The interface language is set by the URL (the English version is under <span class="mono">/en</span>) and is not stored in cookies or local storage.
+  </p>
+
+  <h3>6. Rate limiting</h3>
+  <p>
+    To prevent scripted bulk lookups, this site counts lookups keyed by your IP address, and the counts expire after 1 hour; for multi-database location, Whois lookups and Turnstile verification, IPv6 addresses are counted per /64.
+  </p>
+
+  <h3>7. Test pages</h3>
+  <ul>
+    <li><strong>WebRTC leak test, browser fingerprint test, Claude check</strong>: probing happens entirely in your browser,
+        and the results are not sent back to this site. The WebRTC test makes the browser send requests to the STUN servers listed on that page.</li>
+    <li><strong>JA3 / JA4 fingerprint</strong>: only when you select this option on the fingerprint page does the browser connect directly to a third-party echo service
+        (<span class="mono">tls.peet.ws</span>, falling back to <span class="mono">tls.browserleaks.com</span>) to read TLS handshake traits.</li>
+    <li><strong>DNS leak test</strong>: the browser requests one-time random subdomains under <span class="mono">edns.ip-api.com</span>, and ip-api.com's public EDNS service returns the address of the DNS server that resolved them for you; ip-api.com therefore sees your IP, the resolver addresses and the ECS subnet, and handles them under its own policy.
+        The page then sends those resolver addresses and your exit IP to this site's server to look up their owners (the same lookup and cache as in section 2). This site does not store the test result.</li>
+  </ul>
+
+  <h3>8. Network probes from your browser</h3>
+  <p>
+    Connectivity, the Cloudflare edge check, CDN edge nodes, the split routing test, the AI access check, the GPT · Codex check, and the "Local network" and "Connectivity" sections on the home page when viewing your own IP
+    are all requests <strong>sent directly by your browser</strong> to third-party sites; this site's server does not relay, receive or store any of the results.
+    The only request sent back to this site is one location lookup on the Cloudflare edge check and CDN edge nodes pages: the page asks this site's server roughly where the IP it sees is located,
+    to estimate how far nodes are from you. That request carries no cookies and no test results (only one fixed request header marking it as coming from this site's pages), so all this site learns from it is your IP;
+    the response is the country, region, city, approximate coordinates and ASN from the lookup described in section 2. Requests to third parties have these in common:
+  </p>
+  <ul>
+    <li>No cookies, no Referer, no cache, and no custom headers or information about you. The other side sees your IP address, browser User-Agent and request time.
+        Requests that need to read a result back (Cloudflare trace, IP echo, CDN node info) include
+        <span class="mono">Origin: https://judgeip.com</span> under the browser's cross-origin rules, so the other side knows the request came from a test page on this site; latency-only requests (connectivity) don't send this header.</li>
+    <li>The exit IP, country, node and latency read back are shown only on the current page; they are not sent back to this site or written to any browser storage, and disappear when you close the page. The "Hide IPs" switch only changes the display and stores nothing.</li>
+    <li>Every page lists its probe targets (rendered by the server). The sites a page is actually allowed to contact are set by connect-src in that page's Content-Security-Policy response header:
+        beyond the list on the page, it only adds the site-wide bot verification (challenges.cloudflare.com) and analytics (stat.re), and the browser won't let the page's scripts contact any other site.
+        Site icons on the pages are ordinary images, allowed separately by img-src in the same header; apart from this site, the only source is the icon service favicon.is, see section 12.</li>
+  </ul>
+  <ul>
+    <li><strong>Connectivity</strong> (/connectivity, starts when opened): sends several latency-only requests to each of about 44 well-known sites in and outside China, AI services, social and developer sites, without reading any response content.
+        The home page card only starts when you view your own IP and the card scrolls into view, and tests only 8 of those sites. The page reads your system time zone locally, only to choose the wording of the conclusion, and sends it nowhere.</li>
+    <li><strong>Cloudflare edge check</strong> (/cloudflare): requests <span class="mono">/cdn-cgi/trace</span> from speed.cloudflare.com, 1.1.1.1 and several sites behind Cloudflare.
+        Distance to nodes is estimated from the location lookup above, and only when the IP this site sees is the same exit Cloudflare sees.
+        The "Turnstile verification" on the same page needs this site's server to verify the token, so it is an exception to "this site receives nothing" here; see section 4.</li>
+    <li><strong>Home page "Local network"</strong>: requests the trace from speed.cloudflare.com and the visitor-IP echo services <span class="mono">api4.ipify.org</span> /
+        <span class="mono">api6.ipify.org</span> (falling back to <span class="mono">ipv4.icanhazip.com</span> / <span class="mono">ipv6.icanhazip.com</span>) to detect IPv4 / IPv6 dual stack.</li>
+    <li><strong>CDN edge nodes</strong> (/cdn): requests public speed-test files on about 20 CDNs including Cloudflare, Google Cloud, jsDelivr, Fastly, CloudFront, Akamai, Tencent EdgeOne, ByteDance and NetEase,
+        and reads whatever node info they expose. Distance to each node is likewise estimated from the location lookup above and checked against the exit reported by the Cloudflare row.</li>
+    <li><strong>Split routing test</strong> (/split): requests <span class="mono">/cdn-cgi/trace</span> from about 40 sites, plus CDN speed-test files from NetEase and ByteDance, to read the exit IP they see.
+        The "Address seen by the JudgeIP server" row is rendered by this site from the current connection, and the page is not stored in any cache.</li>
+    <li><strong>AI access check</strong> (/ai): requests <span class="mono">/cdn-cgi/trace</span> from ChatGPT, OpenAI, Sora, the OpenAI API (api.openai.com, latency only when unreadable), Claude, Anthropic,
+        the Claude API (api.anthropic.com), Grok, Perplexity, Mistral and Poe, and sends latency-only requests to the Gemini API and DeepSeek.
+        The page reads your system time zone and browser language locally to flag mismatches with the exit; these values are sent nowhere.</li>
+    <li><strong>GPT · Codex check</strong> (/gpt): requests <span class="mono">/cdn-cgi/trace</span> from chatgpt.com, auth.openai.com, cdn.oaistatic.com, ios.chat.openai.com, api.openai.com, openai.com and sora.com,
+        and sends a latency-only request to DeepSeek; time zone and language are handled as in the AI access check.</li>
+  </ul>
+
+  <h3>9. Global ping</h3>
+  <p>
+    Only after you click "Start" does your browser submit one measurement directly to Globalping (<span class="mono">api.globalping.io</span>, an open-source probe network maintained by the jsDelivr team):
+    the target you entered (IP or domain), the method and probe locations, followed by a progress read once a second. Globalping therefore learns your IP address, User-Agent and the target,
+    and counts the anonymous quota by your IP; it keeps results on its platform for a while under its own policy, and anyone with the measurement ID can view them. This site's server does not relay, log or cache these requests or results.
+    Shared links put the target after #, which is not sent to this site; opening an old /ping?host=… link records the query string in the standard access log described in section 1, like any visit, and the page then rewrites it to the # form.
+  </p>
+
+  <h3>10. Whois lookups and service status</h3>
+  <p>
+    Both are queried from public data by this site's server, and your browser contacts no new third party (apart from the service icons on the status page, see section 12):
+  </p>
+  <ul>
+    <li><strong>Whois</strong> (/whois): your query (domain, IP, IP range or ASN) is sent by this site's server to the official RDAP service of the responsible registry or regional internet registry;
+        TLDs without RDAP (such as .cn) are queried over port 43 via IANA and the registry's Whois server. They see this site's server address, not your IP.
+        Results are cached by query for 6 hours (10 minutes when unregistered or not found, 2 minutes on temporary failures); rate-limit counts are keyed by your IP (per /64 for IPv6) and expire after 1 hour;
+        there are also site-wide total and concurrency limits that only count and contain no visitor information. Result pages with query parameters are not cached or indexed.</li>
+    <li><strong>Service status</strong> (/status): when someone opens the page and the cached data is older than 10 minutes, this site's server reads the public status of more than twenty providers from their official status pages using its own address
+        (data under half an hour old is refreshed after the page is sent; older data is refreshed first). The requests contain no visitor information; results are cached on this site for at most 24 hours, and this site does not record who opened the page.</li>
+  </ul>
+
+  <h3>11. Analytics</h3>
+  <p>
+    This site uses Plausible to count page views. It uses no cookies and does no cross-site tracking; it only counts aggregate data such as page views, referrers and browser types.
+  </p>
+
+  <h3>12. Site icons</h3>
+  <p>
+    The Connectivity (/connectivity) and Service status (/status) pages, and the "Connectivity" section on the home page when viewing your own IP, show each site's icon next to its name.
+    These icons are loaded <strong>directly by your browser</strong> from the third-party icon service favicon.is (URLs like <span class="mono">https://favicon.is/claude.ai</span>),
+    so favicon.is sees your IP address, browser User-Agent and which public site's icon you requested.
+    These requests send no Referer; this site's server neither handles nor logs them, and favicon.is handles the information under its own policy.
+    If icons fail to load (for example blocked by an extension or the network), the page shows the site name's initial or abbreviation instead (an empty box when JavaScript is disabled); test and status results are not affected.
+  </p>
+
+  <h2>2. What this site does not do</h2>
+  <ul>
+    <li>Does not sell or rent any of your information.</li>
+    <li>Does not provide your information to any third party other than the providers listed above, unless required by law.</li>
+    <li>Does not build user profiles, track you across sites or serve personalized ads.</li>
+    <li>Does not alter the raw data obtained from data providers.</li>
+  </ul>
+
+  <h2>3. Third-party links</h2>
+  <p>
+    Pages on this site contain links to other websites (such as product links in the footer and promotional banners). Clicking them takes you away from this site,
+    and those sites handle your information under their own privacy policies.
+  </p>
+
+  <h2>4. Changes to this policy</h2>
+  <p>
+    This policy is updated when the site's features or data flows change, and the "Last updated" date at the top is changed accordingly.
+    Continuing to use this site after an update means you accept the updated policy.
+  </p>
+</article>

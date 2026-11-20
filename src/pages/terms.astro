@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/terms.html?raw";
+import zhHtml from "../snippets/terms.html?raw";
+import enHtml from "../snippets/en/terms.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="服务条款 · JudgeIP"
-  description="JudgeIP 服务使用条款与免责声明。"
+  title={pick(lang, '服务条款 · JudgeIP', 'Terms of service · JudgeIP')}
+  description={pick(lang, 'JudgeIP 服务使用条款与免责声明。', 'JudgeIP terms of service.')}
   canonicalPath="/terms"
   bodyClass="page-terms"
-  currentLabel="服务条款"
+  currentLabel={pick(lang, '服务条款', 'Terms of service')}
   activeNav="/terms"
   extraCss={[]}
   extraJs={[]}

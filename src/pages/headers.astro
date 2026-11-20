@@ -111,7 +111,7 @@ allHeaders.sort((a, b) => a.name.localeCompare(b.name));
     </section>
 
     <section class="group">
-      <h2 class="group__title">{t('全部原始 HTTP 请求头 (', 'All raw HTTP request headers (')}{allHeaders.length} {t('项)', ')')}</h2>
+      <h2 class="group__title">{t('全部原始 HTTP 请求头 (', 'All raw HTTP request headers (')}{allHeaders.length}{t(' 项)', ')')}</h2>
       <div class="rows">
         {allHeaders.map((h) => (
           <div class="row">

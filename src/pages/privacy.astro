@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/privacy.html?raw";
+import zhHtml from "../snippets/privacy.html?raw";
+import enHtml from "../snippets/en/privacy.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="隐私政策 · JudgeIP"
-  description="JudgeIP 隐私政策与数据处理说明。"
+  title={pick(lang, '隐私政策 · JudgeIP', 'Privacy policy · JudgeIP')}
+  description={pick(lang, 'JudgeIP 隐私政策与数据处理说明。', 'JudgeIP privacy policy: what data is processed and how.')}
   canonicalPath="/privacy"
   bodyClass="page-privacy"
-  currentLabel="隐私政策"
+  currentLabel={pick(lang, '隐私政策', 'Privacy policy')}
   activeNav="/privacy"
   extraCss={[]}
   extraJs={[]}
