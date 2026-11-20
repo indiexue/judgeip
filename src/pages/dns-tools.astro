@@ -2,6 +2,11 @@
 import IpcxLayout from '../layouts/IpcxLayout.astro';
 import { parseIp } from '../lib/ip-utils';
 import { checkIpv4Dnsbl } from '../lib/ipcx-lookup';
+import { getLang, localePath } from '../lib/i18n';
+const lang = getLang(Astro.locals);
+const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
+const lp = (path: string) => localePath(path, lang);
+
 
 const rawQ = (Astro.url.searchParams.get('q') || '').trim();
 const queryTarget = rawQ.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
@@ -84,20 +89,20 @@ if (queryTarget) {
 ---
 
 <IpcxLayout
-  title="DNS 查询与黑名单 (DNSBL) 检测 — A/AAAA/MX/TXT/NS/PTR · JudgeIP"
-  description="在线查询域名的 A、AAAA、CNAME、MX、TXT、NS 解析记录，或检测 IPv4 地址的反向解析 PTR 与邮件垃圾黑名单 (DNSBL)。"
+  title={t('DNS 查询与黑名单 (DNSBL) 检测 — A/AAAA/MX/TXT/NS/PTR · JudgeIP', 'DNS lookup and blocklist (DNSBL) check: A/AAAA/MX/TXT/NS/PTR · JudgeIP')}
+  description={t('在线查询域名的 A、AAAA、CNAME、MX、TXT、NS 解析记录，或检测 IPv4 地址的反向解析 PTR 与邮件垃圾黑名单 (DNSBL)。', 'Look up a domain\'s A, AAAA, CNAME, MX, TXT and NS records, or check an IPv4 address\'s reverse DNS (PTR) and spam blocklists (DNSBL).')}
   canonicalPath="/dns-tools"
   bodyClass="page-dnstools"
-  currentLabel="DNS 工具"
+  currentLabel={t('DNS 工具', 'DNS tools')}
   activeNav="/dns-tools"
   extraCss={['/assets/css/whois.css']}
 >
   <section class="hero">
-    <h1 class="hero__title">DNS 解析与 DNSBL 黑名单工具</h1>
-    <p class="hero__lede">输入域名一次拉取全部 A / AAAA / MX / TXT / NS 记录；输入 IPv4 地址反查 PTR 与 4 家主流垃圾黑名单。</p>
+    <h1 class="hero__title">{t('DNS 查询与 DNSBL 黑名单', 'DNS lookup and DNSBL')}</h1>
+    <p class="hero__lede">{t('输入域名，一次查出 A / AAAA / MX / TXT / NS 记录；输入 IPv4 地址，查 PTR 与 4 个常用垃圾邮件黑名单。', 'Enter a domain to get its A / AAAA / MX / TXT / NS records at once; enter an IPv4 address to check its PTR and 4 common spam blocklists.')}</p>
   </section>
 
-  <form class="query whois-query" method="get" action="/dns-tools" role="search">
+  <form class="query whois-query" method="get" action={lp('/dns-tools')} role="search">
     <div class="query__line">
       <span class="query__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,23 +118,23 @@ if (queryTarget) {
         placeholder="judgeip.com / openai.com / 8.8.8.8"
         autocomplete="off"
         spellcheck="false"
-        aria-label="要查询的域名或 IPv4"
+        aria-label={t('要查询的域名或 IPv4', 'Domain or IPv4 to look up')}
       />
-      <button class="query__submit" type="submit">查询</button>
+      <button class="query__submit" type="submit">{t('查询', 'Look up')}</button>
     </div>
 
     <p class="whois-examples">
-      <span class="whois-examples__label">试试</span>
-      <a class="whois-examples__item" href="/dns-tools?q=judgeip.com" rel="nofollow">judgeip.com</a>
-      <a class="whois-examples__item" href="/dns-tools?q=openai.com" rel="nofollow">openai.com</a>
-      <a class="whois-examples__item" href="/dns-tools?q=gmail.com" rel="nofollow">gmail.com</a>
-      <a class="whois-examples__item" href="/dns-tools?q=8.8.8.8" rel="nofollow">8.8.8.8</a>
-      <a class="whois-examples__item" href="/dns-tools?q=45.76.12.8" rel="nofollow">45.76.12.8</a>
+      <span class="whois-examples__label">{t('试试', 'Try')}</span>
+      <a class="whois-examples__item" href={lp('/dns-tools?q=judgeip.com')} rel="nofollow">judgeip.com</a>
+      <a class="whois-examples__item" href={lp('/dns-tools?q=openai.com')} rel="nofollow">openai.com</a>
+      <a class="whois-examples__item" href={lp('/dns-tools?q=gmail.com')} rel="nofollow">gmail.com</a>
+      <a class="whois-examples__item" href={lp('/dns-tools?q=8.8.8.8')} rel="nofollow">8.8.8.8</a>
+      <a class="whois-examples__item" href={lp('/dns-tools?q=45.76.12.8')} rel="nofollow">45.76.12.8</a>
     </p>
 
     {mode === 'invalid' && (
       <p class="notice" role="alert">
-        <span>输入格式无法识别，请输入有效的域名（如 openai.com）或 IPv4 地址（如 8.8.8.8）。</span>
+        <span>{t('无法识别输入，请输入域名（如 openai.com）或 IPv4 地址（如 8.8.8.8）。', 'Unrecognized input. Enter a domain (such as openai.com) or an IPv4 address (such as 8.8.8.8).')}</span>
       </p>
     )}
   </form>
@@ -138,13 +143,13 @@ if (queryTarget) {
     <div class="groups">
       <section class="group">
         <h2 class="group__title">
-          DNS 解析记录 ({queryTarget}) <span class="whois-count">{records.length} 条</span>
+          {t('DNS 解析记录', 'DNS records')} ({queryTarget}) <span class="whois-count">{records.length}{t(' 条', '')}</span>
         </h2>
         <div class="rows">
           {records.length === 0 ? (
             <div class="row">
-              <span class="row__label">查询结果</span>
-              <span class="row__value"><span class="dim">未查到公开 DNS 记录（域名不存在或未配置常见记录）。</span></span>
+              <span class="row__label">{t('查询结果', 'Results')}</span>
+              <span class="row__value"><span class="dim">{t('未查到公开 DNS 记录（域名不存在或未配置常见记录）。', 'No public DNS records found (the domain doesn\'t exist or has none of the common records).')}</span></span>
             </div>
           ) : (
             records.map((r) => (
@@ -165,19 +170,19 @@ if (queryTarget) {
   {mode === 'ip' && (
     <div class="groups">
       <section class="group">
-        <h2 class="group__title">反向解析 (rDNS / PTR)</h2>
+        <h2 class="group__title">{t('反向解析 (rDNS / PTR)', 'Reverse DNS (rDNS / PTR)')}</h2>
         <div class="rows">
           <div class="row">
-            <span class="row__label">反查区名</span>
+            <span class="row__label">{t('反查区名', 'Reverse zone')}</span>
             <span class="row__value"><span class="mono">{ptrDomain}</span></span>
           </div>
           <div class="row">
-            <span class="row__label">PTR 主机名</span>
+            <span class="row__label">{t('PTR 主机名', 'PTR host name')}</span>
             <span class="row__value">
               {records.length > 0 ? (
                 <span class="mono">{records.map((r) => r.data).join(', ')}</span>
               ) : (
-                <span class="dim">未设置反向解析记录</span>
+                <span class="dim">{t('未设置反向解析记录', 'No reverse DNS record set')}</span>
               )}
             </span>
           </div>
@@ -185,7 +190,7 @@ if (queryTarget) {
       </section>
 
       <section class="group">
-        <h2 class="group__title">DNSBL 实时黑名单核查</h2>
+        <h2 class="group__title">{t('DNSBL 黑名单检查', 'DNSBL check')}</h2>
         <div class="rows">
           {['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT'].map((blName) => {
             const hit = dnsblHits.includes(blName);
@@ -193,7 +198,7 @@ if (queryTarget) {
               <div class="row">
                 <span class="row__label">{blName}</span>
                 <span class="row__value">
-                  <span class={`tag tag--${hit ? 'leak' : 'ok'}`}>{hit ? '命中黑名单 (Listed)' : '未收录 (Clean)'}</span>
+                  <span class={`tag tag--${hit ? 'leak' : 'ok'}`}>{hit ? t('命中黑名单 (Listed)', 'Listed') : t('未收录 (Clean)', 'Not listed')}</span>
                 </span>
               </div>
             );
@@ -204,10 +209,22 @@ if (queryTarget) {
   )}
 
   <article class="prose">
-    <h2>关于 DoH 解析与 DNSBL</h2>
-    <p>
-      本工具在服务端通过 Cloudflare <span class="mono">1.1.1.1</span> DNS-over-HTTPS 接口实时查询权威记录，避免本地运营商缓存污染。
-      当输入 IPv4 地址时，系统除了查询 <span class="mono">in-addr.arpa</span> 反向域名外，还会并发核验主流反垃圾邮件与僵尸网络黑名单（DNSBL）——如果发件服务器或静态住宅代理命中其中任意一家，发信进垃圾箱与登录触发验证码的概率会显著上升。
-    </p>
+    {lang === 'en' ? (
+      <>
+        <h2>About DoH lookups and DNSBL</h2>
+        <p>
+          Lookups are made from the server through Cloudflare's <span class="mono">1.1.1.1</span> DNS-over-HTTPS API, so the results aren't affected by your local ISP's DNS cache or tampering.
+          For an IPv4 address, besides the <span class="mono">in-addr.arpa</span> reverse lookup, the address is checked against common spam and botnet blocklists (DNSBL) in parallel. A mail server or static residential proxy listed on any of them is more likely to have mail land in spam and to hit CAPTCHAs on sign-in.
+        </p>
+      </>
+    ) : (
+      <>
+        <h2>关于 DoH 查询与 DNSBL</h2>
+        <p>
+          查询由服务端通过 Cloudflare <span class="mono">1.1.1.1</span> 的 DNS-over-HTTPS 接口发出，不受你本地运营商 DNS 缓存或劫持的影响。
+          输入 IPv4 地址时，除了查 <span class="mono">in-addr.arpa</span> 反向解析，还会同时检查常用的垃圾邮件与僵尸网络黑名单（DNSBL）。发信服务器或静态住宅代理只要被其中一个收录，邮件就更容易进垃圾箱，登录时也更容易遇到验证码。
+        </p>
+      </>
+    )}
   </article>
 </IpcxLayout>
