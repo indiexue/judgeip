@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/cdn.html?raw";
+import zhHtml from "../snippets/cdn.html?raw";
+import enHtml from "../snippets/en/cdn.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="CDN 命中节点检测 — Cloudflare、Fastly、CloudFront、Akamai 等把你调度到哪 · JudgeIP"
-  description="检测十多家国内外主流 CDN 将你的网络调度到哪个边缘城市与节点。"
+  title={pick(lang, 'CDN 命中节点检测 — Cloudflare、Fastly、CloudFront、Akamai 等把你调度到哪 · JudgeIP', 'CDN edge nodes: where each CDN routes you · JudgeIP')}
+  description={pick(lang, '检测十多家国内外主流 CDN 将你的网络调度到哪个边缘城市与节点。', 'Shows which node Cloudflare, Fastly, CloudFront, Akamai, EdgeOne and other CDNs route you to, how far away it is and the latency.')}
   canonicalPath="/cdn"
   bodyClass="page-cdn"
-  currentLabel="CDN 节点"
+  currentLabel={pick(lang, 'CDN 节点', 'CDN edge nodes')}
   activeNav="/cdn"
   extraCss={["/assets/css/cdn.css"]}
   extraJs={["/assets/js/probe.js", "/assets/js/cdn.js"]}

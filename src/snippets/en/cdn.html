@@ -1,0 +1,456 @@
+
+<section class="hero">
+  <h1 class="hero__title">CDN edge nodes</h1>
+  <p class="hero__lede">Shows which node each major CDN routes you to, how far away it is, and the latency.</p>
+</section>
+
+<div class="probe cdn"
+     id="cdn"
+     data-iata="/assets/data/iata.json"
+     data-me="/geo/api?me=1"
+     data-lanes="6"
+     data-timeout="6000"
+     data-body-timeout="4000">
+
+  <div class="probe__bar cdn-live">
+    <button class="probe__run" type="button" data-cdn-run>Run again</button>
+    <span class="probe__hint" data-cdn-progress>Starts when the page opens: your browser requests 19 CDNs directly, 6 at a time, waiting up to 6 seconds per request and about 16 seconds per CDN at most.</span>
+  </div>
+
+  <div class="verdict" data-cdn-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-cdn-verdict-title></p>
+      <p class="verdict__note" data-cdn-verdict-note></p>
+    </div>
+  </div>
+
+  <section class="cdnsum cdn-live" aria-labelledby="cdnsum-title">
+    <h2 class="cdnsum__title" id="cdnsum-title">You are hitting</h2>
+    <div class="cdnsum__chips" data-cdn-chips>
+      <span class="dim">Once the check starts, this section summarizes the city each CDN routes you to.</span>
+    </div>
+    <p class="cdnsum__where" data-cdn-where>Distance is calculated from the approximate location of your exit IP as looked up by this site.</p>
+  </section>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">International CDNs</h2>
+      <div class="rows cdntable" role="table" aria-label="International CDNs: nodes hit">
+        <div class="cdnrow cdnrow--head" role="row">
+          <span role="columnheader">CDN</span>
+          <span role="columnheader">Node · node IP</span>
+          <span class="cdnrow__ms" role="columnheader">Latency</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cloudflare"
+             data-name="Cloudflare"
+             data-url="https://www.cloudflare.com/cdn-cgi/trace"
+             data-method="GET"
+             data-headers=""
+             data-parser="trace">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Cloudflare</span>
+            <span class="cdnrow__note">Anycast network, more than 300 cities worldwide</span>
+                        <span class="cdnrow__how" title="GET https://www.cloudflare.com/cdn-cgi/trace">Reads colo from the trace · <span class="mono">www.cloudflare.com</span></span>
+            <a class="cdnrow__more" href="/en/cloudflare">Compare nodes across network tiers →</a>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="gcp"
+             data-name="Google Cloud"
+             data-url="https://global.gcping.com/api/ping"
+             data-method="GET"
+             data-headers=""
+             data-regions="{&quot;africa-south1&quot;:[&quot;Johannesburg&quot;,&quot;ZA&quot;,-26.2,28.05],&quot;asia-east1&quot;:[&quot;Changhua, Taiwan&quot;,&quot;TW&quot;,24.07,120.54],&quot;asia-east2&quot;:[&quot;Hong Kong&quot;,&quot;HK&quot;,22.32,114.17],&quot;asia-northeast1&quot;:[&quot;Tokyo&quot;,&quot;JP&quot;,35.68,139.69],&quot;asia-northeast2&quot;:[&quot;Osaka&quot;,&quot;JP&quot;,34.69,135.5],&quot;asia-northeast3&quot;:[&quot;Seoul&quot;,&quot;KR&quot;,37.57,126.98],&quot;asia-south1&quot;:[&quot;Mumbai&quot;,&quot;IN&quot;,19.08,72.88],&quot;asia-south2&quot;:[&quot;Delhi&quot;,&quot;IN&quot;,28.61,77.21],&quot;asia-southeast1&quot;:[&quot;Singapore&quot;,&quot;SG&quot;,1.35,103.82],&quot;asia-southeast2&quot;:[&quot;Jakarta&quot;,&quot;ID&quot;,-6.21,106.85],&quot;australia-southeast1&quot;:[&quot;Sydney&quot;,&quot;AU&quot;,-33.87,151.21],&quot;australia-southeast2&quot;:[&quot;Melbourne&quot;,&quot;AU&quot;,-37.81,144.96],&quot;europe-central2&quot;:[&quot;Warsaw&quot;,&quot;PL&quot;,52.23,21.01],&quot;europe-north1&quot;:[&quot;Hamina, Finland&quot;,&quot;FI&quot;,60.57,27.2],&quot;europe-north2&quot;:[&quot;Stockholm&quot;,&quot;SE&quot;,59.33,18.07],&quot;europe-southwest1&quot;:[&quot;Madrid&quot;,&quot;ES&quot;,40.42,-3.7],&quot;europe-west1&quot;:[&quot;St. Ghislain, Belgium&quot;,&quot;BE&quot;,50.45,3.82],&quot;europe-west2&quot;:[&quot;London&quot;,&quot;GB&quot;,51.51,-0.13],&quot;europe-west3&quot;:[&quot;Frankfurt&quot;,&quot;DE&quot;,50.11,8.68],&quot;europe-west4&quot;:[&quot;Eemshaven, Netherlands&quot;,&quot;NL&quot;,53.44,6.83],&quot;europe-west6&quot;:[&quot;Zurich&quot;,&quot;CH&quot;,47.38,8.54],&quot;europe-west8&quot;:[&quot;Milan&quot;,&quot;IT&quot;,45.46,9.19],&quot;europe-west9&quot;:[&quot;Paris&quot;,&quot;FR&quot;,48.86,2.35],&quot;europe-west10&quot;:[&quot;Berlin&quot;,&quot;DE&quot;,52.52,13.4],&quot;europe-west12&quot;:[&quot;Turin&quot;,&quot;IT&quot;,45.07,7.69],&quot;me-central1&quot;:[&quot;Doha&quot;,&quot;QA&quot;,25.29,51.53],&quot;me-central2&quot;:[&quot;Dammam&quot;,&quot;SA&quot;,26.43,50.1],&quot;me-west1&quot;:[&quot;Tel Aviv&quot;,&quot;IL&quot;,32.09,34.78],&quot;northamerica-northeast1&quot;:[&quot;Montreal&quot;,&quot;CA&quot;,45.5,-73.57],&quot;northamerica-northeast2&quot;:[&quot;Toronto&quot;,&quot;CA&quot;,43.65,-79.38],&quot;northamerica-south1&quot;:[&quot;Querétaro, Mexico&quot;,&quot;MX&quot;,20.59,-100.39],&quot;southamerica-east1&quot;:[&quot;São Paulo&quot;,&quot;BR&quot;,-23.55,-46.63],&quot;southamerica-west1&quot;:[&quot;Santiago, Chile&quot;,&quot;CL&quot;,-33.45,-70.67],&quot;us-central1&quot;:[&quot;Iowa, US&quot;,&quot;US&quot;,41.26,-95.86],&quot;us-east1&quot;:[&quot;South Carolina, US&quot;,&quot;US&quot;,33.2,-80.01],&quot;us-east4&quot;:[&quot;Northern Virginia, US&quot;,&quot;US&quot;,39.04,-77.49],&quot;us-east5&quot;:[&quot;Columbus, Ohio, US&quot;,&quot;US&quot;,39.96,-83],&quot;us-south1&quot;:[&quot;Dallas&quot;,&quot;US&quot;,32.78,-96.8],&quot;us-west1&quot;:[&quot;Oregon, US&quot;,&quot;US&quot;,45.6,-121.18],&quot;us-west2&quot;:[&quot;Los Angeles&quot;,&quot;US&quot;,34.05,-118.24],&quot;us-west3&quot;:[&quot;Salt Lake City&quot;,&quot;US&quot;,40.76,-111.89],&quot;us-west4&quot;:[&quot;Las Vegas&quot;,&quot;US&quot;,36.17,-115.14]}"
+             data-parser="gcp">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Google Cloud</span>
+            <span class="cdnrow__note">Global load balancing to the nearest cloud region</span>
+                        <span class="cdnrow__how" title="GET https://global.gcping.com/api/ping">Reads the returned region name · <span class="mono">global.gcping.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="jsdelivr"
+             data-name="jsDelivr"
+             data-url="https://cdn.jsdelivr.net/npm/latency-test@1.0.0/generate_200"
+             data-method="HEAD"
+             data-headers="server cf-ray x-served-by x-id"
+             data-parser="jsdelivr">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">jsDelivr</span>
+            <span class="cdnrow__note">Uses both Cloudflare and Fastly</span>
+                        <span class="cdnrow__how" title="HEAD https://cdn.jsdelivr.net/npm/latency-test@1.0.0/generate_200">Reads server / cf-ray / x-served-by · <span class="mono">cdn.jsdelivr.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="fastly"
+             data-name="Fastly"
+             data-url="https://fastly.jsdelivr.net/npm/latency-test@1.0.0/generate_200"
+             data-method="HEAD"
+             data-headers="x-served-by"
+             data-parser="fastly">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Fastly</span>
+            <span class="cdnrow__note">jsDelivr's dedicated Fastly endpoint</span>
+                        <span class="cdnrow__how" title="HEAD https://fastly.jsdelivr.net/npm/latency-test@1.0.0/generate_200">Reads x-served-by · <span class="mono">fastly.jsdelivr.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cloudfront"
+             data-name="AWS CloudFront"
+             data-url="https://djlzvy5xcvhxt.cloudfront.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-amz-cf-pop"
+             data-parser="cloudfront">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">AWS CloudFront</span>
+            <span class="cdnrow__note">Amazon's CDN, routed by DNS</span>
+                        <span class="cdnrow__how" title="HEAD https://djlzvy5xcvhxt.cloudfront.net/500b-bench.jpg">Reads x-amz-cf-pop · <span class="mono">djlzvy5xcvhxt.cloudfront.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="akamai"
+             data-name="Akamai"
+             data-url="https://perfopsrum.akamaized.net/500b-bench.jpg"
+             data-method="GET"
+             data-headers="x-cache2"
+             data-parser="akamai">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Akamai</span>
+            <span class="cdnrow__note">Long-established CDN with nodes deep inside local ISPs</span>
+                        <span class="cdnrow__how" title="GET https://perfopsrum.akamaized.net/500b-bench.jpg">Reads x-cache2 · <span class="mono">perfopsrum.akamaized.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bunny"
+             data-name="Bunny"
+             data-url="https://test.b-cdn.net/"
+             data-method="HEAD"
+             data-headers="server"
+             data-parser="bunny">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Bunny</span>
+            <span class="cdnrow__note">Low-cost CDN founded in Slovenia</span>
+                        <span class="cdnrow__how" title="HEAD https://test.b-cdn.net/">Reads server · <span class="mono">test.b-cdn.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdn77"
+             data-name="CDN77"
+             data-url="https://1596384882.rsc.cdn77.org/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-77-pop"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDN77</span>
+            <span class="cdnrow__note">Part of DataCamp (Czech Republic)</span>
+                        <span class="cdnrow__how" title="HEAD https://1596384882.rsc.cdn77.org/500b-bench.jpg">Reads x-77-pop · <span class="mono">1596384882.rsc.cdn77.org</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cachefly"
+             data-name="CacheFly"
+             data-url="https://cdnperf.cachefly.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-cf1"
+             data-parser="cachefly">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CacheFly</span>
+            <span class="cdnrow__note">US anycast CDN</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf.cachefly.net/500b-bench.jpg">Reads x-cf1 · <span class="mono">cdnperf.cachefly.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="medianova"
+             data-name="Medianova"
+             data-url="https://medianova-cdnvperf.mncdn.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-edge-location"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Medianova</span>
+            <span class="cdnrow__note">Turkish CDN covering the Middle East and Europe</span>
+                        <span class="cdnrow__how" title="HEAD https://medianova-cdnvperf.mncdn.com/500b-bench.jpg">Reads x-edge-location · <span class="mono">medianova-cdnvperf.mncdn.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="zenlayer"
+             data-name="Zenlayer"
+             data-url="https://test-perfops.ecn.zenlayer.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="zenlayer">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Zenlayer</span>
+            <span class="cdnrow__note">Started in the US and China, with many emerging-market nodes</span>
+                        <span class="cdnrow__how" title="HEAD https://test-perfops.ecn.zenlayer.net/500b-bench.jpg">Reads via · <span class="mono">test-perfops.ecn.zenlayer.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="ovh"
+             data-name="OVHcloud"
+             data-url="https://ovh-cdn.perfops.io/500b-bench.jpg"
+             data-method="GET"
+             data-headers="x-cdn-pop"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">OVHcloud</span>
+            <span class="cdnrow__note">The CDN of the French cloud provider</span>
+                        <span class="cdnrow__how" title="GET https://ovh-cdn.perfops.io/500b-bench.jpg">Reads x-cdn-pop · <span class="mono">ovh-cdn.perfops.io</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdnnet"
+             data-name="CDN.net"
+             data-url="https://perfops.r.worldssl.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-edge-location"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDN.net</span>
+            <span class="cdnrow__note">Part of Virtuozzo</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops.r.worldssl.net/500b-bench.jpg">Reads x-edge-location · <span class="mono">perfops.r.worldssl.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdnetworks"
+             data-name="CDNetworks"
+             data-url="https://cdnperf-rum.cdnetworks.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via x-via"
+             data-parser="via">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDNetworks</span>
+            <span class="cdnrow__note">Founded in Korea, now part of Wangsu</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf-rum.cdnetworks.net/500b-bench.jpg">Reads via / x-via · <span class="mono">cdnperf-rum.cdnetworks.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="quantil"
+             data-name="QUANTIL"
+             data-url="https://cdnperf-rum.quantil.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via x-via"
+             data-parser="via">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">QUANTIL</span>
+            <span class="cdnrow__note">Wangsu's international brand</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf-rum.quantil.com/500b-bench.jpg">Reads via / x-via · <span class="mono">cdnperf-rum.quantil.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">China-based CDNs</h2>
+      <div class="rows cdntable" role="table" aria-label="China-based CDNs: nodes hit">
+        <div class="cdnrow cdnrow--head" role="row">
+          <span role="columnheader">CDN</span>
+          <span role="columnheader">Node · node IP</span>
+          <span class="cdnrow__ms" role="columnheader">Latency</span>
+          <span role="columnheader">Status</span>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="edgeone"
+             data-name="Tencent EdgeOne"
+             data-url="https://eo-static-perfops.qcloudcdn.com/500b-bench.jpg"
+             data-method="GET"
+             data-headers="xcc"
+             data-parser="edgeone">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Tencent EdgeOne</span>
+            <span class="cdnrow__note">Tencent Cloud's edge security and acceleration platform</span>
+                        <span class="cdnrow__how" title="GET https://eo-static-perfops.qcloudcdn.com/500b-bench.jpg">Reads xcc (node IP in base64) · <span class="mono">eo-static-perfops.qcloudcdn.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bytedance"
+             data-name="ByteDance · China"
+             data-url="https://perfops.byte-test.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="bytedance">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">ByteDance · China</span>
+            <span class="cdnrow__note">Volcano Engine CDN's network inside China</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops.byte-test.com/500b-bench.jpg">Reads via · <span class="mono">perfops.byte-test.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bytedance-global"
+             data-name="ByteDance · international"
+             data-url="https://perfops2.byte-test.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="bytedance">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">ByteDance · international</span>
+            <span class="cdnrow__note">BytePlus's international network</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops2.byte-test.com/500b-bench.jpg">Reads via · <span class="mono">perfops2.byte-test.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="netease"
+             data-name="NetEase"
+             data-url="https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png"
+             data-method="HEAD"
+             data-headers="cdn-ip cdn-source"
+             data-parser="netease">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">NetEase</span>
+            <span class="cdnrow__note">NetEase cloud storage, served through several CDNs</span>
+                        <span class="cdnrow__how" title="HEAD https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png">Reads cdn-ip / cdn-source · <span class="mono">necaptcha.nosdn.127.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">Pending</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Only each CDN's own edge knows which node you hit, so the browser has to ask it directly. JavaScript is disabled, so this page can only show the check list and notes.
+        You can also open <span class="mono">https://www.cloudflare.com/cdn-cgi/trace</span> in your browser;
+        the three letters after <span class="mono">colo=</span> are the Cloudflare data center you hit.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What a CDN edge node is</h2>
+  <p>
+    A CDN (content delivery network) keeps copies of site content in data centers around the world. When you visit a site on a CDN,
+    your request does not travel all the way to the origin server; it lands in one of the CDN's edge data centers (PoPs), which serves the cached content locally.
+    That data center is your <strong>edge node</strong>. CDNs usually name it after the IATA code of a nearby airport: HKG is Hong Kong, NRT is Tokyo Narita, LAX is Los Angeles, FRA is Frankfurt.
+  </p>
+  <p>
+    CDNs assign you to a node in one of two ways. <strong>Anycast</strong>: the same IP is announced from every data center at once,
+    and internet routing decides where you land. Cloudflare and Google Cloud global load balancing work this way, and the result mainly depends on where your exit is and how your ISP connects.
+    <strong>DNS routing</strong>: when resolving a domain, the CDN returns a data center address based on the location of the DNS server that queried on your behalf. Most CDNs, such as CloudFront and Akamai, rely on this,
+    so which DNS you use and where it is directly changes the node you hit. One person landing on different continents with different CDNs is not unusual.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>For each CDN on the list, send one cross-origin request to its public test file (no cookies, no referrer) and read the response header that carries node information. For Cloudflare it reads <span class="mono">colo</span> from the <span class="mono">/cdn-cgi/trace</span> body; for Google Cloud it reads the returned region name.</li>
+    <li>Once the connection is open, request again and record that time as latency. The first request includes DNS resolution and the TCP and TLS handshakes, which do not reflect everyday speed.</li>
+    <li>If the CDN refuses the cross-origin read, retry with an opaque latency-only request to tell "connects but can't be read" from "does not connect at all".</li>
+    <li>Convert node codes to cities, then ask this site for the approximate coordinates and country of "the IP this site sees" (the same data as on the home page) and compute the distance to each node, classified by the rules under "Reading the results". No CDN tells a web page where you are, so this location refers to the address this site sees. The Cloudflare row's trace reports the exit IP Cloudflare sees; if it is not the same exit this site sees (common with split-routing proxies), these coordinates do not apply, and this page judges nearness only by the country/region Cloudflare reports, without distance. For "the country/region of the exit" in the rules, the one in Cloudflare's trace is used when available, the same approach as the <a href="/en/cloudflare">Cloudflare edge check</a>, so a node gets the same verdict on both pages; if it disagrees with this site's records, a note appears under "You are hitting". The country from this site's records is only used when the trace could not be read.</li>
+  </ol>
+  <p>
+    6 at a time throughout, up to 6 seconds per request; one CDN takes at most three back-to-back steps ("read node, read body, measure latency again"), capped at about 16 seconds. All 19 usually finish within 10–20 seconds. Probe requests go straight from your browser to each CDN; this site's server is not involved and receives no results. The only request sent back to this site is the approximate-location lookup, which carries no probe data.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+        <li><strong>Nearby / In region / Cross-region</strong>: the node was read and nearness could be judged; the tiers are exactly the same as on the <a href="/en/cloudflare">Cloudflare edge check</a>. Within 1000 km, or a node near your exit (for example Hong Kong, Taipei, Tokyo, Osaka, Seoul or Singapore for visitors in mainland China), or in the same country/region as the exit and within 3000 km, counts as <strong>nearby</strong>. Anything else within 3000 km, or in the same country/region as the exit (including thousands of kilometers inside large countries such as the US, Russia or Brazil), counts as <strong>in region</strong>. The rest is <strong>cross-region</strong>. Most CDNs nearby is ideal; one or two in region is common; several cross-region at once means your exit or DNS does not look close to you from the CDN's point of view.</li>
+    <li><strong>Identified / Read</strong>: the node was read but nearness could not be judged; the neutral gray label means neither good nor bad. <strong>Identified</strong> means the city or country was recognized but distance could not be computed (your location is missing, does not apply to this exit, or the CDN only gives a country), and the node is not in your country/region or nearby; nodes in the same country or nearby count as nearby even without a distance. <strong>Read</strong> means only a node ID or node IP was available. Formats that cannot be parsed are shown as is and never guessed as a city.</li>
+    <li><strong>Reachable · node info not exposed</strong>: the request succeeded, but this CDN does not expose the node header to other sites, so only latency is shown.</li>
+    <li><strong>Reachable, cross-origin reads not allowed</strong>: the CDN does not accept cross-origin reads at all; latency was measured with an opaque request.</li>
+    <li><strong>Unreachable</strong>: timed out or failed to connect. Your network may not reach this CDN, or the test file itself may be gone; a single unreachable CDN is nothing to worry about.</li>
+  </ul>
+
+  <h2>Why some CDNs only show latency</h2>
+  <p>
+    This follows from browser security rules, not a failed check. When a page makes a request to another site, scripts can only read a few "safe" response headers by default (content type, length, cache policy and the like);
+    the <span class="mono">x-served-by</span>, <span class="mono">x-amz-cf-pop</span> and <span class="mono">via</span> headers that CDNs use to mark nodes are not among them,
+    and other sites can only read them if the CDN lists them in <span class="mono">Access-Control-Expose-Headers</span>.
+    Developer-facing public CDNs such as jsDelivr expose them all; many test files don't. <strong>For CDNs that don't, this page only reports latency and never makes up a node</strong>;
+    to see their nodes, look at the response headers of these requests in the Network panel of your browser's developer tools.
+  </p>
+  <p class="prose__note">
+    The Cloudflare row only shows the data center you hit. Its different networks (Free, Enterprise, China network, 1.1.1.1) route the same person to different nodes;
+    for the full comparison, exit IP, HTTP/3 and WARP status see the <a href="/en/cloudflare">Cloudflare edge check</a>;
+    if nodes are generally far away and you suspect DNS, check who resolves names for you with the <a href="/en/dnsleak">DNS leak test</a>.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>Why do some CDNs show latency but no node?</dt>
+    <dd>Browser cross-origin rules only let a page read response headers that the other site explicitly exposes. CDNs put node codes in custom headers such as x-served-by, x-amz-cf-pop and via, and scripts on other sites can only read them if the CDN lists them in Access-Control-Expose-Headers. For CDNs that don't, this page can only confirm that they connect and how long it takes, not the node. This is not a problem with your network; any web-based tool has the same limit.</dd>
+    <dt>The node I hit is far away. What's wrong?</dt>
+    <dd>There are three common causes. First, the exit IP's registered location does not match where you are: you use a proxy or VPN, or the IP database places the range elsewhere, and the CDN only sees the exit. Second, DNS routing: most CDNs, such as CloudFront and Akamai, assign nodes by the location of the DNS server that resolves for you, so if you use a public resolver abroad or DNS goes through a proxy, the node follows the DNS. Third, ISP interconnection: from mainland China, ISPs often lack good interconnection with foreign CDNs, so you get routed to the US West Coast. Start by checking who resolves names for you with the DNS leak test.</dd>
+    <dt>Is it normal for the same CDN to give a different node each time?</dt>
+    <dd>Yes. CDNs adjust routing constantly based on data center load and link quality, anycast routes change, and DNS routing results also depend on cache lifetimes. Switching between neighboring cities (Hong Kong and Tokyo, Frankfurt and Amsterdam) is nothing to worry about; frequent jumps to another continent are worth investigating.</dd>
+    <dt>With a proxy on, CDNs land in different cities. Which one counts?</dt>
+    <dd>The one used by the site you want to visit. CDNs see your exit and your DNS: with a global proxy, every CDN should land near the proxy exit; with rule-based routing, different CDN domains may go direct or through different proxy nodes, so the cities naturally differ, which is a useful way to check that your routing rules work as intended. To see the exit IP site by site, use the split routing test.</dd>
+    <dt>Does this site record the results?</dt>
+    <dd>No. Probe requests go straight from your browser to each CDN's public test file, without cookies or a referrer, and this site's server receives no probe data. The nodes and latency shown exist only on this page and disappear when you close it. The approximate location used for distance comes from asking this site for "the IP this site sees", the same lookup as on the home page, and the request carries no check results.</dd>
+  </dl>
+</article>

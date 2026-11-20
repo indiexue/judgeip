@@ -20,6 +20,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('cdn');
   if (!root) return;
 
@@ -41,12 +43,12 @@
     if (verdict && verdictTitle && verdictNote) {
       verdict.className = 'verdict is-warn';
       verdict.hidden = false;
-      verdictTitle.textContent = broken ? '检测脚本加载失败' : '当前浏览器无法运行检测';
+      verdictTitle.textContent = broken ? T('检测脚本加载失败', 'Check script failed to load') : T('当前浏览器无法运行检测', 'This browser cannot run the check');
       verdictNote.textContent = broken
-        ? '本站的检测脚本（probe.js）没能加载：可能是网络中断，也可能被浏览器扩展拦截了。请刷新页面重试；仍然不行，检查是否有扩展拦截了本站脚本。'
-        : '检测需要浏览器支持 fetch 与 Promise，当前浏览器太旧，请换用较新的浏览器。';
+        ? T('本站的检测脚本（probe.js）没能加载：可能是网络中断，也可能被浏览器扩展拦截了。请刷新页面重试；仍然不行，检查是否有扩展拦截了本站脚本。', 'This site\'s check script (probe.js) did not load. The network may have dropped, or a browser extension blocked it. Reload the page; if that doesn\'t help, check whether an extension is blocking this site\'s scripts.')
+        : T('检测需要浏览器支持 fetch 与 Promise，当前浏览器太旧，请换用较新的浏览器。', 'The check needs fetch and Promise support. This browser is too old; use a newer one.');
     }
-    if (progress) progress.textContent = broken ? '检测脚本加载失败，请刷新页面重试。' : '当前浏览器不支持本页的检测。';
+    if (progress) progress.textContent = broken ? T('检测脚本加载失败，请刷新页面重试。', 'Failed to load the check script. Reload the page and try again.') : T('当前浏览器不支持本页的检测。', 'This browser does not support the checks on this page.');
     if (runButton) runButton.disabled = true;
     return;
   }
@@ -88,19 +90,19 @@
 
   /* 网易对象存储背后的 CDN 厂商（cdn-source 的取值不公开，按常见缩写猜；认不出就原样显示） */
   var VENDORS = [
-    [/^(ws|wangsu|chinanetcenter|wscdn)/i, '网宿'],
-    [/^(ali|aliyun|alibaba|alicdn)/i, '阿里云'],
-    [/^(tencent|qcloud|tx|txcdn)/i, '腾讯云'],
-    [/^(baishan|bs)/i, '白山云'],
-    [/^(ks|ksyun|kingsoft)/i, '金山云'],
-    [/^(hw|huawei)/i, '华为云'],
-    [/^(bd|baidu|bce)/i, '百度智能云'],
-    [/^(dl|dilian)/i, '帝联'],
-    [/^(volc|huoshan|bytedance|bytecdn)/i, '火山引擎'],
-    [/^(qiniu|qn)/i, '七牛云'],
-    [/^(upyun|upai)/i, '又拍云'],
-    [/^(jd|jdcloud)/i, '京东云'],
-    [/^(nos|netease|163|wy)/i, '网易自建']
+    [/^(ws|wangsu|chinanetcenter|wscdn)/i, T('网宿', 'Wangsu')],
+    [/^(ali|aliyun|alibaba|alicdn)/i, T('阿里云', 'Alibaba Cloud')],
+    [/^(tencent|qcloud|tx|txcdn)/i, T('腾讯云', 'Tencent Cloud')],
+    [/^(baishan|bs)/i, T('白山云', 'Baishan Cloud')],
+    [/^(ks|ksyun|kingsoft)/i, T('金山云', 'Kingsoft Cloud')],
+    [/^(hw|huawei)/i, T('华为云', 'Huawei Cloud')],
+    [/^(bd|baidu|bce)/i, T('百度智能云', 'Baidu AI Cloud')],
+    [/^(dl|dilian)/i, T('帝联', 'Dnion')],
+    [/^(volc|huoshan|bytedance|bytecdn)/i, T('火山引擎', 'Volcano Engine')],
+    [/^(qiniu|qn)/i, T('七牛云', 'Qiniu Cloud')],
+    [/^(upyun|upai)/i, T('又拍云', 'UPYUN')],
+    [/^(jd|jdcloud)/i, T('京东云', 'JD Cloud')],
+    [/^(nos|netease|163|wy)/i, T('网易自建', 'NetEase in-house')]
   ];
 
   /* 城市即国家的地方：只知道国家，也就知道了城市。Bunny 的 HK1、字节的 hk… 借数据集里那座机场的坐标算距离——
@@ -401,7 +403,7 @@
       if (!data.colo) {
         /* 被劫持到登录页、拦截页时最常见：连上了，但回来的不是 Cloudflare 的 trace */
         out.raw = shorten(body);
-        out.odd = '返回的不是 trace';
+        out.odd = T('返回的不是 trace', 'Not a trace response');
         return out;
       }
       return codeResult(out, data.colo, data.colo);
@@ -412,7 +414,7 @@
       if (!region) return empty();
       var out = seen(shorten(region));
       if (!/^[a-z]+-[a-z]+\d+$/.test(region)) {
-        out.odd = '返回内容无法识别';
+        out.odd = T('返回内容无法识别', 'Unrecognized response');
         return out;
       }
       var entry = row.regions ? row.regions[region] : null;
@@ -448,8 +450,8 @@
         out.label = shorten(server || xid);
         return out;
       }
-      out.sub = shorten(server) || '未知';
-      out.label = '未能判断是哪一家';
+      out.sub = shorten(server) || T('未知', 'Unknown');
+      out.label = T('未能判断是哪一家', 'Provider unknown');
       return out;
     },
 
@@ -623,7 +625,7 @@
     } catch (e) {
       /* 解析器自己出错也不能让这一行卡住：按「读到了但看不懂」处理，把原始值摆出来 */
       out = seen('');
-      out.label = '无法解析';
+      out.label = T('无法解析', 'Cannot parse');
     }
     var dump = headerDump(result.values);
     if (dump) out.raw = dump;
@@ -739,7 +741,7 @@
     cell.removeAttribute('title');
 
     if (kind === 'opaque' || kind === 'hidden' || kind === 'odd') {
-      fill(cell, [dim('仅测得延迟')]);
+      fill(cell, [dim(T('仅测得延迟', 'Latency only'))]);
       if (kind === 'odd' && parsed && parsed.raw) cell.title = parsed.raw;
       return;
     }
@@ -763,7 +765,7 @@
     var ip = null;
     if (parsed.ip) {
       ip = P.el('span', 'cdnrow__ip');
-      ip.appendChild(document.createTextNode('节点 IP '));
+      ip.appendChild(document.createTextNode(T('节点 IP ', 'Node IP ')));
       var value = P.el('span', 'mono', P.compactIp(parsed.ip));
       if (value.textContent !== parsed.ip) value.title = parsed.ip;
       ip.appendChild(value);
@@ -771,7 +773,7 @@
 
     var meta = [];
     var distance = km(parsed.place);
-    if (distance !== null) meta.push(P.el('span', '', '约 ' + thousands(distance) + ' 公里'));
+    if (distance !== null) meta.push(P.el('span', '', T('约 ', 'about ') + thousands(distance) + T(' 公里', ' km')));
     if (ip && (parsed.place || parsed.label)) {
       meta.push(ip);
     } else if (ip) {
@@ -810,13 +812,13 @@
     /* 判断不了远近的（已识别、已读取）一律中性灰：绿色只留给就近接入，
        否则同一列里绿色既表示「近」又表示「读到了但不知远近」，读的人会以为那家更好 */
     if (label) nodes = stateTag(label[0], 'tag--' + label[1]);
-    else if (kind === 'read') nodes = stateTag('已读取', 'tag--muted');
-    else if (kind === 'hidden') nodes = stateTag('可达', 'tag--muted', '节点信息未开放' + (http ? ' · ' + http : ''));
-    else if (kind === 'opaque') nodes = stateTag('可达', 'tag--muted', '但不允许跨域读取');
-    else if (kind === 'odd') nodes = stateTag('可达', 'tag--warn', row.parsed.odd);
+    else if (kind === 'read') nodes = stateTag(T('已读取', 'Read'), 'tag--muted');
+    else if (kind === 'hidden') nodes = stateTag(T('可达', 'Reachable'), 'tag--muted', T('节点信息未开放', 'node info not exposed') + (http ? ' · ' + http : ''));
+    else if (kind === 'opaque') nodes = stateTag(T('可达', 'Reachable'), 'tag--muted', T('但不允许跨域读取', 'cross-origin reads not allowed'));
+    else if (kind === 'odd') nodes = stateTag(T('可达', 'Reachable'), 'tag--warn', row.parsed.odd);
     else if (kind === 'csp') nodes = stateTag(P.failureText('csp'), 'tag--leak');
-    else if (kind === 'down') nodes = stateTag('不可达', 'tag--warn', P.failureText(result.reason));
-    else nodes = [dim('待检测')];
+    else if (kind === 'down') nodes = stateTag(T('不可达', 'Unreachable'), 'tag--warn', P.failureText(result.reason));
+    else nodes = [dim(T('待检测', 'Pending'))];
 
     fill(row.cells.state, nodes);
   }
@@ -831,7 +833,7 @@
     }
     cell.textContent = result.ms + ' ms';
     cell.className += result.ms <= GOOD_MS ? ' is-good' : result.ms <= OK_MS ? ' is-ok' : ' is-slow';
-    if (!result.warm) cell.title = '第二次请求没能完成，这是含握手的首次耗时';
+    if (!result.warm) cell.title = T('第二次请求没能完成，这是含握手的首次耗时', 'The second request did not complete; this is the first timing, which includes the handshake');
     else cell.removeAttribute('title');
   }
 
@@ -869,7 +871,7 @@
     if (chips.length) {
       fill(chipsCell, chips);
     } else {
-      fill(chipsCell, [dim(running ? '检测中，读到节点的 CDN 会依次出现在这里。' : '没有读到任何一家 CDN 的节点城市。')]);
+      fill(chipsCell, [dim(running ? T('检测中，读到节点的 CDN 会依次出现在这里。', 'Checking; CDNs whose node is read will appear here one by one.') : T('没有读到任何一家 CDN 的节点城市。', 'No CDN node city was read.'))]);
     }
   }
 
@@ -883,11 +885,11 @@
       /* 位置与出口两样都有了着落才合（settleVisitor）。还差哪一样就说哪一样：
          本站的回答已经到了、只差 Cloudflare 那一行的时候，不该还写着「正在向本站查询」 */
       if (me === undefined) {
-        whereCell.textContent = '正在向本站查询你的大致位置，用来计算节点距离…';
+        whereCell.textContent = T('正在向本站查询你的大致位置，用来计算节点距离…', 'Asking this site for your approximate location to compute node distances…');
       } else if (me) {
-        whereCell.textContent = '本站已查到你的大致位置，正在等 Cloudflare 一行的 trace：核对它看到的出口是不是同一个之后，再计算节点距离…';
+        whereCell.textContent = T('本站已查到你的大致位置，正在等 Cloudflare 一行的 trace：核对它看到的出口是不是同一个之后，再计算节点距离…', 'This site has your approximate location and is waiting for the Cloudflare row\'s trace: once it confirms Cloudflare sees the same exit, node distances will be computed…');
       } else {
-        whereCell.textContent = '没能取到你的大致位置，正在等 Cloudflare 一行的 trace，看它报的出口在哪个国家/地区…';
+        whereCell.textContent = T('没能取到你的大致位置，正在等 Cloudflare 一行的 trace，看它报的出口在哪个国家/地区…', 'Your approximate location is not available; waiting for the Cloudflare row\'s trace to see which country/region it reports for the exit…');
       }
       return;
     }
@@ -896,20 +898,20 @@
     /* 分档用的国家（见 settleVisitor）。多数时候和 country 是同一个 */
     var tier = visitor ? P.country(visitor.tier) : '';
     /* 没有坐标时还剩什么可依据：trace 报的国家 */
-    var byCountry = country ? '，只按 Cloudflare 报的国家/地区（' + country + '）判断远近' : '';
+    var byCountry = country ? T('，只按 Cloudflare 报的国家/地区（', '; nearness is judged only by the country/region Cloudflare reports (') + country + T('）判断远近', ')') : '';
 
     if (whereKind === 'other') {
-      whereCell.textContent = 'Cloudflare 看到的出口与本站看到的不是同一个地址（多见于分流代理，或双栈网络下两边各走了一个地址族），'
-        + '本站查到的位置不适用：本次不计算距离' + byCountry + '。';
+      whereCell.textContent = T('Cloudflare 看到的出口与本站看到的不是同一个地址（多见于分流代理，或双栈网络下两边各走了一个地址族），', 'The exit Cloudflare sees is not the address this site sees (common with split-routing proxies, or dual-stack networks where each side used a different address family), ')
+        + T('本站查到的位置不适用：本次不计算距离', 'so the location this site found does not apply and no distance is computed this time') + byCountry + T('。', '.');
       return;
     }
     if (whereKind === 'none') {
-      whereCell.textContent = '没能取到你的大致位置（本站的归属查询暂时不可用），本次不计算距离' + byCountry + '。';
+      whereCell.textContent = T('没能取到你的大致位置（本站的归属查询暂时不可用），本次不计算距离', 'Your approximate location is not available (this site\'s lookup is temporarily unavailable), so no distance is computed this time') + byCountry + T('。', '.');
       return;
     }
     if (!hasCoords()) {
-      whereCell.textContent = '本站没有查到你这条出口 IP 的坐标，本次不计算距离'
-        + (tier ? '，只按国家/地区（' + tier + '）判断远近' : '') + '。';
+      whereCell.textContent = T('本站没有查到你这条出口 IP 的坐标，本次不计算距离', 'This site found no coordinates for your exit IP, so no distance is computed this time')
+        + (tier ? T('，只按国家/地区（', '; nearness is judged only by country/region (') + tier + T('）判断远近', ')') : '') + T('。', '.');
       return;
     }
 
@@ -923,21 +925,21 @@
     var parts = [];
     if (place && !(countryName && countryName.slice(-place.length) === place)) parts.push(place);
     if (country) parts.push(country);
-    whereCell.textContent = '距离按本站查到的你的出口 IP 的大致位置计算：'
-      + (parts.length ? parts.join(' · ') : '坐标 ' + visitor.lat + ', ' + visitor.lon) + '。'
+    whereCell.textContent = T('距离按本站查到的你的出口 IP 的大致位置计算：', 'Distance is computed from the approximate location of your exit IP as found by this site: ')
+      + (parts.length ? parts.join(' · ') : T('坐标 ', 'coordinates ') + visitor.lat + ', ' + visitor.lon) + T('。', '.')
       + (whereKind === 'unchecked'
-        ? '这一轮没能读到 Cloudflare 的 trace，无法核对各家 CDN 看到的是不是这个出口；开着分流代理时，实际距离可能不同。'
+        ? T('这一轮没能读到 Cloudflare 的 trace，无法核对各家 CDN 看到的是不是这个出口；开着分流代理时，实际距离可能不同。', ' The Cloudflare trace could not be read this round, so it cannot be confirmed that the CDNs see this exit; with a split-routing proxy the actual distance may differ.')
         : '')
       /* 两家库对这条 IP 的国家说法不一时把话说明白：不然读的人会对不上——位置写着香港，东京的节点却算就近 */
       + (whereKind === 'ok' && visitor.tier !== visitor.country
         ? (tier
-          ? 'Cloudflare 报的出口国家/地区是 ' + tier + '，与本站的记录不同；节点是否与你同在一个国家/地区、是否算周边，按 Cloudflare 报的判断，与 Cloudflare 节点检测一致。'
-          : 'Cloudflare 没有报出这个出口所在的国家/地区，本次只按距离判断远近。')
+          ? T('Cloudflare 报的出口国家/地区是 ', ' Cloudflare reports the exit country/region as ') + tier + T('，与本站的记录不同；节点是否与你同在一个国家/地区、是否算周边，按 Cloudflare 报的判断，与 Cloudflare 节点检测一致。', ', which differs from this site\'s records; whether a node is in your country/region or nearby is judged by what Cloudflare reports, consistent with the Cloudflare edge check.')
+          : T('Cloudflare 没有报出这个出口所在的国家/地区，本次只按距离判断远近。', ' Cloudflare did not report the exit\'s country/region, so nearness is judged by distance only this time.'))
         : '');
   }
 
   function names(list) {
-    return list.map(function (row) { return row.name; }).join('、');
+    return list.map(function (row) { return row.name; }).join(T('、', ', '));
   }
 
   function renderVerdict(seconds) {
@@ -959,47 +961,47 @@
     if (!identified) {
       if (unreachable === rows.length) {
         tone = 'is-bad';
-        title = '所有 CDN 都连不上';
-        note = '一家都没有响应。可能是网络断开、被防火墙或代理规则拦下，也可能是浏览器扩展（广告拦截、隐私保护）拦截了这些请求。';
+        title = T('所有 CDN 都连不上', 'No CDN connects');
+        note = T('一家都没有响应。可能是网络断开、被防火墙或代理规则拦下，也可能是浏览器扩展（广告拦截、隐私保护）拦截了这些请求。', 'None responded. The network may be down, blocked by a firewall or proxy rule, or a browser extension (ad blocking, privacy) may be blocking these requests.');
       } else {
         tone = 'is-warn';
-        title = '没能读到任何一家的节点';
-        note = '能连上的 ' + limited + ' 家都没有把节点信息开放给其他网站，只测得延迟。'
-             + '换一个网络或关掉拦截跨域请求的扩展后再试一次。';
+        title = T('没能读到任何一家的节点', 'No node could be read');
+        note = T('能连上的 ', 'All ') + limited + T(' 家都没有把节点信息开放给其他网站，只测得延迟。', ' reachable CDNs keep node info private from other sites, so only latency was measured.')
+             + T('换一个网络或关掉拦截跨域请求的扩展后再试一次。', ' Try another network or disable extensions that block cross-origin requests, then try again.');
       }
     } else if (located) {
       if (by.far.length && by.far.length * 2 >= located) {
         tone = 'is-warn';
-        title = '多数 CDN 把你调度到了跨区节点';
-        note = names(by.far) + ' 跨区接入：节点离你超过 ' + thousands(P.REGION_KM) + ' 公里，也不在你所在的国家/地区或周边。'
-             + '常见原因：出口 IP 的归属与你的实际位置不符（代理 / VPN），DNS 用的是远处的解析器，'
-             + '或者你的运营商与这些 CDN 之间缺少就近的互联。';
+        title = T('多数 CDN 把你调度到了跨区节点', 'Most CDNs route you to cross-region nodes');
+        note = names(by.far) + T(' 跨区接入：节点离你超过 ', ' are cross-region: the nodes are more than ') + thousands(P.REGION_KM) + T(' 公里，也不在你所在的国家/地区或周边。', ' km away and not in your country/region or nearby.')
+             + T('常见原因：出口 IP 的归属与你的实际位置不符（代理 / VPN），DNS 用的是远处的解析器，', ' Common causes: the exit IP\'s registered location does not match where you are (proxy / VPN), DNS uses a distant resolver,')
+             + T('或者你的运营商与这些 CDN 之间缺少就近的互联。', ' or your ISP lacks nearby interconnection with these CDNs.');
       } else {
         tone = 'is-good';
         /* 跨区的不到一半；就近的过半才说「就近」，否则只能说没有绕远（就近 + 区域内过半） */
-        if (by.near.length * 2 < located) title = '多数 CDN 没有跨区调度';
-        else title = by.far.length ? '大部分 CDN 就近调度' : 'CDN 调度基本就近';
+        if (by.near.length * 2 < located) title = T('多数 CDN 没有跨区调度', 'Most CDNs avoid cross-region routing');
+        else title = by.far.length ? T('大部分 CDN 就近调度', 'Most CDNs route you nearby') : T('CDN 调度基本就近', 'CDN routing is mostly nearby');
         var spread = [];
-        if (by.near.length) spread.push(by.near.length + ' 家就近接入');
-        if (by.region.length) spread.push(by.region.length + ' 家在区域内');
-        if (by.far.length) spread.push(by.far.length + ' 家跨区接入（' + names(by.far) + '）');
-        note = located + ' 家能判断远近：' + spread.join('、') + '。';
+        if (by.near.length) spread.push(by.near.length + T(' 家就近接入', ' nearby'));
+        if (by.region.length) spread.push(by.region.length + T(' 家在区域内', ' in region'));
+        if (by.far.length) spread.push(by.far.length + T(' 家跨区接入（', ' cross-region (') + names(by.far) + T('）', ')'));
+        note = located + T(' 家能判断远近：', ' CDNs with a known distance: ') + spread.join(T('、', ', ')) + T('。', '.');
       }
     } else {
       tone = 'is-good';
-      title = '读到了 ' + identified + ' 家 CDN 的节点';
+      title = T('读到了 ', 'Nodes read for ') + identified + T(' 家 CDN 的节点', ' CDNs');
       note = hasCoords()
-        ? '这几家只给出了国家、节点编号或节点 IP，没有城市坐标，暂不判断远近。'
+        ? T('这几家只给出了国家、节点编号或节点 IP，没有城市坐标，暂不判断远近。', 'These CDNs only gave a country, node ID or node IP without city coordinates, so nearness is not judged for now.')
         : (whereKind === 'other'
-          ? '本站查到的位置不适用于 CDN 看到的这个出口，这几家暂不判断远近。'
-          : '没能取到你的大致位置，暂不判断远近。');
+          ? T('本站查到的位置不适用于 CDN 看到的这个出口，这几家暂不判断远近。', 'The location this site found does not apply to the exit these CDNs see, so nearness is not judged for now.')
+          : T('没能取到你的大致位置，暂不判断远近。', 'Your approximate location is not available, so nearness is not judged for now.'));
     }
 
     var tail = [];
-    if (identified && limited) tail.push(limited + ' 家只测得延迟（对方没有开放节点信息' + (by.odd.length ? '，或返回内容无法识别' : '') + '）');
-    if (identified && by.down.length) tail.push(by.down.length + ' 家不可达');
-    if (by.csp.length) tail.push(by.csp.length + ' 家被本站的内容安全策略拦下（' + names(by.csp) + '），这是部署配置的问题，不是你的网络');
-    if (tail.length) note += '另有 ' + tail.join('，') + '。';
+    if (identified && limited) tail.push(limited + T(' 家只测得延迟（对方没有开放节点信息', ' latency only (node info not exposed') + (by.odd.length ? T('，或返回内容无法识别', ', or the response could not be parsed') : '') + T('）', ')'));
+    if (identified && by.down.length) tail.push(by.down.length + T(' 家不可达', ' unreachable'));
+    if (by.csp.length) tail.push(by.csp.length + T(' 家被本站的内容安全策略拦下（', ' blocked by this site\'s Content Security Policy (') + names(by.csp) + T('），这是部署配置的问题，不是你的网络', '); this is a deployment configuration issue, not your network'));
+    if (tail.length) note += T('另有 ', ' Also: ') + tail.join(T('，', ', ')) + T('。', '.');
 
     verdict.className = 'verdict ' + tone;
     verdict.hidden = false;
@@ -1007,8 +1009,8 @@
     verdictNote.textContent = note;
 
     if (progress) {
-      progress.textContent = '完成：读到 ' + identified + ' 家的节点，' + limited + ' 家只测得延迟，'
-        + unreachable + ' 家不可达，用时 ' + seconds + ' 秒。';
+      progress.textContent = T('完成：读到 ', 'Done: nodes read for ') + identified + T(' 家的节点，', ' CDNs, ') + limited + T(' 家只测得延迟，', ' latency only, ')
+        + unreachable + T(' 家不可达，用时 ', ' unreachable, took ') + seconds + T(' 秒。', ' s.');
     }
   }
 
@@ -1121,10 +1123,10 @@
     whereKind = 'loading';
     if (runButton) runButton.disabled = true;
     verdict.hidden = true;
-    rows.forEach(function (row) { setPending(row, '排队中'); });
+    rows.forEach(function (row) { setPending(row, T('排队中', 'Queued')); });
     renderChips();
     renderWhere();
-    if (progress) progress.textContent = '检测中… 已完成 0 / ' + rows.length;
+    if (progress) progress.textContent = T('检测中… 已完成 0 / ', 'Checking… done 0 / ') + rows.length;
 
     var iataReady = P.iata(iataUrl).then(function (data) {
       if (data !== colos) {
@@ -1139,7 +1141,7 @@
     var jobs = rows.map(function (row) {
       return queue.add(function () {
         if (gen !== generation) return null;
-        fill(row.cells.state, [dim('检测中…')]);
+        fill(row.cells.state, [dim(T('检测中…', 'Checking…'))]);
         return within(probe(row), ROW_DEADLINE, { kind: 'down', ms: ROW_DEADLINE, reason: 'timeout' });
       }).then(function (result) {
         return iataReady.then(function () { return result; });
@@ -1149,7 +1151,7 @@
         row.parsed = result.kind === 'ok' ? parse(row, result) : null;
         renderRow(row);
         done++;
-        if (progress) progress.textContent = '检测中… 已完成 ' + done + ' / ' + rows.length;
+        if (progress) progress.textContent = T('检测中… 已完成 ', 'Checking… done ') + done + ' / ' + rows.length;
         renderChips();
         if (row === exitRow) {
           exit = readExit(result);
