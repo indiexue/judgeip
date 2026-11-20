@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/tools.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="全部工具 · JudgeIP"
+  description="JudgeIP 的全部 IP 查询、泄露检测、分流与节点测试工具列表。"
+  canonicalPath="/tools"
+  bodyClass="page-tools"
+  currentLabel="全部工具"
+  activeNav="/tools"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

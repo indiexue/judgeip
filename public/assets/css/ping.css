@@ -1,0 +1,350 @@
+/* ip.cx — 全球 Ping 页的局部样式。
+   卡片、分组标题、结论块、标签都直接用 app.css 里的公共组件，这里只放这一页独有的三样：
+   带探测方式选择的输入胶囊、四列的延迟行，以及与之配套的四档颜色。 */
+
+/* ---------------------------------------------------------------- 四档颜色
+
+   平均延迟的数字与延迟条用同一档颜色，图例也读这两个变量——改一处，三个地方一起变。
+   文字色与填充色分开定义：条子要亮一点才看得出长短，数字要深一点才过得了 AA（lime-7 做正文只有 2.4:1）。 */
+.pingrow.is-good,
+.pinglegend__item.is-good {
+  --ping-text: var(--badge-green-fg);
+  --ping-fill: var(--ping-good-fill);
+}
+
+.pingrow.is-ok,
+.pinglegend__item.is-ok {
+  --ping-text: var(--ping-ok-text);
+  --ping-fill: var(--ping-ok-fill);
+}
+
+.pingrow.is-slow,
+.pinglegend__item.is-slow {
+  --ping-text: var(--score-warn-text);
+  --ping-fill: var(--score-warn-fill);
+}
+
+.pingrow.is-bad,
+.pinglegend__item.is-bad {
+  --ping-text: var(--badge-red-fg);
+  --ping-fill: var(--ping-bad-fill);
+}
+
+/* ---------------------------------------------------------------- 输入胶囊
+
+   外观沿用首页查询框（.query__line），只是在输入框与按钮之间多夹一个探测方式的下拉框。
+   下拉框去掉原生外观、换成一枚细箭头：原生的那块灰底按钮塞在胶囊里像是另一个控件。 */
+.pingform {
+  margin-block-end: var(--size-2);
+}
+
+.pingform__proto {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding-inline-start: var(--size-2);
+  border-inline-start: 1px solid var(--border);
+}
+
+.pingform__select {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 32px;
+  padding: 0 18px 0 6px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: var(--font-weight-6);
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-2);
+  cursor: pointer;
+}
+
+.pingform__select:hover:not(:disabled) {
+  color: var(--accent-text);
+}
+
+.pingform__select:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 1px;
+}
+
+.pingform__select:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.pingform__chevron {
+  position: absolute;
+  inset-inline-end: 3px;
+  inline-size: 12px;
+  block-size: 12px;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+.pingform__run {
+  min-inline-size: 4.5em;
+}
+
+/* .notice 是 display:flex，会盖掉 UA 的 [hidden]{display:none}（特异度相同，后加载的赢） */
+.pingform__error[hidden] {
+  display: none;
+}
+
+/* 预填提示里会原样写出访客的目标（「已填入 …」）：最长 253 个字符、中间没有空格的域名，
+   不允许任意处断行就会把手机版面横向撑破 */
+.pingform__hint {
+  display: block;
+  margin: 0 0 var(--size-2);
+  padding-inline: var(--size-2);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+/* 结论里可能带着 Globalping 或探针原样报回的英文原因（参数名、主机名），同理允许任意处断行 */
+.ping .verdict__title,
+.ping .verdict__note {
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- 图例 */
+
+.pinglegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-1) var(--size-3);
+  margin: 0 0 var(--size-4);
+  padding-inline: var(--size-2);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.pinglegend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pinglegend__dot {
+  inline-size: 8px;
+  block-size: 8px;
+  background: var(--ping-fill);
+  border-radius: var(--radius-round);
+}
+
+/* ---------------------------------------------------------------- 延迟行
+
+   节点 ｜ 最小 / 平均 / 最大 ｜ 丢包 ｜ 延迟条。和 .stun / .dnsrow 是同一张卡片里的兄弟，
+   但多了一列、且数字列要右对齐，没有硬塞进那两个类的修饰符里。
+   列宽按最宽的内容定：三个三位数加分隔符与单位约 18 个等宽字符。 */
+.pinghead,
+.pingrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10rem 3.5rem 6rem;
+  align-items: center;
+  gap: var(--size-2) var(--size-3);
+  padding: var(--size-2) var(--size-4);
+}
+
+/* 每张卡片自带一行表头：分组之间隔着标题，只在第一张放表头的话，往下翻就对不上列了 */
+.pinghead {
+  padding-block: 6px;
+  font-size: 11.5px;
+  font-weight: var(--font-weight-6);
+  letter-spacing: .04em;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border-block-end: 1px solid var(--border-soft);
+}
+
+.pinghead > span:nth-child(2),
+.pinghead > span:nth-child(3) {
+  text-align: right;
+}
+
+.pingrow {
+  transition: background-color .15s var(--ease-3);
+}
+
+.pingrow + .pingrow {
+  border-block-start: 1px solid var(--border-soft);
+}
+
+.pingrow:hover {
+  background: var(--surface-2);
+}
+
+/* min-width:0 是必须的：没有它，长运营商名会把 1fr 那列撑破整行 */
+.pingrow__node {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.pingrow__name {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.pingrow.is-none .pingrow__name {
+  color: var(--text-dim);
+}
+
+/* 实际执行测量的探针：城市 · AS 运营商 · 与多数节点不同的解析地址。
+   这一行决定了上面那个数字可不可信，所以用 text-dim 而不是更淡的 text-mute。 */
+.pingrow__probe {
+  display: block;
+  margin-block-start: 1px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 分隔点挂在前一段的末尾而不是后一段的开头：长运营商名折行时，「·」留在上一行行尾，
+   不会出现一行以孤零零的「·」开头 */
+.pingrow__probe > span:not(:last-child)::after {
+  content: "\00a0· ";
+  color: var(--text-mute);
+}
+
+.pingrow__addr {
+  color: var(--tag-global-fg);
+  white-space: nowrap;
+}
+
+/* inline-block：短的中文原因整段换行而不是从中间断开；探针原样报回的长英文仍能在块内折行 */
+.pingrow__why {
+  display: inline-block;
+  max-inline-size: 100%;
+  color: var(--badge-red-fg);
+}
+
+.pingrow__rtt,
+.pingrow__loss {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pingrow__rtt {
+  font-size: 13.5px;
+}
+
+.pingrow__loss {
+  font-size: 13px;
+}
+
+.pingrow__num {
+  color: var(--text-dim);
+}
+
+.pingrow__sep,
+.pingrow__unit {
+  color: var(--text-mute);
+}
+
+.pingrow__unit {
+  font-size: 11.5px;
+}
+
+/* 三个数里平均值才是结论：加粗、上色，最小 / 最大只是它的误差范围 */
+.pingrow__avg {
+  font-weight: var(--font-weight-7);
+  color: var(--ping-text, var(--text));
+}
+
+/* 窄屏才显示的列名；宽屏有表头，这里只留给读屏器 */
+.pingrow__k {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pingrow__wait {
+  color: var(--text-dim);
+  animation: ping-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ping-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .45; }
+}
+
+/* 进度用内联 SVG 的 <rect width>（见 ping.js 的 bar()）：CSP 不允许 style="width:…" */
+.pingbar {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.pingbar__track {
+  fill: var(--border);
+}
+
+.pingbar__fill {
+  fill: var(--ping-fill, var(--text-mute));
+}
+
+.pinglink {
+  color: var(--accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- 窄屏
+
+   四列在手机上每列只剩几个字。改成三行：节点名与延迟条、探针信息（独占整行，长运营商名少折一次）、
+   数字与丢包；表头藏掉，每个数字前面补上自己的列名。
+   .pingrow__node 用 display:contents 拆开，名字与探针信息才能各自落进网格的不同行。 */
+@media (max-width: 480px) {
+  .pinghead {
+    display: none;
+  }
+
+  .pingrow {
+    grid-template-columns: minmax(0, 1fr) 5.5rem;
+    grid-template-areas:
+      "name  bar"
+      "probe probe"
+      "rtt   loss";
+    gap: 2px var(--size-3);
+    padding-inline: var(--size-3);
+  }
+
+  .pingrow__node  { display: contents; }
+  .pingrow__name  { grid-area: name; }
+  .pingrow__probe { grid-area: probe; margin-block-start: 0; }
+  .pingrow__rtt   { grid-area: rtt; text-align: left; margin-block-start: 2px; }
+  .pingrow__loss  { grid-area: loss; margin-block-start: 2px; }
+  .pingrow__bar   { grid-area: bar; align-self: center; }
+
+  .pingrow__k {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0 6px 0 0;
+    overflow: visible;
+    clip-path: none;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+
+  .pingform__select {
+    padding-inline-start: 2px;
+    font-size: 13px;
+  }
+
+  .pinglegend,
+  .pingform__hint {
+    padding-inline: var(--size-1);
+  }
+}

@@ -1,0 +1,371 @@
+
+<section class="hero">
+  <h1 class="hero__title">Cloudflare 节点检测</h1>
+  <p class="hero__lede">测试你能否自动通过 Cloudflare 人机验证，并查看你命中的 Cloudflare 节点。</p>
+</section>
+
+<div class="probe cf"
+     id="cloudflare"
+     data-visible-ip="__VISITOR_IP__"
+     data-iata="/assets/data/iata.json"
+     data-main="speed.cloudflare.com"
+     data-me="/geo/api?me=1"
+     data-ipv4="1.1.1.1">
+
+    <section class="group cf__ts" id="ts-test">
+    <h2 class="group__title">Turnstile 人机验证</h2>
+    <div class="tsgrid" data-ts data-ts-api="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" data-ts-endpoint="/cloudflare/turnstile">
+      <article class="rows tscard" data-ts-card="ni" data-sitekey="1x00000000000000000000AA" data-action="cf-test-ni" aria-labelledby="ts-ni-title">
+        <div class="tscard__head">
+          <div class="tscard__id">
+                        <h3 class="tscard__title" id="ts-ni-title">Turnstile 非交互模式</h3>
+            <p class="tscard__mode"><span class="tag tag--global" lang="en">Non-interactive</span></p>
+            <p class="tscard__sub">后台静默校验，不需要任何点击</p>
+          </div>
+          <button class="tsreset" type="button" data-ts-reset disabled>重置</button>
+        </div>
+        <div class="tscard__widget">
+          <div class="tscard__mount" data-ts-mount><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">当前状态</div>
+          <div class="row__value" data-ts-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">服务端验证</div>
+          <div class="row__value" data-ts-server><span class="dim">—</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">响应耗时</div>
+          <div class="row__value" data-ts-time><span class="dim">—</span></div>
+        </div>
+        <div class="tscard__out" aria-live="polite">
+          <div class="verdict tsverdict" data-ts-verdict hidden>
+            <span class="verdict__dot" aria-hidden="true"></span>
+            <div class="verdict__body">
+              <p class="verdict__title" data-ts-verdict-title></p>
+              <p class="verdict__note" data-ts-verdict-note></p>
+            </div>
+          </div>
+          <p class="sr-only" data-ts-say></p>
+        </div>
+                <details class="tsmeta">
+          <summary class="tsmeta__summary">响应元数据</summary>
+          <div class="tsmeta__body" data-ts-meta><p class="tsmeta__empty">尚未取得。</p></div>
+        </details>
+      </article>
+      <article class="rows tscard" data-ts-card="mg" data-sitekey="1x00000000000000000000AA" data-action="cf-test-mg" aria-labelledby="ts-mg-title">
+        <div class="tscard__head">
+          <div class="tscard__id">
+                        <h3 class="tscard__title" id="ts-mg-title">Turnstile 托管模式</h3>
+            <p class="tscard__mode"><span class="tag tag--global" lang="en">Managed</span></p>
+            <p class="tscard__sub">由 Cloudflare 决定是否点击确认</p>
+          </div>
+          <button class="tsreset" type="button" data-ts-reset disabled>重置</button>
+        </div>
+        <div class="tscard__widget">
+          <div class="tscard__mount" data-ts-mount><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">当前状态</div>
+          <div class="row__value" data-ts-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">服务端验证</div>
+          <div class="row__value" data-ts-server><span class="dim">—</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">响应耗时</div>
+          <div class="row__value" data-ts-time><span class="dim">—</span></div>
+        </div>
+        <div class="tscard__out" aria-live="polite">
+          <div class="verdict tsverdict" data-ts-verdict hidden>
+            <span class="verdict__dot" aria-hidden="true"></span>
+            <div class="verdict__body">
+              <p class="verdict__title" data-ts-verdict-title></p>
+              <p class="verdict__note" data-ts-verdict-note></p>
+            </div>
+          </div>
+          <p class="sr-only" data-ts-say></p>
+        </div>
+                <details class="tsmeta">
+          <summary class="tsmeta__summary">响应元数据</summary>
+          <div class="tsmeta__body" data-ts-meta><p class="tsmeta__empty">尚未取得。</p></div>
+        </details>
+      </article>
+    </div>
+  </section>
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-cf-run>开始检测</button>
+    <span class="probe__hint" data-cf-progress>打开页面即自动开始，节点检测由你的浏览器直接向 Cloudflare 发起，通常几秒内完成。</span>
+        <button class="mask cf__mask" type="button" data-cf-mask aria-pressed="false" aria-label="隐藏 IP 地址" title="隐藏 IP 地址">
+      <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
+        <circle cx="12" cy="12" r="2.9"></circle>
+      </svg>
+      <svg class="mask__icon mask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
+        <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
+        <path d="M4 4l16 16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="verdict" data-cf-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-cf-verdict-title></p>
+      <p class="verdict__note" data-cf-verdict-note></p>
+    </div>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">Cloudflare 看到的你</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">本站看到的 IP</div>
+          <div class="row__value"><span class="mono" data-cf-visible>__VISITOR_IP__</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">出口 IP</div>
+          <div class="row__value" data-cf="ip"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">国家 / 地区</div>
+          <div class="row__value" data-cf="loc"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">网络（ASN）</div>
+          <div class="row__value" data-cf="asn"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">命中节点</div>
+          <div class="row__value" data-cf="colo"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">1.1.1.1（DNS/WARP 网络，强制 IPv4）</div>
+          <div class="row__value" data-cf="ipv4"><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">连接详情</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">HTTP 协议</div>
+          <div class="row__value" data-cf="http"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">TLS 版本</div>
+          <div class="row__value" data-cf="tls"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">SNI / ECH</div>
+          <div class="row__value" data-cf="sni"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">密钥交换</div>
+          <div class="row__value" data-cf="kex"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">WARP</div>
+          <div class="row__value" data-cf="warp"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">Zero Trust 网关</div>
+          <div class="row__value" data-cf="gateway"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">远程浏览器隔离</div>
+          <div class="row__value" data-cf="rbi"><span class="dim">待检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">边缘时间</div>
+          <div class="row__value" data-cf="ts"><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">节点等级对比</h2>
+      <div class="rows">
+        <div class="cftier" data-cf-tier="cloudflare" data-host="www.cloudflare.com" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">企业版</span>
+              <span class="cftier__name">Cloudflare 官网</span>
+            </div>
+            <div class="cftier__host mono">www.cloudflare.com</div>
+            <div class="cftier__note">Cloudflare 自己的官网，企业版网络的基准。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="claude" data-host="claude.ai" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">企业版</span>
+              <span class="cftier__name">Claude</span>
+            </div>
+            <div class="cftier__host mono">claude.ai</div>
+            <div class="cftier__note">企业版站点：Anthropic 的 Claude 网页端。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="npm" data-host="registry.npmjs.org" data-kind="ent">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--global">企业版</span>
+              <span class="cftier__name">npm 软件源</span>
+            </div>
+            <div class="cftier__host mono">registry.npmjs.org</div>
+            <div class="cftier__note">企业版站点：Node.js 的官方软件包仓库。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="cn" data-host="www.cloudflare-cn.com" data-kind="cn">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--cn">中国网络</span>
+              <span class="cftier__name">Cloudflare 中国网络</span>
+            </div>
+            <div class="cftier__host mono">www.cloudflare-cn.com</div>
+            <div class="cftier__note">仅中国大陆访客会命中境内节点，其余地区看到的都是海外节点。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="dns" data-host="one.one.one.one" data-kind="dns">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">DNS / WARP</span>
+              <span class="cftier__name">1.1.1.1 公共 DNS</span>
+            </div>
+            <div class="cftier__host mono">one.one.one.one</div>
+            <div class="cftier__note">公共 DNS 与 WARP 所在的网络，任播路由和 CDN 不是同一套。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="speed" data-host="speed.cloudflare.com" data-kind="speed">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">测速网络</span>
+              <span class="cftier__name">Cloudflare 测速</span>
+            </div>
+            <div class="cftier__host mono">speed.cloudflare.com</div>
+            <div class="cftier__note">Cloudflare 官方测速站，本页的主 trace 也来自这里。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier" data-cf-tier="cdnjs" data-host="cdnjs.cloudflare.com" data-kind="cdn">
+          <div class="cftier__id">
+            <div class="cftier__head">
+              <span class="tag tag--name">静态 CDN</span>
+              <span class="cftier__name">cdnjs</span>
+            </div>
+            <div class="cftier__host mono">cdnjs.cloudflare.com</div>
+            <div class="cftier__note">开源前端库的公共 CDN，大量网站从这里加载脚本。</div>
+          </div>
+          <div class="cftier__node" data-cf-tier-node><span class="dim">待检测</span></div>
+          <div class="cftier__lat" data-cf-tier-lat></div>
+        </div>
+        <div class="cftier cftier--sum" data-cf-tier-sum>
+          <span class="dim">每个网络先预热 1 次，再连续请求 3 次取最快的一次；延迟条以最慢的那个网络为满格。</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+    <details class="cfraw">
+    <summary class="cfraw__summary">原始 trace（speed.cloudflare.com/cdn-cgi/trace）</summary>
+    <pre class="cfraw__pre mono" data-cf-raw>尚未取得。</pre>
+  </details>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Cloudflare 节点只有 Cloudflare 的边缘知道，必须由浏览器直接去问。当前浏览器禁用了 JavaScript，本页只能显示检测清单与说明。你也可以直接在浏览器里打开 <span class="mono">https://speed.cloudflare.com/cdn-cgi/trace</span>，其中 <span class="mono">colo=</span> 后面的三个字母就是你命中的机房。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是 Cloudflare 节点</h2>
+  <p>
+    Cloudflare 在全球三百多个城市部署了数据中心，所有接入 Cloudflare 的网站共用这张网络。访问这些网站时，你的请求不会直接到达网站的源服务器，而是先落到 Cloudflare 的某一个边缘机房，由它完成 TLS 握手、缓存命中与安全过滤，再决定要不要回源。这个机房就叫<strong>节点</strong>（Cloudflare 内部称为 colo），用就近机场的 IATA 三字码命名：HKG 是香港，NRT 是东京成田，LAX 是洛杉矶，FRA 是法兰克福。</p>
+  <p>
+    Cloudflare 用任播（Anycast）把同一个 IP 同时宣告在所有机房，<strong>由互联网路由决定你最终落到哪一个</strong>。理想情况下这就是离你最近的那个；但运营商的国际出口、与 Cloudflare 的互联关系、目标站点的套餐等级都会改变这个结果——这正是同一个人访问不同网站、延迟却能差出几百毫秒的原因。</p>
+  <p>
+    每个走 Cloudflare 的站点都有一个公开的诊断地址 <span class="mono">/cdn-cgi/trace</span>，它用几行纯文本告诉你：命中的机房（<span class="mono">colo</span>）、它看到的出口 IP（<span class="mono">ip</span>）与国家（<span class="mono">loc</span>）、HTTP 与 TLS 版本、SNI 是否加密、密钥交换算法，以及 WARP、Zero Trust 网关是否在用。本页的全部结论都来自这几行字。</p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>向 <span class="mono">speed.cloudflare.com/cdn-cgi/trace</span> 连续请求两次：第一次只为建立连接，第二次的结果才展示。第二次请求前后各记一次本机时间，取中点与边缘时间对照，得出时钟偏差（边缘时间只精确到秒，偏差也只报到整秒）。</li>
+    <li>向本站查询「本站看到的你的 IP」的归属：运营商（ASN）、城市与大致坐标，和首页显示的是同一份数据。trace 本身不给坐标，所以只有当这条地址与上一步 Cloudflare 看到的出口是同一个（IPv4 相同，或 IPv6 同在一个 /64 网段）时，才用它来算你和节点之间的距离；不是同一个出口，就只按国家判断远近。</li>
+    <li>请求 <span class="mono">https://1.1.1.1/cdn-cgi/trace</span>：IP 字面量只能走 IPv4，看到的是你的 IPv4 出口与 1.1.1.1 所在网络的落点。</li>
+    <li>对下表 7 个不同等级的 Cloudflare 网络，各预热 1 次、再连续请求 3 次，取最快的一次作为延迟，同时记下命中的节点与协议。最多 4 个网络同时测，避免互相抢带宽。</li>
+    <li>从 <span class="mono">challenges.cloudflare.com</span> 加载 Cloudflare Turnstile，用非交互、托管两种模式的组件各跑一次人机验证；拿到的 token 交给本站服务器，向 Cloudflare 复核一次（见下文）。</li>
+  </ol>
+  <p>
+    发往 Cloudflare 的请求（第 1、3、4 步）都不带 Cookie、不带来源页，也不附加任何自定义请求头（加了会触发跨域预检，而 trace 地址不响应预检），结果只留在当前页面里，不会发回本站。
+    第 2 步是向本站自己查询，请求里不带任何检测结果，本站从中看到的只有你的 IP，和你打开本页时一样。
+    Turnstile 那一步的 token 必须由服务端复核才算数，本站服务器复核完即丢弃，不保存 token 与结果，只按你的 IP 记一个 1 小时后过期的复核次数，用来限流。</p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+        <li><strong>命中节点与距离</strong>：距离在 1000 公里以内，或节点在你出口的周边（中国大陆访客命中香港、台北、东京、大阪、首尔、新加坡——那已经是境外网络能给到的最近落点），或与出口同在一个国家/地区且不超过 3000 公里，算<strong>就近接入</strong>；其余 3000 公里以内的，或与出口同在一个国家/地区的（美国、俄罗斯、巴西这样的大国，境内跨几千公里也不算绕到别的地区），算<strong>区域内</strong>；剩下的是<strong>跨区接入</strong>，延迟会明显偏高。没取到你的坐标、算不出距离时，同国或周边的节点照样算就近接入，其余只标中性的「已识别」，不判远近。距离按本站查到的出口 IP 的大致坐标估算，只是一个量级参考；Cloudflare 看到的出口与本站看到的不是同一个地址时，这份坐标不适用，不估算距离。</li>
+    <li><strong>出口 IP</strong>：与本站看到的同族地址一致，说明访问 Cloudflare 和访问本站走的是同一个出口；同族却不同，说明有分流或多出口代理；一个 IPv4、一个 IPv6 则只是双栈网络下各走各的，属于正常现象。</li>
+    <li><strong>HTTP/3</strong>：首次访问通常为 HTTP/2，浏览器记住站点支持 HTTP/3 之后才会改走 QUIC，刷新后再测即可。HTTP/1.1 则往往意味着中间有一层不支持新协议的代理。</li>
+    <li><strong>TLS、ECH 与后量子</strong>：TLS 1.3 是当前标准；SNI 显示「加密（ECH）」说明连沿途的网络设备也看不到你访问的域名；密钥交换里出现 <span class="mono">MLKEM</span> 或 <span class="mono">Kyber</span>，表示这条连接已经用上了抗量子计算的混合密钥交换。</li>
+    <li><strong>WARP / Zero Trust 网关 / 远程浏览器隔离</strong>：任何一项开启，Cloudflare 看到的都不再是你直连的出口，节点与出口 IP 要按 WARP 或公司网关的出口来理解。</li>
+    <li><strong>时钟偏差</strong>：trace 给的边缘时间只精确到秒，偏差因此只按整秒估算；估出来相差 3 秒及以上（真实偏差至少 2 秒上下）会单独标出——时钟不准会导致 TLS 证书校验、两步验证码等出问题。</li>
+  </ul>
+
+  <h2>为什么不同网络会命中不同节点</h2>
+  <p>
+    Cloudflare 的套餐决定了站点能用哪些机房、走哪条线路。<strong>企业版</strong>站点可以用上全部节点与更优的路由，<strong>中国网络</strong>（与京东云合作）只在中国大陆访客访问时才调度到境内节点，<strong>1.1.1.1</strong> 的 DNS 与 WARP 网络使用独立的任播地址段，<strong>测速站</strong>与 <strong>cdnjs</strong> 也各有各的调度。所以对比表里各行命中不同的节点很常见；如果全部落在同一个就近节点，说明你的网络到 Cloudflare 的路由非常理想。</p>
+  <p>
+    对比表里没有「免费版」：本站不在 Cloudflare 上，找不到一个能长期确定仍是免费套餐的第三方站点。如果你自己有免费套餐的站点，在浏览器里打开它的 <span class="mono">/cdn-cgi/trace</span>，对照 <span class="mono">colo=</span> 一行即可。</p>
+
+  <h2>Turnstile 人机验证测的是什么</h2>
+  <p>
+    Turnstile 是 Cloudflare 用来替代传统验证码的人机验证：它在后台读取浏览器环境、执行一小段质询，再结合 Cloudflare 对这个 IP 与网络的了解，判断访问者是不是真人。越来越多的网站在登录、注册、评论、下载这些地方用它挡机器人——浏览器总是过不了它、或者每次都要点一下，这些网站用起来就会处处卡顿。</p>
+  <p>
+    本页用两个不同模式的组件各跑一次验证，看你的浏览器能不能<strong>不做任何操作就自动通过</strong>：</p>
+  <ul>
+    <li><strong>非交互模式（Non-interactive）</strong>：组件只显示一个进度，从不出现可以点的复选框。Cloudflare 满意就直接发放 token，不满意就直接判失败——它最直接地回答「你能不能无感通过」。</li>
+    <li><strong>托管模式（Managed）</strong>：由 Cloudflare 决定要不要请你点一下。多数正常的浏览器会自动通过；信号不够干净时，组件里会出现「确认您是真人」的复选框，点一下才放行。本站首页手动查询 IP 时用的就是这种模式。</li>
+  </ul>
+  <p>
+    卡片上的「响应耗时」是从页面开始验证到拿到 token 的时间，需要点击时也包括你点击之前的等待。拿到 token 之后，页面把它交给本站服务器，由服务器连同你的 IP 向 Cloudflare 的 siteverify 接口复核一次：token 是否有效、是不是第一次使用、是不是本站这张卡片签发的（hostname 与 action 要对得上）。<strong>前端拿到 token、服务端也复核通过</strong>，才算真正通过。「响应元数据」里列着复核时 Cloudflare 返回的各项字段（经本站筛选、限长）；其中的 cData 由页面自己与本次渲染时生成的随机值对照，只标出是否一致供你核对，不计入判定。</p>
+  <h3>托管模式没让你点就通过了</h3>
+  <p>
+    说明在 Cloudflare 看来，这个浏览器和这条网络都像普通访客：出口 IP 的信誉正常、浏览器特征前后一致、没有明显的自动化痕迹。这是最理想的结果——在其他使用 Turnstile 的网站上，你多半也看不到验证框。</p>
+  <h3>要求点击确认，或者非交互模式没通过</h3>
+  <p>
+    这只说明 Cloudflare 没能「自动」认定你是真人，不等于被封锁。常见原因有：出口是数据中心、VPN 或代理的地址（同一出口上机器流量多，信誉自然偏低）；隐私类扩展或防指纹浏览器改动、拦截了浏览器特征；浏览器带有自动化特征（例如被 Selenium、Playwright 控制）；本机时钟与真实时间相差太大；或者网络太慢，质询没能在时限内完成。换一个出口、暂时关掉相关扩展后点「重置」再测，通常就能看出是哪一项造成的。Cloudflare 的判定只基于它能看到的信号，本页如实转述结果，但无法告诉你它具体看重了哪一项。</p>
+  <p>
+    卡片显示「脚本加载失败」，说明浏览器没能从 challenges.cloudflare.com 加载 Turnstile：所在网络屏蔽了这个域名，或者扩展、代理规则拦下了它。这种情况下，任何使用 Turnstile 的网站都会卡在验证这一步。显示「长时间未加载」则是 15 秒内脚本还没就绪：可能被拦截，也可能只是到 challenges.cloudflare.com 的网络很慢——脚本晚些到达时，卡片会自动开始检测。卡片上注明是本站部署问题的错误（例如 110200：当前域名不在 Widget 的允许列表里）出在本站的配置上，与你的浏览器无关。</p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>人在国内或亚洲，为什么命中的是美国的节点？</dt>
+    <dd>Cloudflare 的调度看的是网络而不是地图：你的请求落到哪个机房，取决于运营商的国际出口、Cloudflare 与这家运营商的互联关系，以及目标站点的套餐等级。中国大陆访客访问没有接入中国网络的站点时，常被调度到洛杉矶（LAX）、圣何塞（SJC）这类美国西海岸机房，企业版站点更容易落在香港、东京、新加坡。这是调度策略的结果，不代表你的网络出了故障。</dd>
+    <dt>Cloudflare 看到的出口 IP 和本站看到的不一样，是怎么回事？</dt>
+    <dd>先看两个地址是不是同一族。一个是 IPv4、一个是 IPv6 很正常：双栈网络下，浏览器访问本站和访问 Cloudflare 时可能各自选了不同的地址族，两条都是你自己的出口。如果两个都是 IPv4（或都是 IPv6）却不一样，说明访问 Cloudflare 的流量走了另一个出口——常见于按域名分流的代理规则，或者带多个出口的代理服务。</dd>
+    <dt>为什么显示 HTTP/2，而不是 HTTP/3？</dt>
+    <dd>浏览器要先通过一次 HTTP/2 连接收到 Alt-Svc 响应头，才知道这个站点支持 HTTP/3，之后的新连接才会改走 QUIC。所以首次访问通常为 HTTP/2，刷新几次后变成 HTTP/3 是正常的。如果一直停在 HTTP/2，多半是网络屏蔽了 UDP 443，或者你用的代理不支持转发 QUIC——这不影响正常浏览。</dd>
+    <dt>WARP、Zero Trust 网关、远程浏览器隔离分别是什么？</dt>
+    <dd>WARP 是 Cloudflare 的客户端加速与加密服务，开启后网站看到的是 WARP 的出口，plus 表示 WARP+（付费的 Argo 线路）。Zero Trust 网关（Gateway）表示你的流量正经过某个组织配置的 Cloudflare 安全网关，多见于公司设备。远程浏览器隔离（RBI）表示网页其实在 Cloudflare 的远程浏览器里运行，你看到的只是渲染结果。三项都显示未启用，说明你是直接连到 Cloudflare 的。</dd>
+    <dt>Turnstile 测试要我点一下才通过，是我的网络有问题吗？</dt>
+    <dd>不一定。托管（Managed）模式由 Cloudflare 根据浏览器与网络信号决定要不要请你点一下：多数正常的浏览器会直接通过，而出口是数据中心、VPN 或代理的地址，装了改动浏览器特征的隐私扩展，浏览器带有自动化特征，或者本机时钟不准时，被要求点击的概率会明显升高。点一下就能通过，说明只是没能「无感」通过，并不是被封锁。非交互（Non-interactive）模式不会出点击框，Cloudflare 不满意就直接判失败，所以它更能说明你能不能自动通过。</dd>
+    <dt>本站会记录这次检测的结果吗？</dt>
+    <dd>不会。节点检测的请求都由你的浏览器直接发往 Cloudflare 的各个站点，不带 Cookie、不带来源页，trace 内容与节点结果只显示在当前页面里，不会发回本站，关掉页面即消失。算节点距离用的大致位置，是页面向本站查询「本站看到的你的 IP」得到的，和打开首页时的那次查询是同一份数据，请求里不带任何检测结果。Turnstile 检测拿到的一次性 token 会交给本站服务器，连同你的 IP 向 Cloudflare 复核一次后即丢弃；本站只按 IP 记一个 1 小时后自动过期的复核次数，用于限流。</dd>
+  </dl>
+</article>

@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/connectivity.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="网络连通性测试 — 国内外网站、AI 服务可达性与延迟 · JudgeIP"
+  description="实时测试国内外主流网站、AI 服务、开发与社交站点的可达性与连接延迟。"
+  canonicalPath="/connectivity"
+  bodyClass="page-connectivity"
+  currentLabel="连通性"
+  activeNav="/connectivity"
+  extraCss={["/assets/css/connectivity.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/connectivity.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

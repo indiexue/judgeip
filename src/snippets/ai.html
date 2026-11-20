@@ -1,0 +1,559 @@
+
+<section class="hero">
+  <h1 class="hero__title">AI 解锁检测</h1>
+  <p class="hero__lede">检测 ChatGPT、Claude 等 AI 服务能否访问，以及它们看到的出口地区是否受支持。</p>
+</section>
+
+<div class="probe ai"
+     id="ai"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-vendors="{&quot;openai&quot;:{&quot;name&quot;:&quot;OpenAI&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;]},&quot;anthropic&quot;:{&quot;name&quot;:&quot;Anthropic&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;,&quot;VE&quot;,&quot;AF&quot;,&quot;MM&quot;,&quot;YE&quot;,&quot;XK&quot;]},&quot;google&quot;:{&quot;name&quot;:&quot;Google Gemini&quot;,&quot;basis&quot;:&quot;official&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;HK&quot;,&quot;MO&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;xai&quot;:{&quot;name&quot;:&quot;xAI（Grok）&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;perplexity&quot;:{&quot;name&quot;:&quot;Perplexity&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;mistral&quot;:{&quot;name&quot;:&quot;Mistral AI&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;poe&quot;:{&quot;name&quot;:&quot;Poe&quot;,&quot;basis&quot;:&quot;baseline&quot;,&quot;denied&quot;:[&quot;CN&quot;,&quot;RU&quot;,&quot;BY&quot;,&quot;IR&quot;,&quot;KP&quot;,&quot;SY&quot;,&quot;CU&quot;]},&quot;deepseek&quot;:{&quot;name&quot;:&quot;DeepSeek&quot;,&quot;basis&quot;:&quot;reference&quot;,&quot;denied&quot;:[]}}"
+     data-tz="{&quot;US&quot;:[-600,-240],&quot;CA&quot;:[-480,-150],&quot;MX&quot;:[-480,-300],&quot;BR&quot;:[-300,-120],&quot;AR&quot;:[-180,-180],&quot;CL&quot;:[-360,-180],&quot;CO&quot;:[-300,-300],&quot;PE&quot;:[-300,-300],&quot;VE&quot;:[-240,-240],&quot;EC&quot;:[-360,-300],&quot;UY&quot;:[-180,-180],&quot;PA&quot;:[-300,-300],&quot;CR&quot;:[-360,-360],&quot;GB&quot;:[0,60],&quot;IE&quot;:[0,60],&quot;PT&quot;:[-60,60],&quot;IS&quot;:[0,0],&quot;ES&quot;:[0,120],&quot;FR&quot;:[60,120],&quot;DE&quot;:[60,120],&quot;NL&quot;:[60,120],&quot;BE&quot;:[60,120],&quot;LU&quot;:[60,120],&quot;CH&quot;:[60,120],&quot;AT&quot;:[60,120],&quot;IT&quot;:[60,120],&quot;SE&quot;:[60,120],&quot;NO&quot;:[60,120],&quot;DK&quot;:[60,120],&quot;PL&quot;:[60,120],&quot;CZ&quot;:[60,120],&quot;SK&quot;:[60,120],&quot;HU&quot;:[60,120],&quot;SI&quot;:[60,120],&quot;HR&quot;:[60,120],&quot;RS&quot;:[60,120],&quot;MT&quot;:[60,120],&quot;FI&quot;:[120,180],&quot;EE&quot;:[120,180],&quot;LV&quot;:[120,180],&quot;LT&quot;:[120,180],&quot;RO&quot;:[120,180],&quot;BG&quot;:[120,180],&quot;GR&quot;:[120,180],&quot;CY&quot;:[120,180],&quot;UA&quot;:[120,180],&quot;MD&quot;:[120,180],&quot;TR&quot;:[180,180],&quot;BY&quot;:[180,180],&quot;RU&quot;:[120,720],&quot;IL&quot;:[120,180],&quot;AE&quot;:[240,240],&quot;SA&quot;:[180,180],&quot;QA&quot;:[180,180],&quot;BH&quot;:[180,180],&quot;KW&quot;:[180,180],&quot;OM&quot;:[240,240],&quot;IR&quot;:[210,210],&quot;EG&quot;:[120,180],&quot;ZA&quot;:[120,120],&quot;NG&quot;:[60,60],&quot;KE&quot;:[180,180],&quot;MA&quot;:[0,60],&quot;IN&quot;:[330,330],&quot;PK&quot;:[300,300],&quot;BD&quot;:[360,360],&quot;LK&quot;:[330,330],&quot;NP&quot;:[345,345],&quot;KZ&quot;:[300,300],&quot;UZ&quot;:[300,300],&quot;GE&quot;:[240,240],&quot;AM&quot;:[240,240],&quot;AZ&quot;:[240,240],&quot;TH&quot;:[420,420],&quot;VN&quot;:[420,420],&quot;KH&quot;:[420,420],&quot;LA&quot;:[420,420],&quot;MM&quot;:[390,390],&quot;ID&quot;:[420,540],&quot;MY&quot;:[480,480],&quot;SG&quot;:[480,480],&quot;PH&quot;:[480,480],&quot;BN&quot;:[480,480],&quot;CN&quot;:[480,480],&quot;HK&quot;:[480,480],&quot;MO&quot;:[480,480],&quot;TW&quot;:[480,480],&quot;MN&quot;:[420,480],&quot;JP&quot;:[540,540],&quot;KR&quot;:[540,540],&quot;AU&quot;:[480,660],&quot;NZ&quot;:[720,780]}"
+     data-lanes="4"
+     data-trace-timeout="8000"
+     data-optional-timeout="5000"
+     data-timing-timeout="6000"
+     data-rounds="3"
+     data-fast="250"
+     data-slow="500">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-ai-run>重新检测</button>
+    <span class="probe__hint" data-ai-progress>打开页面即自动开始：13 个入口由你的浏览器直接请求，4 路并发，走 Cloudflare 的先读出它看到的出口，每个入口再测三次延迟取中位数，通常十几秒出齐。</span>
+  </div>
+
+  <div class="verdict" data-ai-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ai-verdict-title></p>
+      <div class="ainotes" data-ai-verdict-notes></div>
+    </div>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">OpenAI</h2>
+      <div class="rows aitable" role="table" aria-label="OpenAI的出口与可用性">
+        <div class="airow airow--head" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="chatgpt"
+             data-name="ChatGPT"
+             data-vendor="openai"
+             data-trace="chatgpt.com"
+             data-optional="0"
+             data-timing="https://chatgpt.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">ChatGPT</span>
+            </span>
+            <span class="airow__how">读 chatgpt.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai"
+             data-name="OpenAI 官网"
+             data-vendor="openai"
+             data-trace="openai.com"
+             data-optional="0"
+             data-timing="https://openai.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI 官网</span>
+              <span class="tag tag--name">官网</span>
+            </span>
+            <span class="airow__how">读 openai.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="sora"
+             data-name="Sora"
+             data-vendor="openai"
+             data-trace="sora.com"
+             data-optional="0"
+             data-timing="https://sora.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Sora</span>
+              <span class="tag tag--name">视频</span>
+            </span>
+            <span class="airow__how">读 sora.com 的 trace · 开放地区比 ChatGPT 窄</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="openai-api"
+             data-name="OpenAI API / Codex"
+             data-vendor="openai"
+             data-trace="api.openai.com"
+             data-optional="1"
+             data-timing="https://api.openai.com/">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">OpenAI API / Codex</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">试读 api.openai.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Anthropic</h2>
+      <div class="rows aitable" role="table" aria-label="Anthropic的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="claude"
+             data-name="Claude"
+             data-vendor="anthropic"
+             data-trace="claude.ai"
+             data-optional="0"
+             data-timing="https://claude.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Claude</span>
+            </span>
+            <span class="airow__how">读 claude.ai 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="anthropic"
+             data-name="Anthropic 官网"
+             data-vendor="anthropic"
+             data-trace="www.anthropic.com"
+             data-optional="0"
+             data-timing="https://www.anthropic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Anthropic 官网</span>
+              <span class="tag tag--name">官网</span>
+            </span>
+            <span class="airow__how">读 www.anthropic.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="claude-api"
+             data-name="Claude API / Claude Code"
+             data-vendor="anthropic"
+             data-trace="api.anthropic.com"
+             data-optional="0"
+             data-timing="https://api.anthropic.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Claude API / Claude Code</span>
+              <span class="tag tag--name">API</span>
+            </span>
+            <span class="airow__how">读 api.anthropic.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Google</h2>
+      <div class="rows aitable" role="table" aria-label="Google的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="gemini"
+             data-name="Gemini / Gemini API"
+             data-vendor="google"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://generativelanguage.googleapis.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Gemini / Gemini API</span>
+            </span>
+            <span class="airow__how">只测 generativelanguage.googleapis.com 延迟</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">其他海外 AI</h2>
+      <div class="rows aitable" role="table" aria-label="其他海外 AI的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="grok"
+             data-name="Grok"
+             data-vendor="xai"
+             data-trace="grok.com"
+             data-optional="0"
+             data-timing="https://grok.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Grok</span>
+              <span class="tag tag--name">xAI</span>
+            </span>
+            <span class="airow__how">读 grok.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="perplexity"
+             data-name="Perplexity"
+             data-vendor="perplexity"
+             data-trace="www.perplexity.ai"
+             data-optional="0"
+             data-timing="https://www.perplexity.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Perplexity</span>
+              <span class="tag tag--name">搜索</span>
+            </span>
+            <span class="airow__how">读 www.perplexity.ai 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="mistral"
+             data-name="Mistral Le Chat"
+             data-vendor="mistral"
+             data-trace="mistral.ai"
+             data-optional="0"
+             data-timing="https://mistral.ai/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Mistral Le Chat</span>
+              <span class="tag tag--name">欧洲</span>
+            </span>
+            <span class="airow__how">读 mistral.ai 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="poe"
+             data-name="Poe"
+             data-vendor="poe"
+             data-trace="poe.com"
+             data-optional="0"
+             data-timing="https://poe.com/cdn-cgi/trace">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">Poe</span>
+              <span class="tag tag--name">Quora</span>
+            </span>
+            <span class="airow__how">读 poe.com 的 trace</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">国内参照</h2>
+      <div class="rows aitable" role="table" aria-label="国内参照的出口与可用性">
+        <div class="airow airow--head sr-only" role="row">
+          <span role="columnheader">服务</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">延迟</span>
+          <span role="columnheader">地区</span>
+          <span class="airow__state" role="columnheader">状态</span>
+        </div>
+        <div class="airow"
+             role="row"
+             data-ai-row="deepseek"
+             data-name="DeepSeek"
+             data-vendor="deepseek"
+             data-trace=""
+             data-optional="0"
+             data-timing="https://www.deepseek.com/favicon.ico">
+          <div class="airow__id" role="cell">
+            <span class="airow__title">
+              <span class="airow__name">DeepSeek</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="airow__how">只测 www.deepseek.com 延迟</span>
+          </div>
+          <div class="airow__ip" role="cell" data-ai-ip><span class="dim">待检测</span></div>
+          <div class="airow__colo" role="cell" data-ai-colo><span class="dim">—</span></div>
+          <div class="airow__lat" role="cell" data-ai-lat><span class="dim">—</span></div>
+          <div class="airow__region" role="cell" data-ai-region><span class="dim">—</span></div>
+          <div class="airow__state" role="cell" data-ai-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">出口与环境对照</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">AI 服务看到的出口</div>
+          <div class="row__value" data-ai-sum-exit><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">本站看到的地址</div>
+          <div class="row__value aisum">
+            <span class="mono">__VISITOR_IP__</span>
+            <span class="aisum__tags" data-ai-sum-self></span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">浏览器时区</div>
+          <div class="row__value aisum" data-ai-sum-tz><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">浏览器语言</div>
+          <div class="row__value aisum" data-ai-sum-lang><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">延伸检测</div>
+          <div class="row__value ailinks">
+            <a href="/claude">Claude 检测</a><span class="dim">：时区、语言、字体等 10 项浏览器环境评分</span><br>
+            <a href="/split">网站分流测试</a><span class="dim">：国内外几十个网站各自看到的出口</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">各家的支持地区名单</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">OpenAI</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">不提供服务：</span>
+            <span class="tags">
+              <span class="tag tag--muted">中国大陆</span>
+              <span class="tag tag--muted">中国香港</span>
+              <span class="tag tag--muted">中国澳门</span>
+              <span class="tag tag--muted">俄罗斯</span>
+              <span class="tag tag--muted">白俄罗斯</span>
+              <span class="tag tag--muted">伊朗</span>
+              <span class="tag tag--muted">朝鲜</span>
+              <span class="tag tag--muted">叙利亚</span>
+              <span class="tag tag--muted">古巴</span>
+              <span class="tag tag--muted">委内瑞拉</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://developers.openai.com/api/docs/supported-countries" target="_blank" rel="noopener external">官方名单</a> ·
+              ChatGPT、Sora 与 API 共用这份名单；Sora 实际开放的地区更窄，以官方帮助中心为准。            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Anthropic</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">不提供服务：</span>
+            <span class="tags">
+              <span class="tag tag--muted">中国大陆</span>
+              <span class="tag tag--muted">中国香港</span>
+              <span class="tag tag--muted">中国澳门</span>
+              <span class="tag tag--muted">俄罗斯</span>
+              <span class="tag tag--muted">白俄罗斯</span>
+              <span class="tag tag--muted">伊朗</span>
+              <span class="tag tag--muted">朝鲜</span>
+              <span class="tag tag--muted">叙利亚</span>
+              <span class="tag tag--muted">古巴</span>
+              <span class="tag tag--muted">委内瑞拉</span>
+              <span class="tag tag--muted">阿富汗</span>
+              <span class="tag tag--muted">缅甸</span>
+              <span class="tag tag--muted">也门</span>
+              <span class="tag tag--muted">科索沃</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://www.anthropic.com/legal/supported-regions" target="_blank" rel="noopener external">官方名单</a> ·
+              Claude 网页版、Claude Code 与 API 共用这份名单；乌克兰被占领地区同样不支持，但网页分辨不出来。            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">Google Gemini</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">不提供服务：</span>
+            <span class="tags">
+              <span class="tag tag--muted">中国大陆</span>
+              <span class="tag tag--muted">中国香港</span>
+              <span class="tag tag--muted">中国澳门</span>
+              <span class="tag tag--muted">俄罗斯</span>
+              <span class="tag tag--muted">白俄罗斯</span>
+              <span class="tag tag--muted">伊朗</span>
+              <span class="tag tag--muted">朝鲜</span>
+              <span class="tag tag--muted">叙利亚</span>
+              <span class="tag tag--muted">古巴</span>
+            </span>
+            <span class="ailist__src">
+              <a href="https://ai.google.dev/gemini-api/docs/available-regions" target="_blank" rel="noopener external">官方名单</a> ·
+              Google 不经过 Cloudflare，网页读不到它看到的出口，所以这一家只列名单、不做判断。            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__label">其他海外 AI</div>
+          <div class="row__value ailist">
+            <span class="ailist__lead">xAI（Grok）、Perplexity、Mistral AI、Poe 未公布逐国名单，按常见受限地区推断：</span>
+            <span class="tags">
+              <span class="tag tag--muted">中国大陆</span>
+              <span class="tag tag--muted">俄罗斯</span>
+              <span class="tag tag--muted">白俄罗斯</span>
+              <span class="tag tag--muted">伊朗</span>
+              <span class="tag tag--muted">朝鲜</span>
+              <span class="tag tag--muted">叙利亚</span>
+              <span class="tag tag--muted">古巴</span>
+            </span>
+            <span class="ailist__src">美欧全面制裁或普遍断供的地区，加上境外生成式 AI 均未获准上线的中国大陆。出口命中时只提示「可能受限」，不下「不支持」的结论。</span>
+          </div>
+        </div>
+      </div>
+      <p class="ailist__foot">名单整理于 2026-10-26，只列不在官方允许名单上的国家与地区（已列国家的海外领地一并支持）。各家会调整名单，请以官方页面为准。</p>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>AI 解锁检测必须由浏览器直接访问各家服务，当前浏览器禁用了 JavaScript，本页只能显示服务清单、地区名单与说明部分，无法出结果。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是 AI 解锁检测</h2>
+  <p>
+    ChatGPT、Claude、Gemini 这些服务都按访问者的 IP 判断地区：OpenAI、Anthropic、Google 各自公布了一份支持地区名单，
+    中国大陆、香港、澳门、俄罗斯、伊朗等地区不在名单上。从这些地区访问，轻则打不开、要求反复验证，
+    重则注册失败、付款被拒、账号被停用。所谓「解锁」，就是让这些服务看到一个位于支持地区的出口。
+  </p>
+  <p>
+    麻烦在于，<strong>你以为的出口不一定是它们看到的出口</strong>。代理软件开在「规则」模式时，每个域名按规则各走各的路：
+    chatgpt.com 可能走了美国节点，api.openai.com 却因为规则没写全而直连；claude.ai 走了日本，api.anthropic.com 走了香港。
+    本站服务器只看得到你连到本站的那一条线路，回答不了这个问题——必须让每一家服务自己报一次「我看到你从哪里来」。
+  </p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>对接入 Cloudflare 的服务，读它的 <span class="mono">/cdn-cgi/trace</span>：这是 Cloudflare 边缘对每个接入站点都开放的诊断地址，
+        回一段纯文本，其中 <span class="mono">ip</span> 是这家服务看到的出口 IP、<span class="mono">loc</span> 是 Cloudflare 判定的国家、
+        <span class="mono">colo</span> 是你命中的机房。这正是这家服务做地区判断时看到的信息。</li>
+    <li>对同一个地址再发三次只测时间的请求，取中位数作为延迟。第一次请求往往带着 DNS 解析与 TLS 握手，单测一次会把延迟报高一截。</li>
+    <li>Google 与 DeepSeek 不经过 Cloudflare，网页读不到它们看到的出口，只测连不连得上、有多快。
+        DeepSeek 是国内参照：海外 AI 全部打不开而它正常，说明网络本身是通的，问题出在代理或拦截上。</li>
+    <li>拿每一行的 <span class="mono">loc</span> 对照下方各家的支持地区名单；再拿浏览器时区与语言对照出口所在的国家，
+        把本站看到的地址与 AI 服务看到的出口摆在一起。</li>
+  </ol>
+  <p>
+    所有请求都由你的浏览器直接发出，不带 Cookie、不带来源页面，结果只留在当前页面上，不会发回本站，也不保存历史。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+    <li><strong>地区「支持」</strong>：这家服务看到的出口在它的官方支持地区内。这是能正常使用的前提，但不是全部——
+        出口 IP 是家宽还是机房、有没有代理记录，可以把出口 IP 复制到本站首页查询。</li>
+    <li><strong>地区「不支持」</strong>：出口落在官方名单之外。不建议用这样的出口登录，先把这家的域名分流到支持地区的节点。</li>
+    <li><strong>地区「可能受限」</strong>：这家没有公布逐国名单，出口落在常见的受限地区（制裁地区与中国大陆），仅作提示。</li>
+    <li><strong>几家的出口国家不一致</strong>：分流规则把 AI 服务分到了不同节点。不同服务之间问题不大，
+        同一家的几个入口（网页版与 API）不一致才值得处理——同一个账号的请求在两个国家之间来回切换，是风控最常见的触发条件之一。</li>
+    <li><strong>「时区与出口不一致」</strong>：浏览器时区与出口所在国家的时区相差超过一小时。网页和客户端都读得到系统时区，
+        这是识别代理成本最低的线索。邻近地区之间（例如上海与新加坡）不会报这一条。</li>
+    <li><strong>「不可访问」</strong>：请求超时或被拒绝。若只有个别服务打不开，多半是这几个域名没有被代理规则覆盖，
+        也可能是对方正在故障，可以先到<a href="/status">服务状态</a>页确认。</li>
+  </ul>
+  <p class="prose__note">
+    地区名单由本站对照各家官方页面手工整理，名单会随政策调整，判断以官方页面为准。
+    Cloudflare 的 <span class="mono">loc</span> 与各家自己的地理库偶有出入，尤其是刚换过归属的 IP 段——结果是风险提示，不是对账号命运的判决。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>地区显示「不支持」，账号一定会被封吗？</dt>
+    <dd>不一定，但风险是实打实的。OpenAI、Anthropic、Google 都公布了支持地区名单，名单之外的地区它们不提供服务：从这样的出口注册或登录，常见的结果是反复要求验证、付款失败、功能受限，严重时账号被停用。反过来，出口在支持地区也不代表一定安全——机房 IP、频繁切换节点、支付信息与出口对不上，同样会被风控盯上。本页给出的是风险提示，不是对账号命运的判决。</dd>
+    <dt>为什么 ChatGPT 和 Claude 显示的出口 IP 不一样？</dt>
+    <dd>因为代理软件按规则分流：不同域名命中不同的规则，就会从不同的节点出去。每一行的出口都是那家服务自己的 Cloudflare 边缘在 /cdn-cgi/trace 里报告的，是它真正看到的地址。不同服务之间出口不同问题不大；同一家的几个入口（比如 chatgpt.com 与 api.openai.com、claude.ai 与 api.anthropic.com）出口不一致才值得处理——同一个账号的请求一会儿从美国来、一会儿从日本来，是风控最常见的触发条件之一。</dd>
+    <dt>Gemini 那一行为什么看不到出口？</dt>
+    <dd>Google 的服务不经过 Cloudflare，也没有任何允许网页跨域读取、又会回显访客 IP 的公开地址，所以浏览器只能测出「连不连得上、多快」。本页不会拿别的服务的出口去冒充 Google 看到的出口。想确认 Google 走的是哪个出口，可以在代理软件的连接日志里找 generativelanguage.googleapis.com 与 gemini.google.com 命中的规则。</dd>
+    <dt>时区和出口不一致，会有什么影响？</dt>
+    <dd>网页和客户端都能直接读到系统时区，「IP 在美国、时区却是东八区」是识别代理最常用、成本最低的线索之一；据公开的逆向分析，Claude Code 还会专门读取系统时区。本页只在两者明显对不上时提醒（相差超过一小时、且出口国家在对照表里），邻近地区之间不报。完整的浏览器环境检查（时区、语言、字体、WebRTC 等十项）见本站的 Claude 检测。</dd>
+    <dt>本站会记录这次检测的结果吗？</dt>
+    <dd>不会。所有请求都由你的浏览器直接发给各家服务，不带 Cookie、不带来源页面，结果只显示在当前页面上，一个字节都不会发回本站，也没有历史记录。本站在页面上印出的「本站看到的地址」是打开本页时那次 HTTP 连接的来源地址，这一页因此不会被任何缓存保存。</dd>
+  </dl>
+</article>

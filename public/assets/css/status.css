@@ -1,0 +1,339 @@
+/* ip.cx — 服务状态（/status）。
+
+   结果由服务端渲染，不依赖脚本（也没有本页专属的脚本）：卡片、标签、结论块、分组标题沿用 app.css 的全站组件，
+   这里只放这一页才有的三样——概览计数、服务行（三列 + 事件列表）、字标（连同叠在上面的站点图标）与「维护中」标签。
+
+   颜色只留给状态：字标一律中性灰，换成站点图标后底座也是中性的白底细边（品牌色只占那 16px），
+   绿 / 琥珀 / 红只出现在等级标签、行首色条与计数上，
+   扫一眼整页就知道哪几家不对。不写 style=""（CSP 的 style-src 'self' 会把它整条丢掉）。 */
+
+/* ---------------------------------------------------------------- 结论与概览 */
+
+/* 结论块下面紧跟概览计数，两者是同一个结论的「一句话」与「四个数」，间距收紧 */
+.status .verdict {
+  margin-block-end: var(--size-3);
+}
+
+/* 故障服务名链到页面下方对应的行 */
+.status__jump {
+  color: inherit;
+  font-weight: var(--font-weight-6);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.status__jump:hover {
+  color: var(--text);
+}
+
+/* 四格计数：一张卡片四等分，数字在上、标签在下（dt 在前是为了语义，视觉上用 column-reverse 倒过来） */
+.stsum {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 var(--size-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.stsum__item {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 2px;
+  padding: var(--size-3) var(--size-2);
+}
+
+.stsum__item + .stsum__item {
+  border-inline-start: 1px solid var(--border-soft);
+}
+
+.stsum__label {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.stsum__num {
+  margin: 0;
+  font-size: 24px;
+  font-weight: var(--font-weight-7);
+  line-height: 1.2;
+}
+
+.stsum__item--ok    .stsum__num { color: var(--badge-green-fg); }
+.stsum__item--bad   .stsum__num { color: var(--tag-danger-color); }
+.stsum__item--maint .stsum__num { color: var(--tag-global-fg); }
+.stsum__item--muted .stsum__num { color: var(--text-dim); }
+
+/* 零就是零：不需要颜色去强调「没有故障」，压成灰色，让非零的那一格自己跳出来 */
+.stsum__item.is-zero .stsum__num {
+  color: var(--text-mute);
+}
+
+.stsum__time {
+  margin: 0 0 var(--size-5);
+  padding-inline: 2px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 分组标题后的服务数，和标题同一行、压暗 */
+.stgroup__count {
+  margin-inline-start: 2px;
+  font-weight: var(--font-weight-5);
+  color: var(--text-mute);
+  letter-spacing: 0;
+}
+
+/* ---------------------------------------------------------------- 服务行 */
+
+/* 和 .stun / .dnsrow 同一种三列卡片行：「谁 / 说明 / 等级」。
+   事件与维护挂在下面一行，从说明那一列起排——读完「2 个组件异常」，视线往下就是具体哪几起事件。 */
+.svc {
+  display: grid;
+  grid-template-columns: minmax(10rem, 12.5rem) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id note state"
+    ".  events events";
+  align-items: center;
+  gap: 2px var(--size-3);
+  padding: var(--size-2) var(--size-4);
+  /* 从结论里的服务名跳过来时，别让行顶被吸顶导航条盖住 */
+  scroll-margin-top: 72px;
+  transition: background-color .15s var(--ease-3);
+}
+
+.svc + .svc {
+  border-top: 1px solid var(--border-soft);
+}
+
+.svc:hover {
+  background: var(--surface-2);
+}
+
+/* 跳转落点：淡淡一层底色，告诉读者「你点的是这一行」 */
+.svc:target {
+  background: color-mix(in srgb, var(--badge-amber-bg) 45%, var(--surface));
+}
+
+/* 不正常的行左缘一道色条：长列表里不用逐行读标签也能找到它们。
+   红色那条单独一个变量、不直接用标签的文字色：深色下文字色是发白的浅粉，画成色条比旁边琥珀色的「轻微故障」还淡，轻重就反了 */
+.svc--warn  { box-shadow: inset 3px 0 0 var(--score-warn-fill); }
+.svc--bad   { box-shadow: inset 3px 0 0 var(--svc-bad-edge); }
+.svc--maint { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--tag-global-fg) 70%, transparent); }
+
+.svc__id {
+  grid-area: id;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+/* 字标：两个字母，是站点图标的底座。图标由访客浏览器从 favicon.is 取（见 View::favicon），
+   有 JS 时，还没回来、被拦下、加载失败，行首露出的都是它（没有 JS 的情形见下面 :root:not(.has-js) 那段） */
+.svc__mark {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  font-family: var(--font-code);
+  font-size: 11.5px;
+  font-weight: var(--font-weight-7);
+  letter-spacing: -.02em;
+  color: var(--badge-gray-fg);
+  background: var(--badge-gray-bg);
+  border-radius: var(--radius-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--badge-gray-fg) 10%, transparent);
+}
+
+/* 图标叠在字标正中，加载完之前透明；成功后 app.js 给字标挂 is-iconed：灰底换成白底细边，字藏起来。
+   失败时图标被摘掉，字标原样留着。28 − 16 两边各留 6 个整像素，图标不会糊在半个像素上。
+   color-scheme 钉成浅色，理由同连通性页的格子（connectivity.css）：深色主题下底座仍是一块浅灰（--favicon-chip-bg），
+   而自带 prefers-color-scheme 判断的 SVG 图标在 <img> 里看的是这个元素的 color-scheme——
+   不钉就跟着页面换成给深色背景准备的白色那一套，落在浅底座上正好看不见 */
+.svc__mark .favicon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 16px;
+  block-size: 16px;
+  color-scheme: only light;
+  opacity: 0;
+  transition: opacity .15s var(--ease-3);
+}
+
+.svc__mark.is-iconed {
+  color: transparent;
+  background: var(--favicon-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--favicon-chip-border);
+}
+
+.svc__mark.is-iconed .favicon {
+  opacity: 1;
+}
+
+/* 没有 JS 就分不出图标成功与否，直接按成功摆：字垫在透明底的图标下面会从镂空处透出来，更难看；
+   favicon.is 对没有图标的站也回默认图，真失败多半是整个被拦，只剩一个空白小方框，服务名就在旁边 */
+:root:not(.has-js) .svc__mark {
+  color: transparent;
+  background: var(--favicon-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--favicon-chip-border);
+}
+
+:root:not(.has-js) .svc__mark .favicon {
+  opacity: 1;
+}
+
+.svc__name {
+  min-inline-size: 0;
+  font-size: 15px;
+  font-weight: var(--font-weight-6);
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.svc__name:hover {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.svc__note {
+  grid-area: note;
+  min-inline-size: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 旧数据的年纪：琥珀色，是「这行可能不是此刻」的提醒，不是装饰 */
+.svc__age {
+  margin-inline-start: var(--size-2);
+  font-size: 12px;
+  color: var(--badge-amber-fg);
+  white-space: nowrap;
+}
+
+.svc__state {
+  grid-area: state;
+  justify-self: end;
+}
+
+/* ---------------------------------------------------------------- 事件与维护 */
+
+.svc__events {
+  grid-area: events;
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.svc__event {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.svc__event .tag {
+  flex: 0 0 auto;
+  padding-block: 0;
+  font-size: 11.5px;
+}
+
+.svc__event-body {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.svc__event-name {
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.svc__event-name:hover {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* 影响与时间单独一行：标题长短不一，跟在标题后面时有的同行、有的折行，读起来参差 */
+.svc__event-meta {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.svc__event--more a {
+  font-size: 12.5px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.svc__event--more a:hover {
+  text-decoration: underline;
+}
+
+/* 计划维护：蓝紫色，和故障的琥珀 / 红分开——它是对方提前公告过的，不是事故 */
+.tag--maint {
+  background: var(--tag-global-bg);
+  color: var(--tag-global-fg);
+}
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 480px) {
+  .stsum__item {
+    padding: var(--size-2) 4px;
+  }
+
+  .stsum__num {
+    font-size: 20px;
+  }
+
+  .stsum__label {
+    font-size: 11.5px;
+  }
+
+  /* 三列放不下：名字与等级占第一行，说明和事件依次排在下面，全部左对齐 */
+  .svc {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id state"
+      "note note"
+      "events events";
+    gap: 4px var(--size-2);
+    padding-inline: var(--size-3);
+  }
+
+  .svc__note {
+    padding-inline-start: 38px;
+  }
+
+  .svc__events {
+    margin-block-start: 2px;
+    padding-inline-start: 38px;
+  }
+
+  /* 正常的服务在手机上只留一行：绿色标签已经是结论，「N 个组件全部正常」再占一行只是把页面拉长一倍。
+     带着「N 小时前的数据」提醒的行例外——那句话是要读的 */
+  .svc--ok:not(.svc--aged) .svc__note {
+    display: none;
+  }
+}

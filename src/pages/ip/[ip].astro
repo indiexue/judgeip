@@ -1,41 +1,31 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import VerdictDashboard from '../../components/VerdictDashboard.astro';
-import { parseIp, extractVisitorIp } from '../../lib/ip-utils';
-import { evaluateIpVerdict } from '../../lib/verdict-engine';
-import { detectLocale } from '../../lib/i18n';
-import { getEdgeEnv } from '../../lib/edge-env';
+import IpcxLayout from '../../layouts/IpcxLayout.astro';
+import IpcxHomeContent from '../../components/IpcxHomeContent.astro';
+import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
+import { lookupIpFull } from '../../lib/ipcx-lookup';
 
 const rawIp = Astro.params.ip || '';
 const parsed = parseIp(rawIp);
-const locale = detectLocale(Astro.url, Astro.request);
-
 if (!parsed) {
-  return Astro.redirect(locale === 'zh' ? '/zh' : '/');
+  return Astro.redirect('/');
 }
 
 const visitorIp = extractVisitorIp(Astro.request);
-const isVisitor = parsed.normalized === visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
-const kvNamespace = getEdgeEnv().IP_CACHE;
+const isVisitor = parsed.normalized === visitorIp;
+const info = await lookupIpFull(parsed.normalized, cfMeta, isVisitor);
 
-const report = await evaluateIpVerdict(parsed.normalized, {
-  cfMetadata: cfMeta,
-  isDirectVisitor: isVisitor,
-  kvNamespace,
-});
-
-const title =
-  locale === 'zh'
-    ? `${report.ip} IP 纯净度与归属地查询 (${report.score}/100) | JudgeIP`
-    : `${report.ip} IP Purity & ISP Lookup (${report.score}/100) | JudgeIP`;
-
-const description =
-  locale === 'zh'
-    ? `IP ${report.ip} (${report.geo.countryName} · ${report.network.asnCode} ${report.network.isp}) 纯净度评分 ${report.score}/100，注册属性：${report.network.nativeStatus}。`
-    : `IP details for ${report.ip} (${report.geo.countryName}, ${report.network.asnCode} ${report.network.isp}): Purity Score ${report.score}/100, RIR status: ${report.network.nativeStatus}.`;
+const title = `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`;
+const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`;
 ---
 
-<BaseLayout title={title} description={description} canonicalPath={`/ip/${report.ip}`} locale={locale}>
-  <VerdictDashboard report={report} locale={locale} isVisitor={isVisitor} />
-</BaseLayout>
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath={`/ip/${info.ip}`}
+  bodyClass="page-home"
+  currentLabel="IP 检测"
+  activeNav="/"
+>
+  <IpcxHomeContent info={info} isSelf={false} queryValue={info.ip} />
+</IpcxLayout>

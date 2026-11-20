@@ -1,0 +1,164 @@
+
+<section class="hero">
+  <h1 class="hero__title">DNS 泄露检测</h1>
+  <p class="hero__lede">找出真正替你解析域名的 DNS 服务器，检查 DNS 请求是否绕过代理泄露。</p>
+</section>
+
+<div class="probe"
+     id="dnsleak"
+     data-zone="edns.ip-api.com"
+     data-probes="8"
+     data-visible-ip="__VISITOR_IP__">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-dns-run>开始检测</button>
+    <span class="probe__hint" data-dns-progress>解析要经过你的递归服务器再到本站权威侧，整个过程约十几秒。</span>
+  </div>
+
+  <div class="verdict" data-dns-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-dns-verdict-title></p>
+      <p class="verdict__note" data-dns-verdict-note></p>
+    </div>
+  </div>
+
+    <div class="fixnote" data-dns-fix hidden>
+    <p class="fixnote__title">怎么把 DNS 也一起送进隧道</p>
+    <p class="fixnote__note">
+      优先在 VPN 客户端里打开「DNS 由隧道处理」「阻止 DNS 泄露」这类开关（不同客户端叫法不一，
+      OpenVPN 是 <span class="mono">block-outside-dns</span>，WireGuard 是配置里的 <span class="mono">DNS =</span> 一行）。
+      客户端没有这个能力时，退而求其次：在浏览器里启用 DoH，把解析交给一家你愿意信任的服务商，
+      至少不再落到本地运营商手里。
+    </p>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">出口与解析对照</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">HTTP 可见地址</div>
+          <div class="row__value"><span class="mono">__VISITOR_IP__</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">出口归属</div>
+          <div class="row__value" data-dns-exit><span class="dim">尚未检测</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">捕获到的解析器</div>
+          <div class="row__value" data-dns-count><span class="dim">尚未检测</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">替你查询的 DNS 服务器</h2>
+      <div class="rows" data-dns-list>
+        <div class="dnsrow dnsrow--empty" data-dns-placeholder>
+          <span class="dim">还没有开始检测。点击上方按钮，本页会解析 8 个随机子域，
+            再从权威侧把来问过的服务器列在这里。</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>DNS 泄露检测需要由浏览器发起解析，当前浏览器禁用了 JavaScript，本页只能显示说明部分。
+        你也可以在终端里手动验证：<span class="mono">dig +short 任意随机串.edns.ip-api.com</span>
+        能返回地址，说明本站的权威服务是通的。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是 DNS 泄露</h2>
+  <p>
+    打开一个网址时，真正的第一步不是连接，而是<strong>翻译</strong>：
+    你的设备要先问一台 DNS 服务器「这个域名对应哪个 IP」，拿到答案才知道该往哪里发包。
+    承担这一步的叫<strong>递归解析器</strong>，通常是运营商自动下发的那一台，
+    也可能是你手动填进去的 8.8.8.8、1.1.1.1、223.5.5.5。
+    它顺着根、顶级域、权威服务器一路问下来，最后把结果交还给你。
+  </p>
+  <p>
+    问题在于：这一步和「网页流量走不走代理」是<strong>两件独立的事</strong>。
+    浏览器插件式代理只接管 HTTP(S) 请求，一部分只改路由不改 DNS 配置的 VPN 客户端同样如此。
+    于是出现了这样的局面——网站那一头看到的是代理出口的地址，
+    而你的运营商手上握着一份完整的、按时间排序的域名访问清单。
+    这就是 DNS 泄露（DNS Leak）。
+  </p>
+  <p>
+    值得强调的是，DNS 泄露暴露的信息在某些场景下<strong>比 IP 泄露更具体</strong>。
+    IP 只说明「你在哪」，域名清单说明「你在看什么」。
+    它不需要解密任何流量，也不受 HTTPS 保护——加密的是连接内容，不是你问过哪个域名。
+  </p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>浏览器生成一个 16 位随机 token，拼出 8 个互不相同的一次性子域，形如
+        <span class="mono">1-a1b2c3d4.{token}.edns.ip-api.com</span>。</li>
+    <li>逐个发起解析。这些名字从未在任何地方出现过，所以全世界没有一个缓存里有它们——
+        每一个都必须由你的递归解析器亲自跑到本站的权威服务器上来问。</li>
+    <li>本站持有 <span class="mono">edns.ip-api.com</span> 这个区的权威服务，
+        收到查询时把<strong>来问的那个地址</strong>连同 token 记下来。</li>
+    <li>页面按 token 轮询取回名单，为每个地址补上归属地、ISP 与 ASN，
+        再和你的 HTTP 出口做对照，得出结论。</li>
+  </ol>
+  <p>
+    为什么要发 8 个而不是一个：公共 DNS 的递归侧是一整片机器，
+    一次查询由哪一台出去是随机的，只发一个你就只会看到其中一台。
+    多发几个才能显示出这个池子的真实规模——它们全都拿到了你要访问的域名。
+    子域用完即弃，也从根本上避开了缓存：任何一层缓存命中，这次检测就白做了。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+    <li><strong>解析器与出口同属一个 ASN</strong>：DNS 和网页流量走的是同一条路。
+        你没有使用代理，或者代理已经把解析一并接管了——这是最干净的状态。</li>
+    <li><strong>解析器是知名公共 DNS，且与出口同一个国家/地区</strong>：没有跨境泄露，
+        但你的域名清单交给了那家服务商。是否接受取决于你信任谁，而不是取决于安全与否。</li>
+    <li><strong>解析器落在你本地运营商，出口却在别处</strong>：这是典型的 DNS 泄露。
+        代理只兜住了网页流量，域名仍然在本地网络里明明白白地问了一遍。</li>
+    <li><strong>一个解析器都没抓到</strong>：解析没能到达本站权威侧。
+        常见原因是网络限制了对外 DNS、或者浏览器扩展拦下了这些请求——
+        这不代表安全，只代表这次没测出来，换个网络再试一次。</li>
+  </ul>
+  <p class="prose__note">
+    如果结果里出现了 <strong>ECS</strong> 一项，那是解析器主动把你所在的网段
+    （EDNS Client Subnet，RFC 7871）告诉了本站权威服务器。它的本意是让 CDN 就近调度，
+    代价是每一个权威服务器都会顺带知道你大致在哪个网段——即便 DNS 本身并没有跨境。
+  </p>
+
+  <h2>如何防止 DNS 泄露</h2>
+  <ul>
+    <li><strong>让 VPN 客户端接管 DNS。</strong>这是最彻底的一条。
+        WireGuard 在配置里写 <span class="mono">DNS = </span>，
+        OpenVPN 在 Windows 上用 <span class="mono">block-outside-dns</span>，
+        商业客户端一般有「阻止 DNS 泄露」开关。工作在 TUN 模式、接管整个网络栈的客户端天然没有这个问题。</li>
+    <li><strong>启用 DoH / DoT。</strong>浏览器和系统都支持把解析加密后发给指定服务商。
+        注意它换的是「交给谁」和「路上会不会被看」，不等于不再有人知道你访问了什么。</li>
+    <li><strong>检查系统与路由器的 DNS 配置。</strong>很多泄露的根源是路由器上写死了运营商 DNS，
+        设备层面怎么改都会被 DHCP 覆盖回去。</li>
+    <li><strong>关掉 IPv6，或确认 IPv6 也走隧道。</strong>只接管了 IPv4 的代理配上双栈网络，
+        DNS 会顺着 IPv6 那条路原样漏出去，这是最隐蔽的一种。</li>
+  </ul>
+  <p>
+    改完之后回到本页重测一次即可验证——每次检测用的都是全新的随机子域，
+    不会读到上一次的任何缓存。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>挂着 VPN，为什么 DNS 还是走运营商？</dt>
+    <dd>因为解析发生在连接之前。系统要先把域名换成 IP 才知道该往哪里发包，而「用哪台 DNS」是由网卡配置决定的——只接管 HTTP(S) 的浏览器插件式代理、甚至一部分只改路由不改 DNS 的 VPN 客户端，都不会动那份配置。结果就是：网站看到的是代理出口，你的运营商却拿到了你访问过的每一个域名。</dd>
+    <dt>检测出来的地址和我填的 8.8.8.8 对不上，是不是测错了？</dt>
+    <dd>没测错，这正是这项检测最容易被误读的地方。8.8.8.8 是你提交查询的入口，而权威服务器看到的是 Google 递归集群发出查询的那台机器的出口地址，通常落在 74.125.x 或 172.253.x 上。两者属于同一家、同一个 ASN，但从来不是同一个地址。本页因此按 ASN 而不是按 IP 来认服务商。</dd>
+    <dt>为什么一次检测会冒出好几台解析器？</dt>
+    <dd>公共 DNS 的递归侧是一大片机器，一次查询由哪一台出去是随机的；很多系统还会同时配置主备两组 DNS。本页刻意发起多个互不相同的随机子域，就是为了把这个池子的规模显示出来——它们全都拿到了你要访问的域名。</dd>
+    <dt>开了 DoH / DoT 加密 DNS，还需要测吗？</dt>
+    <dd>需要，而且结论可能和你以为的不一样。加密解决的是「路上有没有人偷看」，不解决「最终由谁来查」——DoH 只是把明文查询换成了到某一家服务商的 HTTPS 请求，那家服务商照样知道你在访问什么。本页测的正是后者：谁最终替你敲了权威服务器的门。</dd>
+    <dt>本站会保存 DNS 检测结果吗？</dt>
+    <dd>不会。一次检测只在 Redis 里留下「某个随机 token 对应哪几个解析器出口地址」，默认 10 分钟后自动清除，且不与访客身份关联。被解析的子域是一次性的随机串，检测结束即失效。</dd>
+  </dl>
+</article>

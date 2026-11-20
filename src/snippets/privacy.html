@@ -1,0 +1,185 @@
+
+<section class="hero">
+  <h1 class="hero__title">隐私政策</h1>
+</section>
+
+<article class="prose prose--page">
+  <p class="prose__meta">最后更新：2026 年 11 月 13 日</p>
+
+  <p>
+    judgeip.com（下称「本站」）是一个 IP 地址查询与网络检测工具。本政策说明你使用本站时，
+    本站会处理哪些信息、为什么处理、保存多久、会交给谁。本站没有账号体系，不要求你提供姓名、邮箱、手机号等任何身份信息。
+  </p>
+
+  <h2>一、本站处理的信息</h2>
+
+  <h3>1. 你的 IP 地址与访问日志</h3>
+  <p>
+    显示你的公网 IP 是本站的核心功能，所以你打开任何一个页面，服务器都会看到你的 IP 地址。
+    与绝大多数网站一样，Web 服务器会记录标准访问日志（IP 地址、访问时间、请求路径、浏览器 User-Agent、来源页），
+    仅用于排查故障与抵御滥用，按服务器的日志轮转策略定期删除。
+    本站服务器向上游查询某个 IP 失败时，错误日志里也会记下那条 IP 与失败原因，用途与保留方式同上。
+  </p>
+
+  <h3>2. IP 查询</h3>
+  <p>
+    当你打开首页或手动查询一个 IP 时，这个 IP 地址会被发送给本站使用的 IP 数据服务商，以取得归属地、ASN、网络类型、
+    威胁与代理情报等信息；同时会对它做一次反向 DNS（PTR）解析。打开 Cloudflare 节点检测、CDN 命中节点两页时，
+    页面要按你的 IP 的大致位置估算节点离你多远，也会对你的 IP 做同样的一次查询（不做反向解析，见第 8 节）。
+    为减少对上游的重复请求，查询结果以 IP 地址为键缓存在服务器内存数据库中：
+    正常结果保留 24 小时，供上游故障时兜底的降级副本保留 7 天，反向解析结果保留 1–24 小时。
+    ASN 的人机流量比例按 ASN（而不是 IP）向 Cloudflare Radar 查询，缓存 6 小时。
+  </p>
+
+  <h3>3. 多库定位</h3>
+  <p>
+    首页「多库定位」一栏列出同一个 IP 在 IP2Location、DB-IP、MaxMind、IPinfo、Cloudflare 这几家的地理位置库里各自落在哪个国家、州/省与城市。
+    数据由谁去取，分下面几种情况：
+  </p>
+  <ul>
+    <li><strong>查看你自己的 IP 时，由你的浏览器直接去问</strong>：浏览器会把页面上显示的这条 IP 作为查询对象，写在请求地址里，
+        发给 IP2Location（<span class="mono">api.ip2location.io</span>）、DB-IP（<span class="mono">api.db-ip.com</span>）与 IPinfo（<span class="mono">ipinfo.io</span>）
+        各自公开的查询接口。这三家因此会同时看到两样东西：<strong>这次请求的来源地址</strong>（你的浏览器连到它们时用的那个出口），
+        以及<strong>被查询的那条 IP</strong>（本站看到的你的地址）；此外还有浏览器 User-Agent、请求时间这类每个网络请求都带的信息。
+        多数情况下这两个地址是同一个。但如果你开着分流代理（去本站与去这三家走的不是同一个出口），或者处在 IPv4 / IPv6 双栈网络里
+        （两边各走了一个地址族），它们就不是同一个——<strong>这三家可以由此把你的这两个地址关联到一起</strong>。
+        请求不携带 Cookie、不发送来源页（Referer），但按浏览器的跨域规则会带上 <span class="mono">Origin: https://judgeip.com</span>，对方由此知道请求来自本站的页面。
+        它们如何处理这些信息，由各自的隐私政策决定，本站无法控制。不希望这三家看到这种关联的话，可以在打开首页之前用内容拦截工具屏蔽上面三个域名：
+        屏蔽之后这几行改由本站服务器代查（见下面「浏览器没能问到的」一条），对方只会看到本站服务器在查这条 IP。</li>
+    <li><strong>Cloudflare 一行</strong>：同样只在查看你自己的 IP 时，由浏览器直接请求 <span class="mono">speed.cloudflare.com</span> 的
+        <span class="mono">/cdn-cgi/trace</span>。这个请求里不带任何 IP，Cloudflare 看到的只是这次连接的来源地址，页面只取它报的国家；
+        它看到的地址与页面上的 IP 不是同一个时，这一行不显示位置。以上由浏览器直接发出的请求，结果只显示在页面上，不发回本站。</li>
+    <li><strong>浏览器没能问到的，由本站服务器补上</strong>：某一家被拦截、读不到、报错或额度用完时，页面会带着这条 IP 请本站服务器代查那一家；MaxMind 一行（页面上有这一行时）始终由服务器查询。
+        这时是本站服务器把你的 IP 地址发送给相应的服务商，对方看到的请求来自本站服务器，而不是你的浏览器。</li>
+    <li><strong>手动查询别的 IP 时</strong>：全部由本站服务器查询，被查询的 IP 会发送给 IP2Location、DB-IP、MaxMind、IPinfo；你的浏览器不会联系它们，Cloudflare 一行也不查询。</li>
+  </ul>
+  <p>
+    经本站服务器取得的结果只含国家、州/省与城市，以 IP 为键缓存：24 小时内直接复用，之后最多再保留到第 7 天，只在服务商暂时查不了时用来兜底；
+    查询失败的标记保留 15 分钟，某一家服务商限流的标记保留 10 分钟（不含任何 IP）。
+  </p>
+
+  <h3>4. 人机验证</h3>
+  <p>
+    手动查询任意 IP 前，本站使用 Cloudflare Turnstile 进行人机验证。验证在后台自动完成，只有 Cloudflare 判定需要时才会弹出验证框。
+    验证过程中 Cloudflare 会收集判断「是否为真人」所需的浏览器与设备信号，这部分数据由 Cloudflare 按其隐私政策处理，本站只收到「是否通过」的结果。
+  </p>
+  <p>
+    Cloudflare 节点检测页（/cloudflare）的「Turnstile 人机验证」一栏是一项检测：打开该页时，你的浏览器会从 <span class="mono">challenges.cloudflare.com</span> 加载 Turnstile，
+    用两个不同模式的组件各运行一次验证，Cloudflare 因此会看到你的 IP 地址、User-Agent 以及上述浏览器与设备信号。
+    每次验证得到的一次性 token 由页面发送给本站服务器，本站服务器把它连同你的 IP 地址一起提交给 Cloudflare 的复核接口（siteverify），
+    只为把复核结果显示给你；token 与复核结果都不保存，只按你的 IP（IPv6 按所在的 /64 网段）记一个复核次数用于限流，1 小时后自动过期。
+  </p>
+
+  <h3>5. Cookie</h3>
+  <p>
+    本站只使用一个会话 Cookie（<span class="mono">ipcx</span>），关闭浏览器即失效，用于：防止跨站请求伪造（CSRF）、
+    记住你刚刚通过了人机验证（10 分钟、20 次内免再次验证）、记住上一次成功查询的 IP，以及授权「多库定位」向本站服务器查询你刚刚在页面上看到的 IP。
+    本站不使用任何广告 Cookie 或跨站追踪 Cookie。
+    浏览器的 localStorage 里只可能有一项：你点过导航条上的浅色 / 深色切换按钮后，这个选择（<span class="mono">ipcx-theme</span>）会记在那里，
+    它只保存在你的浏览器中、不会发送给本站服务器；没点过就不写入，选回与系统设置一致的那一套时会把它删掉。
+  </p>
+
+  <h3>6. 访问限流</h3>
+  <p>
+    为防止脚本批量查询，本站以你的 IP 地址为键记录查询次数，计数在 1 小时后自动过期；其中多库定位、Whois 查询与 Turnstile 复核这几项，IPv6 地址按所在的 /64 网段计。
+  </p>
+
+  <h3>7. 检测页</h3>
+  <ul>
+    <li><strong>WebRTC 泄露检测、浏览器指纹检测、Claude 检测</strong>：探测全部在你的浏览器里完成，
+        探测结果不会发送回本站。WebRTC 相关探测会让浏览器向检测页上列出的 STUN 服务器发送请求。</li>
+    <li><strong>JA3 / JA4 指纹</strong>：只有你在指纹页选择这一项时，浏览器才会直连第三方回显服务
+        （<span class="mono">tls.peet.ws</span>，失败时改用 <span class="mono">tls.browserleaks.com</span>）读取 TLS 握手特征。</li>
+    <li><strong>DNS 泄露检测</strong>：服务器会记录「一个随机检测编号对应哪些 DNS 解析器出口地址」，
+        以便把结果返回给你的页面，这条记录 10 分钟后自动删除，不与你的身份关联。</li>
+  </ul>
+
+  <h3>8. 浏览器端网络探测</h3>
+  <p>
+    网络连通性、Cloudflare 节点检测、CDN 命中节点、网站分流测试、AI 解锁检测，以及首页查看本机 IP 时的「本机网络」「网络连通性」两栏，
+    都是由<strong>你的浏览器直接</strong>向第三方站点发出请求，本站服务器不转发、不接收、不保存任何一条结果。
+    唯一发回本站的是 Cloudflare 节点检测与 CDN 命中节点两页的一次位置查询：页面向本站服务器询问「本站看到的你的 IP 大致在哪」，
+    用来估算节点离你多远。这次请求不携带 Cookie，也不含任何检测结果（只多带一个内容固定的请求头，表明它出自本站的页面），本站从中得知的只有你的 IP；
+    返回的就是第 2 节所说的那份查询结果里的国家、省市、大致坐标与 ASN。发往第三方的请求有这些共同点：
+  </p>
+  <ul>
+    <li>不携带 Cookie、不发送来源页（Referer）、不使用缓存，也不附带任何自定义请求头或你的信息。对方能看到你的 IP 地址、浏览器 User-Agent 与请求时间。
+        其中需要读回结果的请求（Cloudflare trace、IP 回显、CDN 节点信息）按浏览器的跨域规则会带上
+        <span class="mono">Origin: https://judgeip.com</span>，对方因此知道这次请求来自本站的检测页；只测耗时的请求（网络连通性）不带这个头。</li>
+    <li>读回的出口 IP、国家、命中节点、延迟只显示在当前页面里，不回传本站、不写入任何浏览器存储，关闭页面即消失；「隐藏 IP」开关只改显示，不落存储。</li>
+    <li>每一页的探测目标都列在那一页上（由服务端直接渲染）。浏览器实际允许页面联系的站点，以该页响应头 Content-Security-Policy 的 connect-src 为准：
+        它只比页面上的清单多出全站共用的人机验证（challenges.cloudflare.com）与访问统计（stat.re），浏览器不会允许页面的脚本联系其余任何站点。
+        页面上的网站图标是普通图片，由同一个响应头里的 img-src 单独放行，除本站以外只有图标服务 favicon.is 一家，见第 12 节。</li>
+  </ul>
+  <ul>
+    <li><strong>网络连通性</strong>（/connectivity，打开即开始）：向国内外约 44 个知名站点、AI 服务、社交与开发站点各发若干次只测耗时的请求，读不到任何响应内容。
+        首页卡片只在你查看自己的 IP、且卡片滚入视口后才开始，只测其中 8 个站点。页面会在本地读取你的系统时区，只用来决定结论的措辞，不发送到任何地方。</li>
+    <li><strong>Cloudflare 节点检测</strong>（/cloudflare）：请求 speed.cloudflare.com、1.1.1.1 以及若干接入 Cloudflare 的站点的 <span class="mono">/cdn-cgi/trace</span>。
+        到节点的距离按上面所说的位置查询估算，并且只在本站看到的 IP 与 Cloudflare 看到的出口是同一个时才计算。
+        同一页的「Turnstile 人机验证」需要本站服务器复核 token，不属于这里说的「本站不接收」，见第 4 节。</li>
+    <li><strong>首页「本机网络」</strong>：请求 speed.cloudflare.com 的 trace，以及只回显访问者 IP 的 <span class="mono">api4.ipify.org</span> /
+        <span class="mono">api6.ipify.org</span>（失败时改用 <span class="mono">ipv4.icanhazip.com</span> / <span class="mono">ipv6.icanhazip.com</span>），用于判断 IPv4 / IPv6 双栈。</li>
+    <li><strong>CDN 命中节点</strong>（/cdn）：请求 Cloudflare、Google Cloud、jsDelivr、Fastly、CloudFront、Akamai、腾讯 EdgeOne、字节跳动、网易等约 20 家 CDN 上的公开测速文件，
+        读取它们愿意公开的节点信息。到各节点的距离同样按上面所说的位置查询估算，并与 Cloudflare 一行报告的出口核对。</li>
+    <li><strong>网站分流测试</strong>（/split）：请求约 40 个网站的 <span class="mono">/cdn-cgi/trace</span>，以及网易、字节跳动的 CDN 测速文件，读取它们看到的你的出口 IP。
+        页面上「JudgeIP 服务器看到的地址」一行由本站根据本次连接直接渲染，该页不会被任何缓存保存。</li>
+    <li><strong>AI 解锁检测</strong>（/ai）：请求 ChatGPT、OpenAI、Sora、OpenAI API（api.openai.com，读不到时改为只测耗时）、Claude、Anthropic、
+        Claude API（api.anthropic.com）、Grok、Perplexity、Mistral、Poe 的 <span class="mono">/cdn-cgi/trace</span>，并对 Gemini API、DeepSeek 发只测耗时的请求。
+        页面会在本地读取你的系统时区与浏览器语言，用于提示与出口不一致的情况，这些值不发送到任何地方。</li>
+  </ul>
+
+  <h3>9. 全球 Ping</h3>
+  <p>
+    只有在你点击「开始」后，你的浏览器才会直接向 Globalping（<span class="mono">api.globalping.io</span>，由 jsDelivr 团队维护的开源探针网络）
+    提交一次测量：内容是你填写的目标（IP 或域名）、探测方式和探针位置，随后每秒读取一次进度。Globalping 因此会获知你的 IP 地址、User-Agent 与你要测的目标，
+    并按你的 IP 计算匿名测量额度；测量结果由 Globalping 按其政策在其平台上保存一段时间，持有测量编号的人可以查看。本站服务器不转发、不记录、不缓存这些请求与结果。
+    分享链接把目标放在 # 之后，不随请求发给本站；早期 /ping?host=… 形式的旧链接打开时，查询串会和任何一次访问一样记入第 1 节所述的标准访问日志，页面随即改写为 # 形式。
+  </p>
+
+  <h3>10. Whois 查询与服务状态</h3>
+  <p>
+    这两项由本站服务器查询公开数据，你的浏览器不联系任何新的第三方（服务状态页上各家服务的图标除外，见第 12 节）：
+  </p>
+  <ul>
+    <li><strong>Whois 查询</strong>（/whois）：你提交的查询内容（域名、IP、IP 段或 ASN）由本站服务器发往负责它的注册局或区域互联网注册机构的官方 RDAP 服务；
+        没有 RDAP 的顶级域（如 .cn）改经 43 端口查询 IANA 与该注册局的 Whois 服务器。对方看到的是本站服务器的地址，不会收到你的 IP。
+        结果以查询内容为键缓存 6 小时（未注册或查不到时 10 分钟，临时故障 2 分钟）；限流计数以你的 IP 为键（IPv6 按所在的 /64 网段计），1 小时后过期；
+        另有不区分访客的全站总量与并发上限，只是计数，不含任何访客信息。带查询参数的结果页不会被缓存或收录。</li>
+    <li><strong>服务状态</strong>（/status）：有人打开本页且缓存的数据超过 10 分钟时，本站服务器以自己的地址向二十多家服务商的官方状态页读取公开状态
+        （不到半小时的在页面发出后刷新，更旧的先刷新再显示），请求不含任何访客信息；结果缓存在本站，最长保留 24 小时，本站不记录谁打开过这一页。</li>
+  </ul>
+
+  <h3>11. 访问统计</h3>
+  <p>
+    本站使用 Plausible 统计页面访问量。它不使用 Cookie、不跨站追踪，只统计页面浏览数、来源、浏览器类型等汇总数据。
+  </p>
+
+  <h3>12. 网站图标</h3>
+  <p>
+    网络连通性（/connectivity）、服务状态（/status）两页，以及首页查看本机 IP 时的「网络连通性」一栏，会在每个网站名前显示它的图标。
+    这些图标由<strong>你的浏览器直接</strong>从第三方图标服务 favicon.is 加载（地址形如 <span class="mono">https://favicon.is/claude.ai</span>），
+    因此 favicon.is 会看到你的 IP 地址、浏览器 User-Agent，以及你请求的是哪个公开网站的图标。
+    这些请求不发送来源页（Referer）；本站服务器不经手、也不记录这些请求，favicon.is 如何处理这些信息由它自己的政策决定。
+    图标加载不了（例如被浏览器扩展或网络拦下）时，页面改为显示网站名的首字或缩写（浏览器禁用 JavaScript 时只留一个空白小方框），检测与状态结果不受影响。
+  </p>
+
+  <h2>二、本站不做的事</h2>
+  <ul>
+    <li>不出售、不出租你的任何信息。</li>
+    <li>除上文列出的服务商外，不向任何第三方提供你的信息；除非法律法规要求。</li>
+    <li>不建立用户画像，不做跨站追踪，不投放个性化广告。</li>
+    <li>不修改从数据服务商取得的原始数据。</li>
+  </ul>
+
+  <h2>三、第三方链接</h2>
+  <p>
+    本站页面中包含指向其他网站的链接（例如页脚的产品链接、推广横幅）。点击后你将离开本站，
+    这些网站如何处理你的信息由它们各自的隐私政策决定。
+  </p>
+
+  <h2>四、政策更新</h2>
+  <p>
+    本站的功能或数据流向发生变化时会更新本政策，并同步修改页首的「最后更新」日期。
+    更新后继续使用本站，即表示你接受更新后的政策。
+  </p>
+</article>

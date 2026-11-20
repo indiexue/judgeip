@@ -1,0 +1,561 @@
+
+<section class="hero">
+  <h1 class="hero__title">全球 Ping 测试</h1>
+  <p class="hero__lede">从全球 13 个地区同时 Ping 一个 IP 或域名，对比各地的延迟与丢包。</p>
+</section>
+
+<div class="probe ping"
+     id="ping"
+     data-api="https://api.globalping.io/v1/measurements"
+     data-packets="3"
+     data-port="443"
+     data-poll-ms="1000"
+     data-poll-max="30">
+
+    <form class="pingform" action="/ping" method="get" novalidate data-ping-form>
+    <div class="query__line pingform__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono pingform__input"
+        type="text"
+        value=""
+        placeholder="IP 或域名"
+        maxlength="255"
+        inputmode="url"
+        enterkeyhint="go"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="要 Ping 的 IP 地址或域名"
+        data-ping-input>
+      <span class="pingform__proto">
+        <select class="pingform__select" aria-label="探测方式" data-ping-proto>
+          <option value="icmp" selected>ICMP</option>
+          <option value="tcp">TCP 443</option>
+        </select>
+        <svg class="pingform__chevron" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </span>
+      <button class="query__submit pingform__run" type="submit" data-ping-run>开始</button>
+    </div>
+
+    <p class="notice pingform__error" role="alert" data-ping-error hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7.5v5.2M12 16.3v.2"></path>
+      </svg>
+      <span data-ping-error-text></span>
+    </p>
+  </form>
+
+    <p class="probe__hint pingform__hint" data-ping-progress>每次从 13 个地区各挑一台探针、各发 3 个包，通常 5～10 秒出结果。每台探针消耗一次 Globalping 匿名额度（按你的 IP 计，每小时约 250 次）。</p>
+
+    <p class="pinglegend" aria-hidden="true">
+    <span class="pinglegend__item is-good"><i class="pinglegend__dot"></i>&lt;100 ms</span>
+    <span class="pinglegend__item is-ok"><i class="pinglegend__dot"></i>100–200</span>
+    <span class="pinglegend__item is-slow"><i class="pinglegend__dot"></i>200–350</span>
+    <span class="pinglegend__item is-bad"><i class="pinglegend__dot"></i>≥350</span>
+  </p>
+
+  <div class="verdict" data-ping-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-ping-verdict-title></p>
+      <p class="verdict__note" data-ping-verdict-note></p>
+    </div>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">测量概况</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">目标</div>
+          <div class="row__value" data-ping-target><span class="dim">尚未开始</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">方式</div>
+          <div class="row__value" data-ping-mode><span class="dim">尚未开始</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">解析地址</div>
+          <div class="row__value" data-ping-resolved><span class="dim">尚未开始</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">进度</div>
+          <div class="row__value" data-ping-status><span class="dim">尚未开始</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group" data-ping-region="asia">
+      <h2 class="group__title">亚洲</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>节点</span>
+          <span>最小 / 平均 / 最大</span>
+          <span>丢包</span>
+          <span class="pinghead__bar">平均延迟</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="cn"
+             data-name="中国大陆"
+             data-cc="CN"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;CN&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇨🇳</span> 中国大陆</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="hk"
+             data-name="中国香港"
+             data-cc="HK"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;HK&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇭🇰</span> 中国香港</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="tw"
+             data-name="中国台湾"
+             data-cc="TW"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;TW&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇹🇼</span> 中国台湾</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="tokyo"
+             data-name="日本东京"
+             data-cc="JP"
+             data-region="asia"
+             data-city="Tokyo"
+             data-filter="{&quot;country&quot;:&quot;JP&quot;,&quot;magic&quot;:&quot;Tokyo&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇯🇵</span> 日本东京</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="seoul"
+             data-name="韩国首尔"
+             data-cc="KR"
+             data-region="asia"
+             data-city="Seoul"
+             data-filter="{&quot;country&quot;:&quot;KR&quot;,&quot;magic&quot;:&quot;Seoul&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇰🇷</span> 韩国首尔</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="sg"
+             data-name="新加坡"
+             data-cc="SG"
+             data-region="asia"
+             data-city=""
+             data-filter="{&quot;country&quot;:&quot;SG&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇸🇬</span> 新加坡</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="mumbai"
+             data-name="印度孟买"
+             data-cc="IN"
+             data-region="asia"
+             data-city="Mumbai"
+             data-filter="{&quot;country&quot;:&quot;IN&quot;,&quot;magic&quot;:&quot;Mumbai&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇮🇳</span> 印度孟买</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="europe">
+      <h2 class="group__title">欧洲</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>节点</span>
+          <span>最小 / 平均 / 最大</span>
+          <span>丢包</span>
+          <span class="pinghead__bar">平均延迟</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="frankfurt"
+             data-name="德国法兰克福"
+             data-cc="DE"
+             data-region="europe"
+             data-city="Frankfurt"
+             data-filter="{&quot;country&quot;:&quot;DE&quot;,&quot;magic&quot;:&quot;Frankfurt&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇩🇪</span> 德国法兰克福</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="london"
+             data-name="英国伦敦"
+             data-cc="GB"
+             data-region="europe"
+             data-city="London"
+             data-filter="{&quot;country&quot;:&quot;GB&quot;,&quot;magic&quot;:&quot;London&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇬🇧</span> 英国伦敦</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="americas">
+      <h2 class="group__title">美洲</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>节点</span>
+          <span>最小 / 平均 / 最大</span>
+          <span>丢包</span>
+          <span class="pinghead__bar">平均延迟</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="losangeles"
+             data-name="美国洛杉矶"
+             data-cc="US"
+             data-region="americas"
+             data-city="Los Angeles"
+             data-filter="{&quot;country&quot;:&quot;US&quot;,&quot;magic&quot;:&quot;Los Angeles&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇺🇸</span> 美国洛杉矶</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="ashburn"
+             data-name="美国阿什本"
+             data-cc="US"
+             data-region="americas"
+             data-city="Ashburn"
+             data-filter="{&quot;country&quot;:&quot;US&quot;,&quot;magic&quot;:&quot;Ashburn&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇺🇸</span> 美国阿什本</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="saopaulo"
+             data-name="巴西圣保罗"
+             data-cc="BR"
+             data-region="americas"
+             data-city="Sao Paulo"
+             data-filter="{&quot;country&quot;:&quot;BR&quot;,&quot;magic&quot;:&quot;Sao Paulo&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇧🇷</span> 巴西圣保罗</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="oceania">
+      <h2 class="group__title">大洋洲</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>节点</span>
+          <span>最小 / 平均 / 最大</span>
+          <span>丢包</span>
+          <span class="pinghead__bar">平均延迟</span>
+        </div>
+        <div class="pingrow"
+             data-ping-row
+             data-key="sydney"
+             data-name="澳大利亚悉尼"
+             data-cc="AU"
+             data-region="oceania"
+             data-city="Sydney"
+             data-filter="{&quot;country&quot;:&quot;AU&quot;,&quot;magic&quot;:&quot;Sydney&quot;}">
+          <div class="pingrow__node">
+            <span class="pingrow__name"><span class="flag" aria-hidden="true">🇦🇺</span> 澳大利亚悉尼</span>
+            <span class="pingrow__probe" data-ping-probe>待测量</span>
+          </div>
+          <div class="pingrow__rtt">
+            <span class="pingrow__k">最小 / 平均 / 最大</span>
+            <span class="pingrow__v mono" data-ping-rtt><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__loss">
+            <span class="pingrow__k">丢包</span>
+            <span class="pingrow__v mono" data-ping-loss><span class="dim">—</span></span>
+          </div>
+          <div class="pingrow__bar" data-ping-bar>
+            <svg class="pingbar" viewBox="0 0 100 6" aria-hidden="true">
+              <rect class="pingbar__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="group" data-ping-region="other" hidden>
+      <h2 class="group__title">其他</h2>
+      <div class="rows" data-ping-rows>
+        <div class="pinghead" aria-hidden="true">
+          <span>节点</span>
+          <span>最小 / 平均 / 最大</span>
+          <span>丢包</span>
+          <span class="pinghead__bar">平均延迟</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>全球 Ping 由你的浏览器直接调用 Globalping 接口完成，当前浏览器禁用了 JavaScript，本页只能显示节点清单与说明。也可以在终端里用 Globalping 官方命令行测：<span class="mono">globalping ping example.com from Tokyo</span>。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是全球 Ping</h2>
+  <p>
+    Ping 是最古老也最常用的网络诊断命令：向目标发一个 ICMP Echo 请求，等它回一个 Echo 应答，
+    一来一回花的时间就是往返延迟（RTT），没等到应答的比例就是丢包率。
+    但你在自己电脑上敲 <span class="mono">ping</span>，测到的永远只是<strong>「从你这里」</strong>到目标的那一条线路。
+  </p>
+  <p>
+    全球 Ping 把同一个动作搬到世界各地：由分布在不同国家、不同运营商网络里的探针同时 Ping 同一个目标，
+    结果并排放在一起。选购海外服务器之前看看它到国内和到目标用户所在地的延迟，
+    网站上线后确认各地访客连过来快不快，CDN 切换之后检查各地是不是都命中了就近节点，
+    或者只是想确认「是我这边网络有问题，还是对方服务器真的挂了」——这些问题单靠本机 Ping 都回答不了。
+  </p>
+  <p>
+    本页的探针来自 <a href="https://globalping.io" target="_blank" rel="noopener external">Globalping</a>，
+    一个由 jsDelivr 团队维护的开源、免费探针网络，探针由世界各地的志愿者与机构自愿部署。
+  </p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>在你的浏览器里检查输入：只接受公网 IPv4 / IPv6 地址或带点的域名，内网、保留地址与 localhost 会被直接拦下。
+        粘贴整条网址也可以，脚本会从中取出主机名。</li>
+    <li>浏览器直接向 Globalping 提交一次测量：13 个地区每处要 1 台探针，每台发 3 个包；
+        选 TCP 时改为与目标 443 端口握手 3 次。</li>
+    <li>每秒向 Globalping 取一次进度，哪台探针先测完就先填哪一行，全部完成或约 30 秒后停止。</li>
+    <li>汇总出可达节点数、最快与最慢的地区，以及目标在各地解析到的地址。</li>
+  </ol>
+  <p>
+    域名由<strong>探针在当地自行解析</strong>，不是在你的电脑上解析好再发过去。
+    所以使用了 GeoDNS 或 CDN 的网站，在不同地区可能解析到不同的地址——
+    「解析地址」一栏列出了这次各地拿到的全部地址，行内也会标出与多数节点不同的那一个。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+    <li><strong>平均延迟</strong>是三次往返的平均值，颜色分四档：
+        100 ms 以内为优（同城或近邻地区通常只有几毫秒到几十毫秒），100–200 ms 为良，
+        200–350 ms 偏慢（跨洲线路的常见水平），350 ms 以上为差。</li>
+    <li><strong>最小与最大差距很大</strong>说明线路抖动明显，延迟敏感的业务（游戏、语音、远程桌面）会感觉到卡顿。</li>
+    <li><strong>丢包率</strong>不为 0 时单独标出。3 个包丢 1 个就是 33%，偶发一次不必太在意，多个地区同时丢包才值得排查。</li>
+    <li><strong>不可达</strong>表示这台探针的包全部没有收到回应。ICMP 模式下最常见的原因是目标屏蔽了 Ping，
+        切换到 TCP 443 再测一次；TCP 也不通，才说明那个地区确实连不上目标。</li>
+    <li><strong>暂无可用探针</strong>表示 Globalping 这一刻在那个地区没有在线探针，与目标无关，过一会儿再测即可。</li>
+  </ul>
+  <p>
+    每一行都会写出实际执行测量的探针所在城市、AS 号与运营商。同一个地区下次测可能换一台探针，
+    数值也会随之变化——比较两次结果时，先看是不是同一家运营商。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>为什么有的节点显示「不可达」，网站却明明打得开？</dt>
+    <dd>ICMP Ping 和打开网站走的不是同一种流量。很多服务器、云主机的安全组和企业防火墙默认丢弃 ICMP，于是 Ping 全部超时，但 80 / 443 端口照常提供服务。遇到这种情况把方式切到「TCP 443」再测一次：TCP 能通就说明服务器在线，只是不回应 Ping；TCP 也不通，才说明目标在那个地区确实连不上。</dd>
+    <dt>ICMP 和 TCP 443 两种方式有什么区别，该选哪个？</dt>
+    <dd>ICMP 是传统的 Ping，测的是网络层一来一回的时间，适合看线路本身的质量。TCP 443 测的是与目标 443 端口完成三次握手的时间，不受 ICMP 过滤影响，更接近浏览器打开一个 HTTPS 网站时的建连耗时，数值通常与 ICMP 相近或略高一点。测服务器线路先用 ICMP，测网站或遇到「不可达」时用 TCP。</dd>
+    <dt>提示测量额度用完了是怎么回事？</dt>
+    <dd>Globalping 的匿名接口按你的出口 IP 计额度，每小时大约 250 个「探针·次」，本页一轮测 13 个节点就消耗 13 次，相当于每小时能测十几轮。额度按小时滚动恢复，等一会儿再试即可。请求是从你的浏览器直接发出的，额度只属于你自己，不会被其他访客用掉。</dd>
+    <dt>中国大陆节点为什么经常没有结果，或者每次城市都不一样？</dt>
+    <dd>Globalping 的探针由志愿者和机构自愿部署，中国大陆的公开探针数量很少，在线也不稳定。每次测量都从当前在线的探针里随机挑一台，所以城市与运营商可能每次不同，请以行内显示的城市和 AS 号为准；某个地区恰好没有在线探针时，那一行会显示「暂无可用探针」。</dd>
+    <dt>本站会记录我 Ping 过的目标吗？</dt>
+    <dd>不会。测量请求由你的浏览器直接发往 Globalping（api.globalping.io），本站服务器既不转发，也收不到你填写的目标。开始测量后地址栏会变成 /ping#host=…，方便刷新或转发时预填：# 之后的部分是网址片段，浏览器不会把它随请求发给本站，所以不会出现在本站的访问日志里。只有早期 /ping?host=… 形式的旧链接例外：问号之后的查询串是请求的一部分，打开那一次会和任何一次访问一样记进标准访问日志，页面随即把地址改写成 # 形式。需要知道的是：Globalping 作为第三方会收到你填写的目标和你的 IP 地址，测量结果会在它的平台上按其政策保存一段时间，任何拿到测量 ID 的人都能查看。</dd>
+  </dl>
+</article>

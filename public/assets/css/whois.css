@@ -1,0 +1,509 @@
+/* Whois / RDAP 查询页。只放这一页独有的东西：查询框、行、徽章、分组、正文全部沿用 app.css 的组件。 */
+
+/* ---------------------------------------------------------------- 查询框与示例 */
+
+.whois-query {
+  margin-block-end: var(--size-5);
+}
+
+/* 示例查询：几枚等宽小胶囊。它们是真实的查询链接，悬停只换色、不加下划线，免得读成正文里的链接 */
+.whois-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: var(--size-2) 0 0;
+  padding-inline-start: var(--size-3);
+  font-size: 12.5px;
+}
+
+.whois-examples__label {
+  margin-inline-end: 2px;
+  color: var(--text-dim);
+}
+
+.whois-examples__item {
+  padding: 1px 9px;
+  font-family: var(--font-code);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-round);
+  transition: color .15s var(--ease-3), border-color .15s var(--ease-3);
+}
+
+.whois-examples__item:hover {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent-text) 45%, var(--border));
+}
+
+/* ---------------------------------------------------------------- 结果卡 */
+
+.whois {
+  margin-block-start: var(--size-2);
+}
+
+/* 和首页的 IP 卡片同一套语言：极淡的绿色渐变、比分组卡片高一级的投影，
+   它是整页的焦点，下面的分组都是它的注脚 */
+.whois-card {
+  padding: var(--size-4) var(--size-5);
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 9%, var(--surface)),
+      var(--surface) 62%);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+  animation: ipcx-rise .32s var(--ease-out-3) backwards;
+}
+
+/* 未注册：同样是一个结论，但不是「有记录」，换成中性的白底，图标改成对勾 */
+.whois-card--free,
+.whois-card--none {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.whois-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-3);
+}
+
+.whois-card__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  inline-size: 42px;
+  block-size: 42px;
+  margin-block-start: 2px;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-radius: var(--radius-round);
+}
+
+.whois-card--none .whois-card__icon {
+  color: var(--text-dim);
+  background: var(--badge-gray-bg);
+}
+
+.whois-card__icon svg {
+  inline-size: 22px;
+  block-size: 22px;
+}
+
+.whois-card__id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.whois-card__eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  letter-spacing: .08em;
+  color: var(--text-dim);
+}
+
+/* 域名可能长达 253 个字符、IPv6 段也不短：允许在任意位置折行，绝不撑出横向滚动 */
+.whois-card__name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: var(--font-weight-7);
+  line-height: 1.3;
+  letter-spacing: -.01em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.whois-card__ascii {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.whois-card__sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.whois-card--free .whois-card__sub {
+  font-weight: var(--font-weight-6);
+  color: var(--accent-text);
+}
+
+.whois-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-start: var(--size-3);
+}
+
+.whois-card__text {
+  margin: var(--size-3) 0 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-dim);
+}
+
+.whois-card__text strong {
+  color: var(--text);
+  font-weight: var(--font-weight-6);
+}
+
+/* 「已改按 example.com 查询」这类说明：不是警告，只是交代一声 */
+.whois-card__note {
+  margin: var(--size-3) 0 0;
+  padding-block-start: var(--size-2);
+  font-size: 13px;
+  color: var(--text-dim);
+  border-top: 1px dashed var(--border);
+}
+
+/* ---------------------------------------------------------------- 生命周期条 */
+
+.whois-life {
+  margin-block-start: var(--size-4);
+}
+
+.whois-life__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--size-3);
+  margin-block-end: 6px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* 宽度交给 CSS、高度固定 8px；两条 rect 用百分比宽度，所以不需要 viewBox，也就不会被拉伸变形 */
+.whois-life__bar {
+  display: block;
+  inline-size: 100%;
+  block-size: 8px;
+  overflow: visible;
+}
+
+.whois-life__track {
+  fill: var(--border);
+}
+
+.whois-life__fill {
+  fill: var(--life-fill);
+}
+
+.whois-life__caption {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-6);
+  color: var(--life-text);
+}
+
+/* 三档配色与 IP 评分条一致：琥珀那档条子用亮色、文字单独压暗，否则白底上只有 2.2:1 */
+.whois-life--good {
+  --life-fill: var(--score-good-fill);
+  --life-text: var(--badge-green-fg);
+}
+
+.whois-life--warn {
+  --life-fill: var(--score-warn-fill);
+  --life-text: var(--score-warn-text);
+}
+
+.whois-life--bad {
+  --life-fill: var(--score-bad-fill);
+  --life-text: var(--badge-red-fg);
+}
+
+/* ---------------------------------------------------------------- 来源说明 */
+
+.whois-source {
+  margin: var(--size-2) 0 var(--size-5);
+  padding-inline: 2px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 分组标题后面的计数：「6 项保护」「4 台」，压暗、去掉字距，读起来是标题的注脚 */
+.whois-count {
+  margin-inline-start: var(--size-2);
+  font-weight: var(--font-weight-4);
+  letter-spacing: 0;
+  color: var(--text-mute);
+}
+
+/* ---------------------------------------------------------------- 域名状态 */
+
+/* 和 STUN 行同一种思路：一张卡片里的兄弟行，左边是「是什么」，右边是「意味着什么」。
+   每一行是独立的 grid，第一列不能写 auto——那样每行各按自己的内容定宽，右边的说明就参差不齐了。
+   徽章与 EPP 原名上下叠放，最长的 clientTransferProhibited 也放得进 12.5rem。 */
+.whois-st {
+  display: grid;
+  grid-template-columns: 12.5rem 1fr;
+  align-items: baseline;
+  gap: var(--size-1) var(--size-4);
+  padding: var(--size-2) var(--size-4);
+  transition: background-color .15s var(--ease-3);
+}
+
+.whois-st + .whois-st {
+  border-top: 1px solid var(--border-soft);
+}
+
+.whois-st:hover {
+  background: var(--surface-2);
+}
+
+.whois-st__name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.whois-st__code {
+  font-size: 12px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.whois-st__note {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- DNS 服务器 */
+
+.whois-ns {
+  padding: var(--size-2) var(--size-4);
+  overflow-wrap: anywhere;
+  transition: background-color .15s var(--ease-3);
+}
+
+.whois-ns + .whois-ns {
+  border-top: 1px solid var(--border-soft);
+}
+
+.whois-ns:hover {
+  background: var(--surface-2);
+}
+
+/* 日期后面那句「29.1 年前 / 还有 689 天」：是注脚，比日期本身小一号 */
+.whois-hint {
+  margin-inline-start: 6px;
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.whois-mail {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.whois-mail:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------- 原始数据 */
+
+/* 原生 details 折叠：没有脚本也能展开。正文最长 96 KB，限高后在框内滚动，
+   pre-wrap + anywhere 保证再长的一行也只在框内折行，手机上不会出现整页横向滚动 */
+/* normalize.css（Open Props）给 details / summary 带了灰底、内边距和负外边距，
+   这里整套归零，不然卡片里会套出第二层灰框、标题行还会伸出卡片边缘 */
+.whois-raw {
+  margin-block-start: var(--size-5);
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.whois-raw__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2);
+  margin: 0;
+  padding: var(--size-2) var(--size-4);
+  background: transparent;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-6);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color .15s var(--ease-3);
+}
+
+.whois-raw__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 自绘的展开箭头：旋转 90° 表示已展开 */
+.whois-raw__summary::before {
+  content: "";
+  flex: 0 0 auto;
+  inline-size: 7px;
+  block-size: 7px;
+  margin-inline-end: 2px;
+  border-right: 1.6px solid var(--text-dim);
+  border-bottom: 1.6px solid var(--text-dim);
+  transform: rotate(-45deg);
+  transition: transform .15s var(--ease-3);
+}
+
+.whois-raw[open] > .whois-raw__summary {
+  margin-block-end: 0;
+}
+
+.whois-raw[open] > .whois-raw__summary::before {
+  transform: rotate(45deg);
+}
+
+.whois-raw__summary:hover {
+  background: var(--surface-2);
+}
+
+/* 键盘焦点。summary 贴着卡片的内缘，而卡片是 overflow: hidden：全站那圈往外扩 2px 的焦点框在这里被整圈裁掉，
+   按 Tab 走到这一行看不出焦点落在哪。改成往里收 2px，圆角跟着卡片的内圆角走（展开后下面接着正文，下边两个角收平） */
+.whois-raw__summary:focus-visible {
+  outline-offset: -2px;
+  border-radius: calc(var(--card-radius) - 1px);
+}
+
+.whois-raw[open] > .whois-raw__summary:focus-visible {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.whois-raw__size {
+  margin-inline-start: auto;
+  font-size: 12px;
+  font-weight: var(--font-weight-4);
+  color: var(--text-mute);
+}
+
+.whois-raw__body {
+  max-block-size: 32rem;
+  margin: 0;
+  padding: var(--size-3) var(--size-4);
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-soft);
+}
+
+.whois-raw__more {
+  margin: 0;
+  padding: var(--size-2) var(--size-4);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ---------------------------------------------------------------- 正文：状态码对照 */
+
+.prose .whois-codes {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.whois-codes li {
+  margin-block-end: var(--size-3);
+  padding-inline-start: var(--size-3);
+  border-inline-start: 2px solid var(--border);
+}
+
+.whois-codes__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--size-2);
+  color: var(--text);
+}
+
+.whois-codes__head .mono {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.whois-codes__note {
+  display: block;
+  margin-block-start: 2px;
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 480px) {
+  .whois-examples {
+    padding-inline-start: 0;
+  }
+
+  .whois-card {
+    padding: var(--size-3) var(--size-4);
+  }
+
+  .whois-card__icon {
+    inline-size: 36px;
+    block-size: 36px;
+  }
+
+  .whois-card__icon svg {
+    inline-size: 19px;
+    block-size: 19px;
+  }
+
+  .whois-card__name {
+    font-size: 20px;
+  }
+
+  /* 两列在手机上各剩几个字，退回上下堆叠 */
+  .whois-st {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding-inline: var(--size-3);
+  }
+
+  .whois-st__name {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px var(--size-2);
+  }
+
+  .whois-ns {
+    padding-inline: var(--size-3);
+  }
+
+  .whois-raw__summary,
+  .whois-raw__body,
+  .whois-raw__more {
+    padding-inline: var(--size-3);
+  }
+}
+
+@media print {
+  .whois-examples {
+    display: none;
+  }
+
+  .whois-card,
+  .whois-raw {
+    box-shadow: none;
+  }
+}

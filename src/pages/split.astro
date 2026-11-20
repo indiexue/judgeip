@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/split.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="网站分流测试 — 国内、国外、AI 网站分别走哪个出口 IP · JudgeIP"
+  description="同时检测数十个国内外与 AI 网站看到的你的出口 IP，验证代理分流规则是否生效。"
+  canonicalPath="/split"
+  bodyClass="page-split"
+  currentLabel="分流测试"
+  activeNav="/split"
+  extraCss={["/assets/css/split.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/split.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

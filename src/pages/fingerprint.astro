@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/fingerprint.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="浏览器指纹检测 — FingerprintJS v3／v2 与 JA3 / JA4 在线测试 · JudgeIP"
+  description="使用 FingerprintJS v3、v2 与 TLS JA3/JA4 检测当前浏览器的唯一指纹特征。"
+  canonicalPath="/fingerprint"
+  bodyClass="page-fingerprint"
+  currentLabel="浏览器指纹"
+  activeNav="/fingerprint"
+  extraCss={[]}
+  extraJs={["/assets/vendor/fingerprintjs3.min.js", "/assets/vendor/fingerprintjs2.min.js", "/assets/js/fingerprint.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/claude.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="Claude 检测 — 你的环境会被 Claude 判成中国用户吗 · JudgeIP"
+  description="根据时区、语言、字体等浏览器信号，估算 Claude 把你判为中国用户的风险。"
+  canonicalPath="/claude"
+  bodyClass="page-claude"
+  currentLabel="Claude 检测"
+  activeNav="/claude"
+  extraCss={[]}
+  extraJs={["/assets/js/claude.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

@@ -1,0 +1,577 @@
+/* ip.cx — Cloudflare 节点检测（/cloudflare）专用样式。只在这一页加载。
+   卡片、行、标签、结论块全部沿用 app.css 的组件，这里只补这一页独有的：
+   值里多段并排的间距、值下面的说明行、节点等级对比的三列行与延迟条、原始 trace、Turnstile 的两张卡片。 */
+
+/* ---------------------------------------------------------------- 控制条 */
+
+/* 遮罩按钮推到控制条最右：和首页 IP 卡片右上角那枚是同一个组件（.mask），位置跟着「重新检测」这一排走 */
+.cf__mask {
+  margin-inline-start: auto;
+}
+
+/* 结论的第四档：既不是好也不是坏——「区域内」「判断不了」。用 indigo 而不是灰，免得像是没跑完 */
+.verdict.is-info {
+  color: var(--tag-global-fg);
+  background: color-mix(in srgb, var(--tag-global-bg) 55%, transparent);
+  border-color: color-mix(in srgb, var(--tag-global-fg) 22%, transparent);
+}
+
+/* ---------------------------------------------------------------- 行内的值 */
+
+/* 一个值由好几段拼成（地址 + 标签、城市 + 代码 + 距离）：用 flex 的 gap 断开，而不是手塞空格。
+   块级 flex 而不是 inline-flex：一个格子里有两行（1.1.1.1 的地址一行、节点一行）时，
+   inline-flex 会在宽屏上把两行挤成一行。 */
+.cfline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--size-2);
+}
+
+.cfline + .cfline {
+  margin-block-start: 4px;
+}
+
+/* 值下面的说明：为什么是这个结果。text-dim 而不是 text-mute——这是要读的正文，白底上 3:1 不够 */
+.cfnote {
+  display: block;
+  margin-block-start: 4px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.cfcity {
+  font-weight: var(--font-weight-6);
+}
+
+.cfcode {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* 长 IPv6 在窄列里允许断开，不撑出横向滚动 */
+.cf .row__value .mono {
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- 节点等级对比 */
+
+/* 和 .stun / .dnsrow 同一族的三列卡片行：谁 / 命中哪个节点 / 多快。
+   第一列要放三层（等级 + 名字、主机名、说明），所以给它最宽的那一份。 */
+.cftier {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(10rem, 1fr);
+  align-items: center;
+  gap: var(--size-2) var(--size-3);
+  padding: var(--size-2) var(--size-4);
+  transition: background-color .15s var(--ease-3);
+}
+
+.cftier + .cftier {
+  border-top: 1px solid var(--border-soft);
+}
+
+.cftier:hover {
+  background: var(--surface-2);
+}
+
+.cftier__id {
+  min-inline-size: 0;
+}
+
+.cftier__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-1) var(--size-2);
+}
+
+.cftier__name {
+  font-size: 14.5px;
+  font-weight: var(--font-weight-6);
+}
+
+.cftier__host {
+  margin-block-start: 2px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.cftier__note {
+  margin-block-start: 2px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.cftier__node {
+  min-inline-size: 0;
+  font-size: 14px;
+}
+
+.cftier__lat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px var(--size-2);
+  font-size: 13px;
+  text-align: right;
+}
+
+.cftier__ms {
+  min-inline-size: 4.5em;
+  font-weight: var(--font-weight-6);
+  text-align: right;
+}
+
+.cftier__proto {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+/* 汇总：铺满整行的几句话，不参与三列 */
+.cftier--sum {
+  display: block;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  background: var(--surface-2);
+}
+
+.cftier--sum:hover {
+  background: var(--surface-2);
+}
+
+.cftier__sumline {
+  display: block;
+}
+
+.cftier__sumline:first-child {
+  color: var(--text);
+  font-weight: var(--font-weight-6);
+}
+
+/* 延迟条：长度用 <rect width> 表达（CSP 不允许 style=""），颜色按快慢三档。
+   不写 preserveAspectRatio="none"：等比缩放时两端的圆角才是正圆。 */
+.cfbar {
+  inline-size: 72px;
+  block-size: auto;
+  flex: none;
+}
+
+.cfbar__track {
+  fill: var(--border);
+}
+
+/* 用评分条那一组填充色，不直接用徽章的字色：浅色下两者同值；深色下字色是为了在暗底上读得清才调浅的，
+   拿来画条子，「快」是一条发白的薄荷绿、「慢」是一条发白的粉，看不出绿和红 */
+.cfbar--good .cfbar__fill { fill: var(--score-good-fill); }
+.cfbar--ok   .cfbar__fill { fill: var(--score-warn-fill); }
+.cfbar--slow .cfbar__fill { fill: var(--score-bad-fill); }
+
+/* ---------------------------------------------------------------- 原始 trace */
+
+/* 原生 details：不依赖脚本也能开合 */
+.cfraw {
+  margin-block-start: var(--size-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.cfraw__summary {
+  padding: var(--size-2) var(--size-4);
+  font-size: 13.5px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.cfraw__summary:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.cfraw[open] .cfraw__summary {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* trace 的 uag 一行是整条 UA，很长：允许折行，不出横向滚动条 */
+.cfraw__pre {
+  margin: 0;
+  padding: var(--size-3) var(--size-4);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- Turnstile 人机验证 */
+
+/* 整页最上面的一块，独立于下面的节点检测：和「开始检测」那一栏之间留出与分组之间相同的间距 */
+.cf__ts {
+  margin-block-end: var(--size-5);
+}
+
+/* 两张卡片并排。Turnstile 的 flexible 组件最窄 300px：两张并排再加上边框与组件框的内边距，
+   内容区至少要 650px 上下——720px 以下改成上下堆叠，见下面的窄屏段。
+   这个断点只看两张卡片的最小宽度，与导航的折叠断点（app.css 的「窄屏折叠」）无关，改那边时不用跟着动。 */
+.tsgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--size-3);
+}
+
+/* 卡片本体就是 .rows（白底、边框、圆角、投影），这里只把它排成一列，「响应元数据」压到底边：
+   两张并排时底边对齐，不会一张长一张短。
+   这是一栏时、以及不支持 subgrid 的浏览器里的排法；两栏时卡片改用 .tsgrid 的行轨道，见下面「两栏时逐行对齐」 */
+.tscard {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.tscard__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-2);
+  padding: var(--size-3) var(--size-4);
+}
+
+.tscard__id {
+  min-inline-size: 0;
+}
+
+/* 头部固定三行：标题 / 模式 / 一句说明。三行都不折行（放不下就省略号），
+   两张卡片的头部因此永远一样高——下面的组件框、状态行才能左右对齐 */
+.tscard__title,
+.tscard__mode,
+.tscard__sub {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tscard__title {
+  font-size: 15px;
+  font-weight: var(--font-weight-6);
+  line-height: 1.45;
+}
+
+.tscard__mode {
+  margin-block: 4px 3px;
+  line-height: 1;
+}
+
+.tscard__sub {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 「重置」是卡片里的次要操作：和复制按钮（.copy）同一副描边胶囊，不用控制条上那块实心绿 */
+.tsreset {
+  flex: none;
+  min-block-size: 24px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: var(--font-weight-5);
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--field-radius);
+  cursor: pointer;
+  transition: color .18s var(--ease-3), border-color .18s var(--ease-3), opacity .18s var(--ease-3);
+}
+
+.tsreset:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--text-mute);
+}
+
+.tsreset:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+/* 组件框：Turnstile 的 iframe 挂在 .tscard__mount 里。先按 flexible 的固定高度 65px 留好位置，
+   组件出现时卡片不跳；窄到放不下 300px 时脚本改用 compact（150×140），框会自然撑高。 */
+.tscard__widget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: calc(65px + 2 * var(--size-2));
+  padding: var(--size-2);
+  background: var(--surface-2);
+  border-block: 1px solid var(--border-soft);
+}
+
+.tscard__mount {
+  display: flex;
+  justify-content: center;
+  inline-size: 100%;
+  min-inline-size: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 没配置的那一张：组件框不铺底色，读起来就是一句说明，而不是一个空着的输入框 */
+.tscard.is-off .tscard__widget {
+  background: transparent;
+}
+
+/* 卡片只有半栏宽，标签与正文同一个字号会显得挤 */
+.tscard .row__label {
+  font-size: 14px;
+}
+
+/* 结论缩成卡片里的一小块：同一个 .verdict 组件，只收紧留白与字号 */
+.tscard__out {
+  padding-inline: var(--size-4);
+}
+
+.tsverdict {
+  gap: var(--size-2);
+  margin-block: var(--size-1) var(--size-3);
+  padding: var(--size-2) var(--size-3);
+}
+
+.tsverdict .verdict__dot {
+  margin-block-start: 7px;
+}
+
+.tsverdict .verdict__title {
+  font-size: 14px;
+}
+
+.tsverdict .verdict__note {
+  font-size: 13px;
+}
+
+/* 响应元数据：原生 details，不依赖脚本也能开合；和原始 trace（.cfraw）同一种读法 */
+/* normalize 给 details 一层灰底与内边距，这里它是卡片的最后一行，底色与留白都交给里面的 summary 和 body */
+.tsmeta {
+  margin-block-start: auto;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* normalize 给 summary 的是一块带负外边距的灰底圆角按钮；这里它是卡片底边的一行，退回平的 */
+.tsmeta__summary {
+  margin: 0;
+  padding: var(--size-2) var(--size-4);
+  background: none;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.tsmeta__summary:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.tsmeta[open] .tsmeta__summary {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* 键盘焦点。这一页的两处 summary（这里与「原始 trace」）都贴着卡片的内缘，而卡片是 overflow: hidden：
+   全站那圈往外扩 2px 的焦点框在「原始 trace」上被整圈裁掉、在这里只剩顶上一条线，按 Tab 走到这里看不出焦点落在哪。
+   改成往里收 2px；圆角跟着卡片的内圆角走（卡片圆角减去 1px 边框），否则框的四个角仍会被卡片的圆角切掉 */
+.cfraw__summary:focus-visible,
+.tsmeta__summary:focus-visible {
+  outline-offset: -2px;
+}
+
+.cfraw__summary:focus-visible {
+  border-radius: calc(var(--card-radius) - 1px);
+}
+
+.cfraw[open] .cfraw__summary:focus-visible {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.tsmeta:not([open]) .tsmeta__summary:focus-visible {
+  border-end-start-radius: calc(var(--card-radius) - 1px);
+  border-end-end-radius: calc(var(--card-radius) - 1px);
+}
+
+.tsmeta__body {
+  padding: var(--size-2) var(--size-4) var(--size-3);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* normalize 给 p 与 dl 定了正文字号（1.1rem），这里要跟着 .tsmeta__body 的小一号走 */
+.tsmeta__empty {
+  margin: 0;
+  font-size: inherit;
+  color: var(--text-dim);
+}
+
+.tsmeta__list {
+  font-size: inherit;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 4px var(--size-3);
+  margin: 0;
+}
+
+/* normalize 给 dt 的是粗体加上间距（为正文里的术语表准备的）；这里是一张键值表，键要退到值后面 */
+.tsmeta__list dt {
+  margin: 0;
+  font-weight: var(--font-weight-5);
+  color: var(--text-dim);
+}
+
+/* 「siteverify 80 ms」这类跟在标签后面的注脚：比值小一号 */
+.tsaside {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* 值来自第三方，可能很长（ephemeral_id、整串 hostname）：允许任意处断行；metadata 每项一行 */
+.tsmeta__list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+/* ---------------------------------------------------------------- Turnstile：两栏时逐行对齐 */
+
+/* 两张卡片各测各的，状态常常不一样：一张「校验成功」只带一行说明，另一张「需要点击确认」带三行。
+   各排各的（上面那一列 flex）时，从「当前状态」往下，「服务端验证」「响应耗时」、结论、「响应元数据」左右一行行错开。
+   两栏时改由 .tsgrid 出七条行轨道——头部、组件框、三行、结论、响应元数据——卡片用 subgrid 借这七条来排：
+   每条轨道取两张里高的那一个，左右逐行对齐，卡片也自然一样高。两张状态相同时，和各排各的没有任何差别。
+
+   不认识 subgrid 的浏览器（Chrome 117、Safari 16、Firefox 71 之前）整段跳过，仍是上面那一列 flex。
+   堆成一栏时没有「左右」可言，也不用：这里的媒体条件正是下面窄屏段那个断点的反面，两边要一起改。 */
+@supports (grid-template-rows: subgrid) {
+  @media not all and (max-width: 720px) {
+    /* 轨道数就是配好的卡片的直接子元素个数：卡片里添一块、删一块，这里跟着改（tests/turnstile.php 拿标记对这个数）。
+       行距归零：七条轨道之间不该有缝，两张卡片之间只剩列距 */
+    .tsgrid {
+      grid-template-rows: repeat(7, auto);
+      row-gap: 0;
+    }
+
+    /* 列写明 minmax(0, 1fr)：隐式的 auto 列按内容的最小宽度定宽，头部那三行不折行，文案一长（或访客把字号调大）
+       整列就被撑得比卡片宽——省略号出不来，「重置」连同下面各行的右半边一起被卡片裁掉 */
+    .tscard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: subgrid;
+      grid-row: 1 / -1;
+    }
+
+    /* 头尾四块各占指定的轨道，三行自动落进中间：没配置的那一张少一块「响应元数据」，别的块不会因此挪位。
+       结论与元数据从末尾数（倒数第二条、最后一条） */
+    .tscard__head {
+      grid-row: 1;
+    }
+
+    .tscard__widget {
+      grid-row: 2;
+    }
+
+    /* 三行自己再借一次轨道（.row 本身是「标签 | 值」两列的网格）：左右四个格子落在同一条轨道里，对的是同一条基线。
+       值的第一行有时是一枚徽章、有时是一句灰字，行盒高矮不一——只在各自行内对基线，左右两个标签会差出一两个像素 */
+    .tscard > .row {
+      grid-template-rows: subgrid;
+    }
+
+    .tscard__out {
+      grid-row: -3;
+    }
+
+    /* 邻居展开「响应元数据」时这条轨道跟着变高：自己这一行留在轨道顶上、与对面那一行齐平，
+       不再像 flex 列里那样被 auto 外边距推到卡片底 */
+    .tsmeta {
+      grid-row: -2;
+      margin-block-start: 0;
+    }
+
+    /* 这时合着的这一行已经不贴着卡片底边：键盘焦点框的两个下圆角（见上面「键盘焦点」）退回直角。
+       不认识 :has() 的浏览器跳过这一条，焦点框照旧带着圆角，无妨 */
+    .tsgrid:has(.tsmeta[open]) .tsmeta:not([open]) .tsmeta__summary:focus-visible {
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 720px) {
+  /* 改这个断点时，上面「两栏时逐行对齐」的媒体条件（它的反面）要一起改 */
+  .tsgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  /* 「重新检测」与遮罩按钮留在第一行的两端，进度说明换到下一整行——
+     否则说明文字夹在中间，遮罩按钮会被挤成孤零零的第二行 */
+  .cf .probe__hint {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  /* 三列放不下：名字一整行，节点在左、延迟在右排在下面 */
+  .cftier {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px var(--size-2);
+    padding-inline: var(--size-3);
+  }
+
+  .cftier__id {
+    grid-column: 1 / -1;
+  }
+
+  .cftier__lat {
+    gap: 4px 6px;
+  }
+
+  .cfbar {
+    inline-size: 56px;
+  }
+
+  .cftier--sum {
+    padding-inline: var(--size-3);
+  }
+
+  .cfraw__summary,
+  .cfraw__pre {
+    padding-inline: var(--size-3);
+  }
+
+  /* 与 .row 在窄屏上的左右留白对齐 */
+  .tscard__head,
+  .tscard__out,
+  .tsmeta__summary,
+  .tsmeta__body {
+    padding-inline: var(--size-3);
+  }
+}
+
+@media print {
+  .cf__mask,
+  .tsreset {
+    display: none;
+  }
+}

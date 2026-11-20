@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/webrtc.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="WebRTC 泄露检测 — 检查 VPN／代理是否泄露真实 IP · JudgeIP"
+  description="逐台探测国内外 STUN 服务器，检查浏览器 WebRTC 是否绕过代理泄露真实 IP 地址。"
+  canonicalPath="/webrtc"
+  bodyClass="page-webrtc"
+  currentLabel="WebRTC 泄露检测"
+  activeNav="/webrtc"
+  extraCss={[]}
+  extraJs={["/assets/js/webrtc.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

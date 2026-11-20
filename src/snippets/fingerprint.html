@@ -1,0 +1,167 @@
+
+<section class="hero">
+  <h1 class="hero__title">浏览器指纹检测</h1>
+  <p class="hero__lede">看看你的浏览器指纹有多独特，网站能否不靠 Cookie 认出你。</p>
+</section>
+
+<div class="fp" id="fingerprint">
+  <div class="tabs" role="tablist" aria-label="指纹算法">
+    <button class="tabs__item is-active"
+            type="button"
+            role="tab"
+            id="fp-tab-v3"
+            aria-selected="true"
+            aria-controls="fp-panel"
+            data-fp-method="v3"
+            data-fp-note="当前版本的开源实现。只采集跨会话稳定的信号，输出一个 32 位十六进制的 visitorId。">
+      <span class="tabs__name">FingerprintJS</span>
+      <span class="tabs__tag">v3+</span>
+    </button>
+    <button class="tabs__item"
+            type="button"
+            role="tab"
+            id="fp-tab-v2"
+            aria-selected="false"
+            aria-controls="fp-panel"
+            data-fp-method="v2"
+            data-fp-note="2015 年起的旧版实现，采集面更宽也更激进，包含已被现代浏览器削弱或屏蔽的信号。">
+      <span class="tabs__name">FingerprintJS2</span>
+      <span class="tabs__tag">旧版</span>
+    </button>
+    <button class="tabs__item"
+            type="button"
+            role="tab"
+            id="fp-tab-ja3"
+            aria-selected="false"
+            aria-controls="fp-panel"
+            data-fp-method="ja3"
+            data-fp-note="TLS 握手指纹。不看 JavaScript，只看 ClientHello 报文本身——换浏览器才会变，换设备未必变。">
+      <span class="tabs__name">JA3 / JA4</span>
+      <span class="tabs__tag">TLS</span>
+    </button>
+  </div>
+
+  <div class="fp__panel" id="fp-panel" role="tabpanel" aria-labelledby="fp-tab-v3">
+    <p class="fp__desc" data-fp-desc>当前版本的开源实现。只采集跨会话稳定的信号，输出一个 32 位十六进制的 visitorId。</p>
+
+    <div class="hash">
+      <span class="hash__eyebrow" data-fp-eyebrow>指纹</span>
+      <span class="hash__value mono" id="fp-hash" data-fp-hash>计算中…</span>
+      <div class="hash__actions">
+        <button class="copy" type="button" data-copy-target="fp-hash" data-copy-done="已复制">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
+            <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
+          </svg>
+          <span class="copy__label">复制</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="fp__meta" data-fp-meta></p>
+
+    <div class="groups" data-fp-groups>
+      <section class="group">
+        <h2 class="group__title">采集到的信号</h2>
+        <div class="rows" data-fp-rows>
+          <div class="row">
+            <div class="row__label">状态</div>
+            <div class="row__value dim">计算中…</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>指纹计算全部在浏览器里完成，需要 JavaScript。当前浏览器已禁用 JavaScript——顺带一提，这本身就让基于 JS 的指纹算法失效了大半。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是浏览器指纹</h2>
+  <p>
+    浏览器指纹（Browser Fingerprinting）是一种<strong>无状态</strong>的识别技术。
+    传统的 Cookie 是网站往你机器上写一个标记，下次来了再读回去——你可以删掉它，也可以拒收它。
+    指纹反过来：网站什么都不写，只是把你浏览器<strong>本来就会告诉它</strong>的那些属性收集起来，
+    算出一个哈希值当作你的编号。删 Cookie 没用，无痕模式也没用，因为根本没有东西被存下来。
+  </p>
+  <p>
+    单独一项属性的信息量很小——用 Chrome 的人有几十亿。但把几十项拼在一起，重合的概率会急剧下降：
+    你的屏幕是 2560×1440、系统时区是 Asia/Shanghai、装了 187 种字体、显卡是 Apple M2、
+    音频栈算出的浮点数尾数是某个特定值……每多一项，可能的组合数就乘上一个倍数。
+    电子前哨基金会（EFF）2010 年的 Panopticlick 实验就已证明，
+    在开启 Flash 或 Java 的浏览器里，超过九成的样本是全网唯一的。
+  </p>
+
+  <h2>三种算法的差别</h2>
+  <h3>FingerprintJS v3+</h3>
+  <p>
+    目前的开源主流实现。v3 相比旧版最大的转变是<strong>取舍标准变了</strong>：
+    不再追求「采集得越多越好」，而是只保留那些跨会话稳定的信号。
+    User-Agent 这种一升级就变、还能被随意伪造的字段，权重被大幅降低甚至剔除；
+    Canvas 渲染差异、WebGL 显卡与驱动信息、音频处理栈特征、字体度量这些真正跟硬件与系统绑定的信号成为主力。
+    结果是稳定性更高——同一台设备换个网络、换个时区，visitorId 通常不变。
+    本页加载的是 v3.4.2，MIT 协议的开源版本，纯本地计算，不联网。
+  </p>
+  <h3>FingerprintJS2（旧版）</h3>
+  <p>
+    2015 年至 2020 年间广泛使用的版本，采集面更宽：
+    包含插件列表、Flash 字体、触摸支持、CPU 类型、Do-Not-Track 标志等等。
+    这些信号如今大多已被浏览器削弱或直接屏蔽（Chrome 早已不再暴露真实插件列表），
+    所以旧版算出来的哈希在现代浏览器上稳定性反而不如新版。
+    保留它是为了对照：同一台设备两个算法的结果对不上，恰好说明了这几年浏览器在隐私上收紧了多少。
+  </p>
+  <h3>JA3 / JA4</h3>
+  <p>
+    前两种都在 JavaScript 里跑，改一改浏览器设置或装个反指纹扩展就能干扰。
+    JA3 / JA4 完全在另一层：它读的是 TLS 握手时客户端发出的第一个报文（ClientHello），
+    把其中的 TLS 版本、密码套件列表、扩展列表、椭圆曲线及其点格式按固定顺序拼成一个字符串再取哈希。
+    这些内容由浏览器底层的 TLS 库决定，网页里的 JavaScript 碰不到，
+    所以它认的是「你在用哪一个版本的哪一款浏览器（或哪一个爬虫库）」，而不是「你是哪一台设备」。
+    JA4 是 2023 年发布的改进版，把哈希拆成可读的分段结构，抗规避能力更强。
+    CDN 和风控系统大量用它来识别伪装成浏览器的自动化脚本——
+    UA 头写着 Chrome、TLS 握手却是 Python requests 的样子，一眼就能看穿。
+  </p>
+  <p class="prose__note">
+    需要说明：JA3 / JA4 必须由能读到 TLS 握手原始报文的服务端计算，本站的 Web 服务器拿不到这一层的细节。
+    因此该选项会由<strong>你的浏览器直接向第三方 TLS 回显服务发起一次请求</strong>并取回结果——
+    这次请求不经过本站，本站也不接收、不保存它的返回内容。不希望产生这次外部请求的话，不选这一项即可。
+  </p>
+
+  <h2>指纹被用来做什么</h2>
+  <ul>
+    <li><strong>风控与反欺诈</strong>：银行、支付、电商用它识别同一台设备下的批量注册、薅羊毛、盗号登录。这是指纹技术最主要也最正当的用途。</li>
+    <li><strong>广告追踪</strong>：在第三方 Cookie 逐步退场之后，指纹成了跨站追踪的替代方案——你在 A 站看过的商品，会在 B 站的广告位里出现。</li>
+    <li><strong>反爬虫</strong>：JA3 / JA4 尤其常用，用来分辨真实浏览器与伪装的自动化脚本。</li>
+    <li><strong>账号关联</strong>：平台据此判断多个账号是否来自同一台设备，用于封禁小号或识别刷单团伙。</li>
+  </ul>
+
+  <h2>怎么降低被指纹识别的可能</h2>
+  <ul>
+    <li><strong>Tor Browser</strong>：目前最彻底的方案。它的思路不是隐藏，而是让所有用户看起来一模一样——统一窗口尺寸、统一字体列表、屏蔽 Canvas 读取。</li>
+    <li><strong>Firefox 的 resistFingerprinting</strong>：在 <span class="mono">about:config</span> 里把 <span class="mono">privacy.resistFingerprinting</span> 设为 true，会伪装时区、屏蔽 Canvas 与 WebGL 读取。副作用是部分网站显示异常。</li>
+    <li><strong>Brave</strong>：默认为每个站点、每次会话给 Canvas 和音频信号加入随机噪声，让指纹在站与站之间对不上号。</li>
+    <li><strong>指纹浏览器</strong>：多开场景下常用的工具，为每个环境配置一套独立且自洽的指纹参数。</li>
+  </ul>
+  <p>
+    要留意一个反直觉的事实：<strong>装一堆反指纹插件反而可能让你更容易被认出来</strong>。
+    一个把 Canvas 结果随机化、把 UA 改成十年前版本、屏蔽了 WebGL 的浏览器，
+    在统计上是极其罕见的组合，它自己就成了一枚醒目的指纹。
+    真正有效的方向是「混进人群」，而不是「把自己涂花」。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>无痕模式能防指纹吗？</dt>
+    <dd>不能。无痕模式解决的是本地痕迹——不保存历史记录、退出时清 Cookie。但指纹不依赖任何被保存的东西，它读的是硬件与系统属性，无痕窗口里这些属性一模一样。你可以自己开一个无痕窗口打开本页对照一下。</dd>
+    <dt>换个 IP 或挂上 VPN，浏览器指纹会变吗？</dt>
+    <dd>不会。FingerprintJS v3 与 v2 算的都是浏览器与设备本身的属性，跟网络出口无关；JA3 / JA4 算的是 TLS 握手，同样与 IP 无关。这正是指纹的价值所在——它能把不同 IP 下的同一台设备串起来。</dd>
+    <dt>为什么每次刷新，旧版算出来的值都不一样？</dt>
+    <dd>旧版依赖的一部分信号（尤其是 Canvas）在启用了反指纹保护的浏览器上会被逐次加噪，导致结果不稳定。这本身就是一条有用的信息：说明你的浏览器确实开着某种防护。</dd>
+    <dt>本站会保存我的浏览器指纹吗？</dt>
+    <dd>不会。v3 与 v2 的计算完全在你的浏览器里进行，结果不回传本站。JA3 / JA4 需要一次到第三方 TLS 回显服务的请求，返回结果同样只留在当前页面，不经过本站服务器。</dd>
+  </dl>
+</article>

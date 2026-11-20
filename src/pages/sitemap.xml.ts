@@ -2,15 +2,21 @@ import type { APIRoute } from 'astro';
 
 const CORE_ROUTES = [
   '/',
-  '/zh',
-  '/tiktok-ip-check',
-  '/claude-ip-check',
-  '/native-ip-check',
-  '/ip/1.1.1.1',
-  '/ip/8.8.8.8',
-  '/ip/73.162.88.1',
-  '/ip/45.76.12.8',
-  '/ip/185.156.46.12',
+  '/claude',
+  '/ai',
+  '/webrtc',
+  '/dnsleak',
+  '/cloudflare',
+  '/connectivity',
+  '/cdn',
+  '/split',
+  '/ping',
+  '/whois',
+  '/fingerprint',
+  '/status',
+  '/tools',
+  '/privacy',
+  '/terms',
 ];
 
 export const GET: APIRoute = async () => {
@@ -20,7 +26,7 @@ export const GET: APIRoute = async () => {
     <loc>https://judgeip.com${path}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>daily</changefreq>
-    <priority>${path === '/' || path === '/zh' ? '1.0' : '0.8'}</priority>
+    <priority>${path === '/' ? '1.0' : '0.8'}</priority>
   </url>`
   ).join('\n');
 

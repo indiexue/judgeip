@@ -1,0 +1,476 @@
+/* ip.cx — 网站分流测试（/split）。
+   只放这一页才用得到的出口汇总、五列行与遮罩开关；卡片、分组标题、标签、结论块沿用 app.css 的全站组件。
+
+   颜色一律经由 class，绝不写 style=""：CSP 的 style-src 'self' 会把内联样式整条丢掉，
+   出口编号的配色、行的失败态都靠脚本切换类名。 */
+
+/* ---------------------------------------------------------------- 控制条
+
+   遮罩开关贴在控制条右端，和首页 IP 卡片上那枚眼睛按钮同一个意思、同一套图标。
+   没有 JS 时两枚按钮都没有用处，整个藏掉，免得摆着按了没反应的东西。 */
+:root:not(.has-js) .split [data-split-run],
+:root:not(.has-js) .splitmask {
+  display: none;
+}
+
+.splitmask {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  padding: 7px var(--size-3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-5);
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--field-radius);
+  cursor: pointer;
+  transition: color .18s var(--ease-3), border-color .18s var(--ease-3),
+              background-color .18s var(--ease-3), transform .18s var(--ease-3);
+}
+
+.splitmask:hover {
+  color: var(--text);
+  border-color: var(--text-mute);
+  transform: translateY(-1px);
+}
+
+.splitmask:active {
+  transform: translateY(0);
+}
+
+/* 检测脚本没加载时按钮被停用（见 split.js）：看起来也要是停用的，别像能按 */
+.splitmask:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  color: var(--text-dim);
+  border-color: var(--border);
+  transform: none;
+}
+
+.splitmask svg {
+  inline-size: 15px;
+  block-size: 15px;
+}
+
+/* 图标跟着状态走：常态给「眼睛」（点一下会藏起来），已遮罩给「划掉的眼睛」 */
+.splitmask__icon--hide,
+.splitmask[aria-pressed="true"] .splitmask__icon--show {
+  display: none;
+}
+
+.splitmask[aria-pressed="true"] .splitmask__icon--hide {
+  display: block;
+}
+
+/* 遮罩生效时按钮自己也变成状态指示：一眼看出页面上的数字不是真的 */
+.splitmask[aria-pressed="true"] {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ---------------------------------------------------------------- 结论
+
+   结论块可能叠着好几条（主结论 + AI 单独分流 + 双栈提示 + 失败计数），每条一段，段间留一点缝 */
+.splitnotes .verdict__note + .verdict__note {
+  margin-block-start: 6px;
+}
+
+.splitnotes__title {
+  font-weight: var(--font-weight-6);
+  color: var(--text);
+}
+
+.splitnotes__link {
+  color: var(--accent-text);
+  font-weight: var(--font-weight-6);
+  text-decoration: none;
+}
+
+.splitnotes__link:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------- 出口汇总
+
+   一眼读完「我有几个出口、各自承载了什么」，不必在四十行里逐行比 IP。
+   和下面的分组同一种卡片层级，但里面是一条条可点击的出口，不是表格。 */
+.splitsum {
+  margin-block-end: var(--size-5);
+  padding: var(--size-3) var(--size-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+}
+
+.splitsum__title {
+  margin: 0 0 var(--size-2);
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .1em;
+}
+
+.splitsum__list {
+  display: grid;
+  gap: 6px;
+  min-block-size: 30px;
+}
+
+.splitsum__empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+/* 用 text-dim 而不是 text-mute：这一行说明怎么读、怎么复制，是要读的字，不是占位符 */
+.splitsum__note {
+  margin: var(--size-2) 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 一个出口一整行：出口编号 / 国旗·IP·国家 / 站点数 / 类别，最右是复制提示。
+   整行就是一个按钮，点哪里都能复制；复制成功时 app.js 给它加 .is-done，按钮自身变成回执。 */
+.splitchip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--size-2);
+  inline-size: 100%;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  animation: ipcx-fade .2s var(--ease-3) backwards;
+  transition: border-color .15s var(--ease-3), background-color .15s var(--ease-3);
+}
+
+.splitchip:hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.splitchip:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 1px;
+}
+
+.splitchip.is-done {
+  border-color: color-mix(in srgb, var(--badge-green-fg) 28%, transparent);
+  background: var(--badge-green-bg);
+}
+
+.splitchip.is-fail {
+  border-color: color-mix(in srgb, var(--badge-red-fg) 28%, transparent);
+  background: var(--badge-red-bg);
+}
+
+.splitchip__where {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.splitchip__ip {
+  font-weight: var(--font-weight-6);
+  overflow-wrap: anywhere;
+}
+
+/* 「等 3 个地址（同一 /64）」说明这个出口是几个地址合成的，和国家、站点数一样是附加说明，用同一档 */
+.splitchip__country,
+.splitchip__count,
+.splitchip__range {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+
+.splitchip__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.splitchip__tags .tag {
+  padding-block: 0;
+  font-size: 11.5px;
+}
+
+/* 「复制」告诉人整行可以点，是要读的字：12px 的 text-mute 在浅底上只有 3:1，达不到 AA，用 text-dim */
+.splitchip__copy {
+  margin-inline-start: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.splitchip:hover .splitchip__copy {
+  color: var(--accent-text);
+}
+
+.splitchip.is-done .splitchip__copy {
+  color: var(--badge-green-fg);
+}
+
+/* 出口编号的六种配色：同一个出口在汇总与表格里颜色一致，扫一眼就能看出哪些行走的是同一条线路。
+   第七个出口起循环——真有七个出口的网络，靠颜色已经分不清了，编号仍然是准的。 */
+.splitexit {
+  font-variant-numeric: tabular-nums;
+}
+
+.splitexit--0 { background: var(--exit-0-bg); color: var(--exit-0-fg); }
+.splitexit--1 { background: var(--exit-1-bg); color: var(--exit-1-fg); }
+.splitexit--2 { background: var(--exit-2-bg); color: var(--exit-2-fg); }
+.splitexit--3 { background: var(--exit-3-bg); color: var(--exit-3-fg); }
+.splitexit--4 { background: var(--exit-4-bg); color: var(--exit-4-fg); }
+.splitexit--5 { background: var(--exit-5-bg); color: var(--exit-5-fg); }
+
+/* ---------------------------------------------------------------- 结果行
+
+   网站 | 出口 IP | 国家 | CF 节点 | 状态。688px 的版面里五列都要挤得下：
+   IPv4 最长 15 个等宽字符，出口 IP 那一列按它定宽；长 IPv6 由 compactIp 收成「2001:db8…7334」，完整值在 title 里。 */
+.splitrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1.25fr) minmax(0, .9fr) minmax(0, .95fr) minmax(0, 5.2rem);
+  align-items: center;
+  gap: var(--size-2) var(--size-3);
+  padding: var(--size-2) var(--size-4);
+  transition: background-color .15s var(--ease-3);
+}
+
+.splitrow + .splitrow {
+  border-top: 1px solid var(--border-soft);
+}
+
+.splitrow:hover {
+  background: var(--surface-2);
+}
+
+/* 表头：比数据行矮一截、字小一号，只负责告诉人每一列是什么。
+   第一张卡片之外的表头带 .sr-only，只给读屏器（见 views/split.php） */
+.splitrow--head,
+.splitrow--head:hover {
+  padding-block: 6px;
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .06em;
+  background: var(--surface-2);
+}
+
+/* sr-only 的表头脱离了文档流，紧随其后的第一行就是卡片顶，不需要分隔线。
+   上面那条 padding 的特异度和 .sr-only 相同且加载在后，这里把它撤回来，免得被裁剪的盒子仍有尺寸 */
+.splitrow--head.sr-only {
+  padding: 0;
+}
+
+.splitrow--head.sr-only + .splitrow {
+  border-top: 0;
+}
+
+.splitrow__id {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.45;
+}
+
+.splitrow__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.splitrow__name {
+  font-size: 14.5px;
+  font-weight: var(--font-weight-6);
+}
+
+.splitrow__title .tag {
+  padding-block: 0;
+  font-size: 11.5px;
+}
+
+/* 测的是哪个域名：给想自己复核的人看的，压一档。
+   域名整段不折行——从中间断开的「necaptcha.nosdn.127.ne / t」比溢出一点更难认；附注另起一行。
+   备用域名单独一行写出来：它同样会被请求，页面上列出的必须是本页可能联系的全部域名 */
+.splitrow__how,
+.splitrow__fallback,
+.splitrow__note {
+  margin-block-start: 1px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+/* 备用域名不截断：截成「perfops.cloudflareperf.c…」就等于没列出来。
+   视图在每个「.」后面放了 <wbr>，格子窄时只在域名的分段处折行（perfops. / cloudflareperf.com），不会从单词中间断开 */
+.splitrow__fallback .mono {
+  font-size: 1em;
+}
+
+.splitrow__how {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.splitrow__how .mono {
+  font-size: 1em;
+}
+
+.splitrow__ip,
+.splitrow__geo,
+.splitrow__colo {
+  min-inline-size: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.splitrow__ip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+/* 「IPv6」标记和下面的延迟都是结果的一部分，不是装饰：字小，更要用 text-dim 保证对比度（text-mute 在白底上只有 3:1） */
+.splitrow__fam {
+  font-size: 10.5px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .04em;
+}
+
+.splitrow__state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 13px;
+  text-align: right;
+}
+
+.splitrow__ms {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.splitrow__ms.mono {
+  font-size: 11.5px;
+}
+
+.splitgeo,
+.splitcolo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 5px;
+}
+
+/* 借来的国家（网易、字节、本站只给 IP）压暗一档：它是推断，不是那个网站亲口说的 */
+.splitgeo.is-derived {
+  color: var(--text-dim);
+}
+
+.splitcolo__code {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- 窄屏
+
+   五列在手机上每列只剩三四个字，改成两行：上一行「网站 ······ 状态」，下一行「IP · 国家 · 节点」。
+   表头在这个布局下对不上列，整行藏掉——每一格的内容本身已经足够自明。 */
+@media (max-width: 480px) {
+  .splitmask {
+    margin-inline-start: 0;
+  }
+
+  .splitsum {
+    padding-inline: var(--size-3);
+  }
+
+  .splitchip {
+    padding-inline: 8px;
+  }
+
+  /* 三列按比例定宽而不是 auto：auto 会让上一行的长站名把右边的状态列挤没 */
+  .splitrow {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "id    id    state"
+      "ip    geo   colo";
+    gap: 4px var(--size-3);
+    padding-inline: var(--size-3);
+  }
+
+  /* 不用 display:none：那会连读屏器一起藏掉。照 .sr-only 的办法裁掉，表格语义仍然完整 */
+  .splitrow--head {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .splitrow--head + .splitrow {
+    border-top: 0;
+  }
+
+  .splitrow__id    { grid-area: id; }
+  .splitrow__ip    { grid-area: ip; }
+  .splitrow__geo   { grid-area: geo; }
+  .splitrow__colo  { grid-area: colo; justify-self: end; text-align: right; }
+  .splitrow__state { grid-area: state; align-self: start; }
+
+  .splitrow__ip,
+  .splitrow__geo,
+  .splitrow__colo {
+    font-size: 13px;
+  }
+
+  /* 还没测到、或者失败的行，第二行只会是三个「—」，没有信息量，整行收起（.is-empty 由视图预置、脚本维护）；
+     测到了但个别格子是「—」的（响应头那几行没有节点），压淡一档，让有值的格子更显眼。
+     这里的 .dim 只可能是「—」占位符（有字的「未知」只出现在 .is-empty 行里，已经收起），text-mute 正是给占位符用的 */
+  .splitrow.is-empty .splitrow__ip,
+  .splitrow.is-empty .splitrow__geo,
+  .splitrow.is-empty .splitrow__colo {
+    display: none;
+  }
+
+  .splitrow__ip > .dim,
+  .splitrow__geo > .dim,
+  .splitrow__colo > .dim {
+    color: var(--text-mute);
+  }
+}
+
+@media print {
+  .splitmask,
+  .splitchip__copy {
+    display: none;
+  }
+}

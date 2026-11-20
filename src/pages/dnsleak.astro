@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/dnsleak.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="DNS 泄露检测 — 查出是谁在替你解析域名 · JudgeIP"
+  description="找出真正替你解析域名的递归 DNS 服务器，检查 DNS 请求是否绕过代理泄露。"
+  canonicalPath="/dnsleak"
+  bodyClass="page-dnsleak"
+  currentLabel="DNS 泄露检测"
+  activeNav="/dnsleak"
+  extraCss={[]}
+  extraJs={["/assets/js/dnsleak.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

@@ -1,0 +1,80 @@
+
+<section class="hero">
+  <h1 class="hero__title">全部工具</h1>
+  <p class="hero__lede">judgeip.com 的全部检测与查询工具，按用途分组。</p>
+</section>
+
+<div class="groups">
+  <section class="group" id="ip">
+    <h2 class="group__title">IP 查询</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/">
+        <span class="toollist__name">IP 检测</span>
+        <span class="toollist__desc">归属地、ASN、网络类型、威胁与代理情报、IP 评分，以及多家地理库的多库定位。</span>
+      </a>
+      <a class="toollist__item" href="/whois">
+        <span class="toollist__name">Whois 查询</span>
+        <span class="toollist__desc">域名、IP 段、ASN 的注册信息，直接来自各注册局的 RDAP 服务。</span>
+      </a>
+      <a class="toollist__item" href="/ping">
+        <span class="toollist__name">全球 Ping</span>
+        <span class="toollist__desc">从世界各地的探针同时 Ping 一个 IP 或域名，比较各地延迟与丢包。</span>
+      </a>
+    </div>
+  </section>
+  <section class="group" id="net">
+    <h2 class="group__title">网络与节点</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/connectivity">
+        <span class="toollist__name">网络连通性</span>
+        <span class="toollist__desc">国内外网站、AI 服务、社交与开发站点能不能连上、延迟多少。</span>
+      </a>
+      <a class="toollist__item" href="/cloudflare">
+        <span class="toollist__name">Cloudflare 节点检测</span>
+        <span class="toollist__desc">你命中的 Cloudflare 机房、Cloudflare 看到的出口、HTTP/3 与 WARP 状态。</span>
+      </a>
+      <a class="toollist__item" href="/cdn">
+        <span class="toollist__name">CDN 命中节点</span>
+        <span class="toollist__desc">Fastly、CloudFront、Akamai 等十多家 CDN 各自把你调度到哪个城市。</span>
+      </a>
+      <a class="toollist__item" href="/split">
+        <span class="toollist__name">网站分流测试</span>
+        <span class="toollist__desc">数十个网站分别看到你的哪个出口 IP，分流规则有没有生效。</span>
+      </a>
+      <a class="toollist__item" href="/status">
+        <span class="toollist__name">服务状态</span>
+        <span class="toollist__desc">打不开某个服务时，先看是不是对方官方状态页上正在故障。</span>
+      </a>
+    </div>
+  </section>
+  <section class="group" id="leak">
+    <h2 class="group__title">泄露检测</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/webrtc">
+        <span class="toollist__name">WebRTC 泄露检测</span>
+        <span class="toollist__desc">国内外 STUN 服务器逐台探测，判断代理有没有漏掉真实地址。</span>
+      </a>
+      <a class="toollist__item" href="/dnsleak">
+        <span class="toollist__name">DNS 泄露检测</span>
+        <span class="toollist__desc">从本站自持的权威 DNS 反查是谁在替你解析域名。</span>
+      </a>
+      <a class="toollist__item" href="/fingerprint">
+        <span class="toollist__name">浏览器指纹检测</span>
+        <span class="toollist__desc">FingerprintJS v3 / v2 与 JA3 / JA4 三种算法看你的浏览器有多好认。</span>
+      </a>
+    </div>
+  </section>
+  <section class="group" id="ai">
+    <h2 class="group__title">AI 相关</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/ai">
+        <span class="toollist__name">AI 解锁检测</span>
+        <span class="toollist__desc">ChatGPT、Claude、Gemini、Grok 等能否访问，出口是否在支持地区。</span>
+      </a>
+      <a class="toollist__item" href="/claude">
+        <span class="toollist__name">Claude 检测</span>
+        <span class="toollist__desc">时区、语言、字体等 10 项浏览器信号，估算会不会被判成中国用户。</span>
+      </a>
+    </div>
+  </section>
+</div>

@@ -1,9 +1,9 @@
 {
   "name": "judgeip",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "JudgeIP.com — Edge-native IP Purity Check, RIR Native ISP Lookup & Leak Checker",
+  "description": "JudgeIP.com — IP 归属、网络类型、威胁与代理情报、泄露与分流检测工具箱",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -14,9 +14,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.9",
-    "@tailwindcss/vite": "^4.3.5",
-    "astro": "^7.4.13",
-    "tailwindcss": "^4.3.5"
+    "astro": "^7.4.13"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

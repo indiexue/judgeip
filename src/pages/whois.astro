@@ -1,0 +1,241 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { queryRdap } from '../lib/rdap-lookup';
+
+const rawQ = (Astro.url.searchParams.get('q') || '').trim();
+const result = rawQ ? await queryRdap(rawQ) : null;
+
+const title =
+  result && result.ok
+    ? `${result.displayName} 的 Whois / RDAP 注册信息查询 · JudgeIP`
+    : 'Whois 查询 — 域名、IP、ASN 注册信息（RDAP）· JudgeIP';
+const description = '查询域名、IP、IP 段或 ASN 的注册信息，直接来自各注册局与 RIR 的 RDAP 服务。';
+---
+
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath="/whois"
+  bodyClass="page-whois"
+  currentLabel="Whois 查询"
+  activeNav="/whois"
+  extraCss={['/assets/css/whois.css']}
+>
+  <section class="hero">
+    <h1 class="hero__title">Whois / RDAP 查询</h1>
+    <p class="hero__lede">查询域名、IP、IP 段或 ASN 的注册信息。</p>
+  </section>
+
+  <form class="query whois-query" method="get" action="/whois" role="search">
+    <div class="query__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <path d="m20 20-4.9-4.9"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono"
+        type="text"
+        name="q"
+        value={rawQ}
+        placeholder="example.com / 1.1.1.1 / AS13335"
+        maxlength="300"
+        inputmode="url"
+        enterkeyhint="search"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="要查询的域名、IP 地址、IP 段或 ASN"
+      />
+      <button class="query__submit" type="submit">查询</button>
+    </div>
+
+    <p class="whois-examples">
+      <span class="whois-examples__label">试试</span>
+      <a class="whois-examples__item" href="/whois?q=judgeip.com" rel="nofollow">judgeip.com</a>
+      <a class="whois-examples__item" href="/whois?q=qq.com" rel="nofollow">qq.com</a>
+      <a class="whois-examples__item" href="/whois?q=1.1.1.1" rel="nofollow">1.1.1.1</a>
+      <a class="whois-examples__item" href="/whois?q=2400%3A3200%3A%3A1" rel="nofollow">2400:3200::1</a>
+      <a class="whois-examples__item" href="/whois?q=AS13335" rel="nofollow">AS13335</a>
+    </p>
+
+    {result && !result.ok && (
+      <p class="notice" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7.5v5.2M12 16.3v.2"></path>
+        </svg>
+        <span>{result.error}</span>
+      </p>
+    )}
+  </form>
+
+  {result && result.ok && (
+    <div class="whois" id="result">
+      <section class="whois-card" aria-labelledby="whois-name">
+        <div class="whois-card__head">
+          <span class="whois-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path>
+            </svg>
+          </span>
+          <div class="whois-card__id">
+            <span class="whois-card__eyebrow">{result.eyebrow}</span>
+            <h2 class="whois-card__name mono" id="whois-name">{result.displayName}</h2>
+            {result.subline && <p class="whois-card__sub">{result.subline}</p>}
+          </div>
+        </div>
+
+        {result.badges.length > 0 && (
+          <div class="whois-card__badges">
+            {result.badges.map((b) => (
+              <span class={`badge badge--${b.tone}`}>{b.text}</span>
+            ))}
+          </div>
+        )}
+
+        {result.life && (
+          <div class={`whois-life whois-life--${result.life.tone}`}>
+            <div class="whois-life__labels">
+              <span>注册 <span class="mono">{result.life.regDate}</span></span>
+              <span>到期 <span class="mono">{result.life.expDate}</span></span>
+            </div>
+            <svg class="whois-life__bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={result.life.caption}>
+              <rect class="whois-life__track" x="0" y="0" width="100" height="8" rx="4"></rect>
+              {result.life.pct > 0 && (
+                <rect class="whois-life__fill" x="0" y="0" width={result.life.pct} height="8" rx="4"></rect>
+              )}
+            </svg>
+            <p class="whois-life__caption">{result.life.caption}</p>
+          </div>
+        )}
+      </section>
+
+      <p class="whois-source">
+        数据来源 <span class="mono">{result.sourceHost}</span> · RDAP · 实时查询
+      </p>
+
+      <div class="groups">
+        {result.statuses.length > 0 && (
+          <section class="group">
+            <h2 class="group__title">
+              状态标记<span class="whois-count">{result.statuses.length} 项</span>
+            </h2>
+            <div class="rows">
+              {result.statuses.map((st) => (
+                <div class="whois-st">
+                  <div class="whois-st__name">
+                    <span class={`badge badge--${st.tone}`}>{st.label}</span>
+                    <span class="whois-st__code mono">{st.code}</span>
+                  </div>
+                  <div class="whois-st__note">{st.note}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {result.dates.length > 0 && (
+          <section class="group">
+            <h2 class="group__title">关键日期</h2>
+            <div class="rows">
+              {result.dates.map((d) => (
+                <div class="row">
+                  <span class="row__label">{d.label}</span>
+                  <span class="row__value">
+                    <span class="mono">{d.date}</span>
+                    {d.hint && <span class="whois-hint">{d.hint}</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {result.nameservers.length > 0 && (
+          <section class="group">
+            <h2 class="group__title">
+              DNS 服务器<span class="whois-count">{result.nameservers.length} 台</span>
+            </h2>
+            <div class="rows">
+              {result.nameservers.map((ns) => (
+                <div class="whois-ns mono">{ns}</div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {result.details.length > 0 && (
+          <section class="group">
+            <h2 class="group__title">注册信息</h2>
+            <div class="rows">
+              {result.details.map((row) => (
+                <div class="row">
+                  <span class="row__label">{row.label}</span>
+                  <span class="row__value">
+                    {row.badgeTone ? (
+                      <span class={`badge badge--${row.badgeTone}`}>{row.value}</span>
+                    ) : row.isMail ? (
+                      <a class="whois-mail mono" href={`mailto:${row.value}`}>{row.value}</a>
+                    ) : (
+                      <span class={row.mono ? 'mono' : ''}>{row.value}</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      <details class="whois-raw">
+        <summary class="whois-raw__summary">
+          原始 RDAP 数据（JSON） <span class="whois-raw__size mono">{result.rawSizeKb}</span>
+        </summary>
+        <pre class="whois-raw__body mono">{result.rawJson}</pre>
+      </details>
+    </div>
+  )}
+
+  <article class="prose">
+    <h2>什么是 Whois 与 RDAP</h2>
+    <p>
+      每一个域名、每一段公网 IP、每一个自治系统号（ASN）背后都有一条<strong>注册记录</strong>：
+      谁在什么时候通过哪家注册商注册了它、什么时候到期、现在处于什么状态、解析交给哪几台 DNS 服务器。
+      域名的记录由各个顶级域的注册局保存（.com 是 Verisign），IP 地址与 ASN 的记录由五大区域互联网注册机构（APNIC、ARIN、RIPE NCC、LACNIC、AFRINIC）保存。
+    </p>
+    <p>
+      <strong>RDAP</strong>（注册数据访问协议）是传统 Whois 的标准化继任者：走 HTTPS、返回结构化 JSON，状态码和事件有统一的写法，自 2025 年起已成为通用顶级域的权威查询渠道。
+    </p>
+
+    <h2>常见域名状态码</h2>
+    <ul class="whois-codes">
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--green">正常</span> <span class="mono">ok</span></span>
+        <span class="whois-codes__note">没有任何限制，可以正常解析、续费、修改和转移。</span>
+      </li>
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--gray">注册商转移锁</span> <span class="mono">clientTransferProhibited</span></span>
+        <span class="whois-codes__note">注册商禁止把域名转出到其他注册商，防止被恶意转走。绝大多数域名默认开启，属于正常保护。</span>
+      </li>
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--gray">注册商更新锁</span> <span class="mono">clientUpdateProhibited</span></span>
+        <span class="whois-codes__note">注册商禁止修改联系人、DNS 服务器等注册信息，防止信息被篡改。</span>
+      </li>
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--gray">注册商删除锁</span> <span class="mono">clientDeleteProhibited</span></span>
+        <span class="whois-codes__note">注册商禁止删除域名，防止误删或被恶意删除。</span>
+      </li>
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--amber">暂停解析</span> <span class="mono">clientHold</span></span>
+        <span class="whois-codes__note">注册商暂停了域名的 DNS 解析，网站和邮箱都会失效。</span>
+      </li>
+      <li>
+        <span class="whois-codes__head"><span class="badge badge--amber">赎回期</span> <span class="mono">redemptionPeriod</span></span>
+        <span class="whois-codes__note">域名已过期并被删除，原持有人约 30 天内可以支付赎回费找回。</span>
+      </li>
+    </ul>
+  </article>
+</IpcxLayout>

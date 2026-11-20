@@ -1,0 +1,270 @@
+/* ip.cx — CDN 命中节点（/cdn）。
+   只放这一页才用得到的汇总条与四列行；卡片、分组标题、标签、结论块沿用 app.css 的全站组件。
+
+   颜色一律经由 class，绝不写 style=""：CSP 的 style-src 'self' 会把内联样式整条丢掉，
+   延迟颜色、行的失败态都靠脚本切换类名。 */
+
+/* ---------------------------------------------------------------- 没有 JS 时
+
+   「重新检测」按钮与「你当前命中」只有脚本填得进去：禁用 JS 的访客点了没反应、看到的永远是占位语，
+   整块收起，只留清单、说明与 noscript 提示（同 connectivity.css 的 .conn-live）。 */
+:root:not(.has-js) .cdn-live {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- 你当前命中
+
+   一眼读完「各家把我分到了哪」，不必在十九行里逐行找。和下面的分组同一种卡片层级，
+   但里面是一串胶囊而不是行——它是摘要，不是表格。 */
+.cdnsum {
+  margin-block-end: var(--size-5);
+  padding: var(--size-3) var(--size-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-2);
+}
+
+.cdnsum__title {
+  margin: 0 0 var(--size-2);
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .1em;
+}
+
+.cdnsum__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 28px;
+  font-size: 13px;
+}
+
+.cdnchip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-round);
+  white-space: nowrap;
+  animation: ipcx-fade .2s var(--ease-3) backwards;
+}
+
+.cdnchip__name {
+  font-weight: var(--font-weight-6);
+}
+
+.cdnchip__place {
+  color: var(--text-dim);
+}
+
+/* 用 text-dim 而不是 text-mute：这一行说明距离从哪来，是要读的字，不是占位符 */
+.cdnsum__where {
+  margin: var(--size-2) 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- 节点行
+
+   CDN | 命中节点（含节点 IP） | 延迟 | 状态。
+   节点 IP 不单独占一列：十九家里只有两三家会给，单列的话大半是空格子，
+   而 688px 的版面里节点那一列本来就最需要宽度。 */
+.cdnrow {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) 4rem 9rem;
+  align-items: center;
+  gap: var(--size-2) var(--size-3);
+  padding: var(--size-2) var(--size-4);
+  transition: background-color .15s var(--ease-3);
+}
+
+.cdnrow + .cdnrow {
+  border-top: 1px solid var(--border-soft);
+}
+
+.cdnrow:hover {
+  background: var(--surface-2);
+}
+
+/* 表头：比数据行矮一截、字小一号，只负责告诉人每一列是什么 */
+.cdnrow--head,
+.cdnrow--head:hover {
+  padding-block: 6px;
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .06em;
+  background: var(--surface-2);
+}
+
+.cdnrow__id {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.45;
+}
+
+.cdnrow__name {
+  font-size: 14.5px;
+  font-weight: var(--font-weight-6);
+}
+
+.cdnrow__note,
+.cdnrow__how {
+  font-size: 12px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 读的是哪个头、测的是哪个地址：给想自己复核的人看的，再压一档。
+   固定一行，主机名太长就用省略号收尾——十几行各自折成三四行，整张表会被拉得很长 */
+.cdnrow__how {
+  overflow: hidden;
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cdnrow__how .mono {
+  font-size: 1em;
+}
+
+.cdnrow__more {
+  margin-block-start: 2px;
+  font-size: 12px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.cdnrow__more:hover {
+  text-decoration: underline;
+}
+
+/* min-width:0 是必须的：没有它，一长串原样显示的 via 会把 1fr 那列撑破整行 */
+.cdnrow__node {
+  min-inline-size: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cdnrow__hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.cdnrow__place {
+  font-weight: var(--font-weight-5);
+}
+
+.cdnrow__code {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.cdnrow__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--size-3);
+  margin-block-start: 1px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.cdnrow__ip {
+  overflow-wrap: anywhere;
+}
+
+/* 只拿到节点 IP 的行，IP 就是这一格的主角：标签压暗、地址用正文色 */
+.cdnrow__ip--main {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.cdnrow__ip--main .mono {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* 延迟：与连通性页同一套分档颜色 */
+.cdnrow__ms {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cdnrow__ms.is-good { color: var(--badge-green-fg); }
+.cdnrow__ms.is-ok   { color: var(--tier-ok-text); }
+.cdnrow__ms.is-slow { color: var(--badge-amber-fg); }
+
+.cdnrow__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 12.5px;
+}
+
+.cdnrow__why {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+/* 连不上的那几行把名字压暗：一眼分出「有结果」与「没结果」，又不至于像报错一样刺眼 */
+.cdnrow.is-down .cdnrow__name {
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- 窄屏
+
+   四列在手机上每列只剩几个字。改成两行两列：名字与状态一行，节点与延迟一行——
+   最想知道的「分到哪、快不快」仍然在同一行里读完。表头没有对应的列可指，收起。 */
+@media (max-width: 480px) {
+  .cdnsum {
+    padding-inline: var(--size-3);
+  }
+
+  .cdnrow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id   state"
+      "node ms";
+    align-items: start;
+    gap: 4px var(--size-2);
+    padding-inline: var(--size-3);
+  }
+
+  .cdnrow--head {
+    display: none;
+  }
+
+  /* 表头收起后，第一行不该再顶着一条分隔线（上面紧贴的就是卡片边框） */
+  .cdnrow--head + .cdnrow {
+    border-top: 0;
+  }
+
+  .cdnrow__id    { grid-area: id; }
+  .cdnrow__node  { grid-area: node; }
+  .cdnrow__ms    { grid-area: ms; align-self: end; }
+
+  .cdnrow__state {
+    grid-area: state;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    max-inline-size: 9.5rem;
+  }
+}

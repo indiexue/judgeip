@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/cdn.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="CDN 命中节点检测 — Cloudflare、Fastly、CloudFront、Akamai 等把你调度到哪 · JudgeIP"
+  description="检测十多家国内外主流 CDN 将你的网络调度到哪个边缘城市与节点。"
+  canonicalPath="/cdn"
+  bodyClass="page-cdn"
+  currentLabel="CDN 节点"
+  activeNav="/cdn"
+  extraCss={["/assets/css/cdn.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/cdn.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

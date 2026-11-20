@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/ping.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="全球 Ping 测试 — 从世界各地探针测试 IP 与域名延迟 · JudgeIP"
+  description="从全球 13 个地区同时 Ping 指定 IP 或域名，对比各地最小/平均/最大延迟与丢包率。"
+  canonicalPath="/ping"
+  bodyClass="page-ping"
+  currentLabel="全球 Ping"
+  activeNav="/ping"
+  extraCss={["/assets/css/ping.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/ping.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

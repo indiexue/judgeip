@@ -1,0 +1,1139 @@
+
+<section class="hero">
+  <h1 class="hero__title">网站分流测试</h1>
+  <p class="hero__lede">检测不同网站分别走了哪个出口 IP，验证代理分流规则是否生效。</p>
+</section>
+
+<div class="probe split"
+     id="split"
+     data-iata="/assets/data/iata.json"
+     data-visible-ip="__VISITOR_IP__"
+     data-ai-denied="CN HK MO RU BY IR KP SY CU"
+     data-lanes="8"
+     data-timeout="6000"
+     data-retry="2000 4000">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-split-run>重新检测</button>
+    <span class="probe__hint" data-split-progress>打开页面即自动开始：40 个网站由你的浏览器直接请求，8 路并发，单项最长等 6 秒，失败的自动重试 2 次。</span>
+    <button class="splitmask" type="button" data-split-mask aria-pressed="false" title="录屏、截图前把页面上的 IP 藏起来">
+      <svg class="splitmask__icon splitmask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
+        <circle cx="12" cy="12" r="2.9"></circle>
+      </svg>
+      <svg class="splitmask__icon splitmask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
+        <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
+        <path d="M4 4l16 16"></path>
+      </svg>
+      <span data-split-mask-label>隐藏 IP</span>
+    </button>
+  </div>
+
+  <div class="verdict" data-split-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-split-verdict-title></p>
+      <div class="splitnotes" data-split-verdict-notes></div>
+    </div>
+  </div>
+
+  <section class="splitsum" aria-labelledby="splitsum-title">
+    <h2 class="splitsum__title" id="splitsum-title">出口汇总</h2>
+    <div class="splitsum__list" data-split-exits aria-live="polite">
+      <p class="splitsum__empty">检测开始后，这里按出口 IP 汇总：每个出口被多少个网站看到、承载了哪几类网站。</p>
+    </div>
+    <p class="splitsum__note">点一下出口即可复制完整 IP。同一个出口下出现了几类网站，就说明这几类走的是同一条线路；IPv4 与 IPv6 各算各的，不放在一起比。IPv6 按 /64 网段归并：同一网段里轮换的几个地址算一个出口。</p>
+  </section>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">本站</h2>
+      <div class="rows splittable" role="table" aria-label="本站看到的地址">
+        <div class="splitrow splitrow--head" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span class="splitrow__state" role="columnheader">状态</span>
+        </div>
+        <div class="splitrow"
+             role="row"
+             data-split-row="self"
+             data-method="self"
+             data-name="JudgeIP"
+             data-region="self"
+             data-group="self"
+             data-tag="本站">
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">JudgeIP 服务器看到的地址</span>
+              <span class="tag tag--name">本站</span>
+            </span>
+            <span class="splitrow__note">打开本页时连到本站的地址</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip>
+            <span class="mono" data-ip="__VISITOR_IP__" title="__VISITOR_IP__">__VISITOR_IP__</span>
+          </div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim" title="本站不经过 Cloudflare">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">对照基准</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">国内</h2>
+      <div class="rows splittable" role="table" aria-label="国内网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="netease"
+             data-method="header"
+             data-name="网易"
+             data-region="cn"
+             data-group="cn"
+             data-tag="国内"
+             data-url="https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png"
+             data-headers="cdn-user-ip"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">网易</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="splitrow__how" title="necaptcha.nosdn.127.net"><span class="mono">necaptcha.nosdn.127.net</span></span>
+            <span class="splitrow__note">读响应头 cdn-user-ip</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="bytedance"
+             data-method="header"
+             data-name="字节跳动"
+             data-region="cn"
+             data-group="cn"
+             data-tag="国内"
+             data-url="https://perfops.byte-test.com/500b-bench.jpg"
+             data-headers="x-request-ip x-response-cinfo"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">字节跳动</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="splitrow__how" title="perfops.byte-test.com"><span class="mono">perfops.byte-test.com</span></span>
+            <span class="splitrow__note">读响应头 x-request-ip</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cfcn"
+             data-method="trace"
+             data-name="Cloudflare 中国网络"
+             data-region="cn"
+             data-group="cn"
+             data-tag="国内"
+             data-host="www.cloudflare-cn.com"
+             data-fallback="perfops.cloudflareperf.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare 中国网络</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="splitrow__how" title="www.cloudflare-cn.com"><span class="mono">www.cloudflare-cn.com</span></span>
+            <span class="splitrow__fallback" title="主域名不通时改问这个域名">备用 <span class="mono">perfops.<wbr>cloudflareperf.<wbr>com</span></span>
+            <span class="splitrow__note">仅中国大陆访客命中境内节点</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="qualcomm"
+             data-method="trace"
+             data-name="高通中国"
+             data-region="cn"
+             data-group="cn"
+             data-tag="国内"
+             data-host="www.qualcomm.cn"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">高通中国</span>
+              <span class="tag tag--cn">国内</span>
+            </span>
+            <span class="splitrow__how" title="www.qualcomm.cn"><span class="mono">www.qualcomm.cn</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">AI</h2>
+      <div class="rows splittable" role="table" aria-label="AI网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="chatgpt"
+             data-method="trace"
+             data-name="ChatGPT"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="chatgpt.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">ChatGPT</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="chatgpt.com"><span class="mono">chatgpt.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="openai"
+             data-method="trace"
+             data-name="OpenAI"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="openai.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">OpenAI</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="openai.com"><span class="mono">openai.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="sora"
+             data-method="trace"
+             data-name="Sora"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="sora.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Sora</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="sora.com"><span class="mono">sora.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="claude"
+             data-method="trace"
+             data-name="Claude"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="claude.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Claude</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="claude.ai"><span class="mono">claude.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="anthropic"
+             data-method="trace"
+             data-name="Anthropic"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="anthropic.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Anthropic</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="anthropic.com"><span class="mono">anthropic.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="grok"
+             data-method="trace"
+             data-name="Grok"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="grok.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Grok</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="grok.com"><span class="mono">grok.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="perplexity"
+             data-method="trace"
+             data-name="Perplexity"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="www.perplexity.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Perplexity</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="www.perplexity.ai"><span class="mono">www.perplexity.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="mistral"
+             data-method="trace"
+             data-name="Mistral"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="mistral.ai"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Mistral</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="mistral.ai"><span class="mono">mistral.ai</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="midjourney"
+             data-method="trace"
+             data-name="Midjourney"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="midjourney.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Midjourney</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="midjourney.com"><span class="mono">midjourney.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="poe"
+             data-method="trace"
+             data-name="Poe"
+             data-region="intl"
+             data-group="ai"
+             data-tag="AI"
+             data-host="poe.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Poe</span>
+              <span class="tag tag--global">AI</span>
+            </span>
+            <span class="splitrow__how" title="poe.com"><span class="mono">poe.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">社交</h2>
+      <div class="rows splittable" role="table" aria-label="社交网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="x"
+             data-method="trace"
+             data-name="X（Twitter）"
+             data-region="intl"
+             data-group="social"
+             data-tag="社交"
+             data-host="x.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">X（Twitter）</span>
+              <span class="tag tag--global">社交</span>
+            </span>
+            <span class="splitrow__how" title="x.com"><span class="mono">x.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="discord"
+             data-method="trace"
+             data-name="Discord"
+             data-region="intl"
+             data-group="social"
+             data-tag="社交"
+             data-host="gateway.discord.gg"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Discord</span>
+              <span class="tag tag--global">社交</span>
+            </span>
+            <span class="splitrow__how" title="gateway.discord.gg"><span class="mono">gateway.discord.gg</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="medium"
+             data-method="trace"
+             data-name="Medium"
+             data-region="intl"
+             data-group="social"
+             data-tag="社交"
+             data-host="medium.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Medium</span>
+              <span class="tag tag--global">社交</span>
+            </span>
+            <span class="splitrow__how" title="medium.com"><span class="mono">medium.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="signal"
+             data-method="trace"
+             data-name="Signal"
+             data-region="intl"
+             data-group="social"
+             data-tag="社交"
+             data-host="signal.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Signal</span>
+              <span class="tag tag--global">社交</span>
+            </span>
+            <span class="splitrow__how" title="signal.org"><span class="mono">signal.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">加密货币</h2>
+      <div class="rows splittable" role="table" aria-label="加密货币网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="coinbase"
+             data-method="trace"
+             data-name="Coinbase"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="加密"
+             data-host="coinbase.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Coinbase</span>
+              <span class="tag tag--global">加密</span>
+            </span>
+            <span class="splitrow__how" title="coinbase.com"><span class="mono">coinbase.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="okx"
+             data-method="trace"
+             data-name="OKX"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="加密"
+             data-host="www.okx.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">OKX</span>
+              <span class="tag tag--global">加密</span>
+            </span>
+            <span class="splitrow__how" title="www.okx.com"><span class="mono">www.okx.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="binance"
+             data-method="trace"
+             data-name="Binance（币安）"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="加密"
+             data-host="www.binance.info"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Binance（币安）</span>
+              <span class="tag tag--global">加密</span>
+            </span>
+            <span class="splitrow__how" title="www.binance.info"><span class="mono">www.binance.info</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cryptocom"
+             data-method="trace"
+             data-name="Crypto.com"
+             data-region="intl"
+             data-group="crypto"
+             data-tag="加密"
+             data-host="crypto.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Crypto.com</span>
+              <span class="tag tag--global">加密</span>
+            </span>
+            <span class="splitrow__how" title="crypto.com"><span class="mono">crypto.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">办公与支付</h2>
+      <div class="rows splittable" role="table" aria-label="办公与支付网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="zoom"
+             data-method="trace"
+             data-name="Zoom"
+             data-region="intl"
+             data-group="office"
+             data-tag="办公"
+             data-host="zoom.us"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Zoom</span>
+              <span class="tag tag--global">办公</span>
+            </span>
+            <span class="splitrow__how" title="zoom.us"><span class="mono">zoom.us</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="notion"
+             data-method="trace"
+             data-name="Notion"
+             data-region="intl"
+             data-group="office"
+             data-tag="办公"
+             data-host="notion.so"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Notion</span>
+              <span class="tag tag--global">办公</span>
+            </span>
+            <span class="splitrow__how" title="notion.so"><span class="mono">notion.so</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="1password"
+             data-method="trace"
+             data-name="1Password"
+             data-region="intl"
+             data-group="office"
+             data-tag="办公"
+             data-host="1password.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">1Password</span>
+              <span class="tag tag--global">办公</span>
+            </span>
+            <span class="splitrow__how" title="1password.com"><span class="mono">1password.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="wise"
+             data-method="trace"
+             data-name="Wise"
+             data-region="intl"
+             data-group="office"
+             data-tag="支付"
+             data-host="wise.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Wise</span>
+              <span class="tag tag--global">支付</span>
+            </span>
+            <span class="splitrow__how" title="wise.com"><span class="mono">wise.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="visa"
+             data-method="trace"
+             data-name="Visa"
+             data-region="intl"
+             data-group="office"
+             data-tag="支付"
+             data-host="www.visa.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Visa</span>
+              <span class="tag tag--global">支付</span>
+            </span>
+            <span class="splitrow__how" title="www.visa.com"><span class="mono">www.visa.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="shopify"
+             data-method="trace"
+             data-name="Shopify"
+             data-region="intl"
+             data-group="office"
+             data-tag="电商"
+             data-host="shopify.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Shopify</span>
+              <span class="tag tag--global">电商</span>
+            </span>
+            <span class="splitrow__how" title="shopify.com"><span class="mono">shopify.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">开发与静态</h2>
+      <div class="rows splittable" role="table" aria-label="开发与静态网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cdnjs"
+             data-method="trace"
+             data-name="cdnjs"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="cdnjs.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">cdnjs</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="cdnjs.cloudflare.com"><span class="mono">cdnjs.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="npm"
+             data-method="trace"
+             data-name="npm"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="registry.npmjs.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">npm</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="registry.npmjs.org"><span class="mono">registry.npmjs.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="unpkg"
+             data-method="trace"
+             data-name="unpkg"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="app.unpkg.com"
+             data-fallback="unpkg.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">unpkg</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="app.unpkg.com"><span class="mono">app.unpkg.com</span></span>
+            <span class="splitrow__fallback" title="主域名不通时改问这个域名">备用 <span class="mono">unpkg.<wbr>com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="jsdelivr"
+             data-method="trace"
+             data-name="jsDelivr"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="testingcf.jsdelivr.net"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">jsDelivr</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="testingcf.jsdelivr.net"><span class="mono">testingcf.jsdelivr.net</span></span>
+            <span class="splitrow__note">Cloudflare 线路</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="nodejs"
+             data-method="trace"
+             data-name="Node.js"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="nodejs.org"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Node.js</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="nodejs.org"><span class="mono">nodejs.org</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="gitlab"
+             data-method="trace"
+             data-name="GitLab"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="gitlab.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">GitLab</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="gitlab.com"><span class="mono">gitlab.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="kali"
+             data-method="trace"
+             data-name="Kali Linux"
+             data-region="intl"
+             data-group="dev"
+             data-tag="开发"
+             data-host="kali.download"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Kali Linux</span>
+              <span class="tag tag--global">开发</span>
+            </span>
+            <span class="splitrow__how" title="kali.download"><span class="mono">kali.download</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">流媒体</h2>
+      <div class="rows splittable" role="table" aria-label="流媒体网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="crunchyroll"
+             data-method="trace"
+             data-name="Crunchyroll"
+             data-region="intl"
+             data-group="media"
+             data-tag="流媒体"
+             data-host="crunchyroll.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Crunchyroll</span>
+              <span class="tag tag--global">流媒体</span>
+            </span>
+            <span class="splitrow__how" title="crunchyroll.com"><span class="mono">crunchyroll.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="bytedance-global"
+             data-method="header"
+             data-name="字节跳动海外"
+             data-region="intl"
+             data-group="media"
+             data-tag="流媒体"
+             data-url="https://perfops2.byte-test.com/500b-bench.jpg"
+             data-headers="x-request-ip x-response-cinfo"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">字节跳动海外</span>
+              <span class="tag tag--global">流媒体</span>
+            </span>
+            <span class="splitrow__how" title="perfops2.byte-test.com"><span class="mono">perfops2.byte-test.com</span></span>
+            <span class="splitrow__note">读响应头 x-request-ip</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">Cloudflare</h2>
+      <div class="rows splittable" role="table" aria-label="Cloudflare网站的出口">
+        <div class="splitrow splitrow--head sr-only" role="row">
+          <span role="columnheader">网站</span>
+          <span role="columnheader">出口 IP</span>
+          <span role="columnheader">国家</span>
+          <span role="columnheader">CF 节点</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cloudflare"
+             data-method="trace"
+             data-name="Cloudflare 官网"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="www.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare 官网</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="www.cloudflare.com"><span class="mono">www.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="cfspeed"
+             data-method="trace"
+             data-name="Cloudflare 测速"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="speed.cloudflare.com"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">Cloudflare 测速</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="speed.cloudflare.com"><span class="mono">speed.cloudflare.com</span></span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="splitrow is-empty"
+             role="row"
+             data-split-row="one"
+             data-method="trace"
+             data-name="1.1.1.1"
+             data-region="intl"
+             data-group="cloudflare"
+             data-tag="CF"
+             data-host="1.1.1.1"
+             >
+          <div class="splitrow__id" role="cell">
+            <span class="splitrow__title">
+              <span class="splitrow__name">1.1.1.1</span>
+              <span class="tag tag--global">CF</span>
+            </span>
+            <span class="splitrow__how" title="1.1.1.1"><span class="mono">1.1.1.1</span></span>
+            <span class="splitrow__note">只走 IPv4</span>
+          </div>
+          <div class="splitrow__ip" role="cell" data-split-ip><span class="dim">—</span></div>
+          <div class="splitrow__geo" role="cell" data-split-geo><span class="dim">—</span></div>
+          <div class="splitrow__colo" role="cell" data-split-colo><span class="dim">—</span></div>
+          <div class="splitrow__state" role="cell" data-split-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>分流的结果只有被访问的网站自己知道，必须由浏览器逐个去问。当前浏览器禁用了 JavaScript，本页只能显示检测清单与说明。
+        你也可以手动验证：在浏览器里直接打开 <span class="mono">https://chatgpt.com/cdn-cgi/trace</span>
+        和 <span class="mono">https://www.qualcomm.cn/cdn-cgi/trace</span>，比较两页里 <span class="mono">ip=</span> 与 <span class="mono">loc=</span> 后面的值。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是分流</h2>
+  <p>
+    Clash、Surge、Shadowrocket、sing-box 这类代理软件通常有三种模式：<strong>直连</strong>（全部不走代理）、<strong>全局</strong>（全部走代理）、
+    <strong>规则</strong>（按域名或 IP 归属逐条判断）。规则模式就是所谓的「分流」：命中 <span class="mono">GEOSITE,CN</span>、
+    <span class="mono">GEOIP,CN</span> 这类规则的国内网站直连，其余走代理节点；讲究一点的配置还会为 AI、流媒体、加密货币单独指定节点，
+    比如让 ChatGPT 与 Claude 固定走美国的住宅 IP，让币安走新加坡。
+  </p>
+  <p>
+    规则一多，实际效果就很难凭配置文件判断：域名有没有写全、规则的先后顺序、DNS 解析发生在哪里，都会让某个网站走到你没想到的出口。
+    最直接的验证办法是<strong>问网站本身</strong>——每个网站看到的那个 IP，就是你的流量到它那里时实际用的出口。
+  </p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>对清单里的每个网站，从你的浏览器直接发一个跨域请求，不带 Cookie、不带来源页。</li>
+    <li>接入 Cloudflare 的网站请求 <span class="mono">/cdn-cgi/trace</span>，读出其中的 <span class="mono">ip</span>（它看到的你）、<span class="mono">loc</span>（这个 IP 所在国家）与 <span class="mono">colo</span>（你命中的 Cloudflare 机房）。</li>
+    <li>网易、字节跳动几行请求各自 CDN 上的测速文件，读响应头里回显的访客地址；它们只给 IP，国家取自看到同一出口（同一 IP，IPv6 为同一 /64 网段）的其他网站。</li>
+    <li>8 路并发、单项最长等 6 秒；失败的网站分别在 2 秒、4 秒后各重试一次。主域名不通时换备用域名再问一次：Cloudflare 中国网络换 <span class="mono">perfops.cloudflareperf.com</span>，unpkg 换 <span class="mono">unpkg.com</span>。</li>
+    <li>按出口 IP 把结果归成几个出口，比较国内组与国外组、AI 组与其他国外网站的出口，给出结论。IPv4 与 IPv6 只在同一族里比较，双栈网络不会被误判成分流；IPv6 按 /64 网段归并——同一台设备的临时地址会在网段内轮换，有的代理也按连接换源地址，它们仍是同一个出口。</li>
+  </ol>
+  <p>
+    所有请求都由你的浏览器直接发出，本站服务器不参与、也收不到任何结果。唯一由服务器给出的是「JudgeIP 服务器看到的地址」那一行，
+    它是你打开本页时连到本站的地址，用来和其他网站看到的地址对照。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+    <li><strong>分流正常</strong>：国内组的网站看到的出口在中国，国外组的在海外。这是规则模式应有的样子。</li>
+    <li><strong>所有网站走同一出口</strong>：没有分流。出口在中国说明根本没走代理；出口在海外说明代理开着全局模式——如果你本来就在海外、没开代理，这也是正常的。</li>
+    <li><strong>国内网站也走了代理</strong>：国内站点绕到了海外节点。访问会变慢，部分国内服务会把你当成海外用户，检查规则里的国内直连部分。</li>
+    <li><strong>AI 流量单独分流</strong>：AI 网站的出口和其他国外网站不同，说明为 AI 单独设置的规则生效了。</li>
+    <li><strong>AI 出口位于不支持的地区</strong>：AI 网站看到的出口在中国大陆、香港、澳门、俄罗斯等地，ChatGPT 与 Claude 在这些地区不提供服务，需要换节点。</li>
+    <li><strong>IPv4 与 IPv6 走了不同出口</strong>：常见于代理只接管了 IPv4，支持 IPv6 的网站绕开了代理直连。</li>
+  </ul>
+  <p class="prose__note">
+    出口汇总里点一下就能复制完整的 IP，再到<a href="/">首页</a>查询它的归属、接入类型与风险记录；
+    想确认 AI 服务的完整支持地区，见 <a href="/ai">AI 解锁检测</a>；每个网站能不能打开、延迟多少，见<a href="/connectivity">网络连通性</a>；
+    你命中的 Cloudflare 机房、WARP 状态与各等级网络的节点对比，见 <a href="/cloudflare">Cloudflare 节点检测</a>。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>显示「所有网站走同一出口」，是不是代理没生效？</dt>
+    <dd>不一定。它只说明这几十个网站看到的是同一个地址：要么完全没走代理（出口就是你本地的运营商），要么代理开在全局模式（出口是代理节点）。看出口所在的国家就能分清：在中国大陆是前者，在海外是后者。想要国内直连、国外走代理，需要在 Clash、Surge、Shadowrocket 这类软件里切到「规则」模式。</dd>
+    <dt>国内网站检测出来是海外 IP，会有什么影响？</dt>
+    <dd>访问国内网站要先绕到海外节点再回来，速度明显变慢；视频、音乐、网银等国内服务会按 IP 把你判定为海外用户，可能出现版权内容看不了、登录要额外验证，甚至触发风控。通常是代理软件开着全局模式，或者规则里缺了国内域名、GEOIP,CN 这类直连规则。</dd>
+    <dt>AI 网站的出口在香港，为什么提示不支持？</dt>
+    <dd>OpenAI 与 Anthropic 都不向中国大陆、香港、澳门提供服务，俄罗斯、白俄罗斯、伊朗、朝鲜、叙利亚、古巴等地区同样不在名单内。出口落在这些地区时，网页可能打不开、注册会被拒，已有账号也可能因此被标记。本页只按这份通用名单提醒一句，各家服务完整的支持地区见本站的 AI 解锁检测。</dd>
+    <dt>为什么有的网站显示「该站未开放 IP 头」或「连接失败」？</dt>
+    <dd>网易、字节跳动几行读的是响应头里的 IP，浏览器只有在对方明确开放（Access-Control-Expose-Headers）时才让网页读到，对方没开放就只能显示这一句。其余网站读的是 Cloudflare 的 /cdn-cgi/trace，失败多半是该站在你的网络里被屏蔽、超时，或者它已经不走 Cloudflare。失败的站点会自动再试两次，个别站点失败不影响整体结论。</dd>
+    <dt>本站会保存分流检测的结果吗？</dt>
+    <dd>不会。每个请求都由你的浏览器直接发给对应的网站，不带 Cookie、不带来源页，读到的地址只显示在当前页面里，不会发回本站。「JudgeIP 服务器看到的地址」一行是本站在你打开页面那一刻看到的连接地址，这一页不缓存，也不和检测结果一起保存。</dd>
+  </dl>
+</article>

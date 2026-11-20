@@ -1,33 +1,51 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import VerdictDashboard from '../components/VerdictDashboard.astro';
-import { extractVisitorIp } from '../lib/ip-utils';
-import { evaluateIpVerdict } from '../lib/verdict-engine';
-import { detectLocale } from '../lib/i18n';
-import { getEdgeEnv } from '../lib/edge-env';
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import IpcxHomeContent from '../components/IpcxHomeContent.astro';
+import { extractVisitorIp, parseIp } from '../lib/ip-utils';
+import { lookupIpFull } from '../lib/ipcx-lookup';
 
-const locale = detectLocale(Astro.url, Astro.request);
 const visitorIp = extractVisitorIp(Astro.request);
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
-const kvNamespace = getEdgeEnv().IP_CACHE;
 
-const report = await evaluateIpVerdict(visitorIp, {
-  cfMetadata: cfMeta,
-  isDirectVisitor: true,
-  kvNamespace,
-});
+let rawQuery = '';
+if (Astro.request.method === 'POST') {
+  try {
+    const fd = await Astro.request.formData();
+    rawQuery = String(fd.get('ip') || '').trim();
+  } catch {
+    rawQuery = '';
+  }
+} else {
+  rawQuery = (Astro.url.searchParams.get('ip') || Astro.url.searchParams.get('q') || '').trim();
+}
 
-const title =
-  locale === 'zh'
-    ? 'JudgeIP — IP 纯净度检测 · 原生 IP 查询 · 风险评分'
-    : 'JudgeIP — IP Purity Check, Risk Score & Native ISP Lookup';
+let targetIp = visitorIp;
+let errorMsg = '';
+if (rawQuery) {
+  const parsed = parseIp(rawQuery);
+  if (parsed) {
+    targetIp = parsed.normalized;
+  } else {
+    errorMsg = `「${rawQuery.slice(0, 60)}」不是有效的 IPv4 或 IPv6 地址，已显示你的本机 IP。`;
+  }
+}
 
-const description =
-  locale === 'zh'
-    ? '免费查询本机或指定 IP 的纯净度评分、归属地、ASN 运营商类型（住宅宽带 / 机房）、WHOIS 原生 / 广播属性及 WebRTC 泄漏检测。'
-    : 'Free IP purity and risk checker: inspect geolocation, residential vs datacenter ASN, RIR WHOIS native status, open ports, and WebRTC leaks.';
+const isSelf = targetIp === visitorIp && !rawQuery;
+const info = await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp);
+
+const title = `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`;
+const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`;
 ---
 
-<BaseLayout title={title} description={description} canonicalPath="/" locale={locale}>
-  <VerdictDashboard report={report} locale={locale} isVisitor={true} />
-</BaseLayout>
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath="/"
+  bodyClass="page-home"
+  currentLabel="IP 检测"
+  activeNav="/"
+  extraCss={['/assets/css/connectivity.css']}
+  extraJs={isSelf ? ['/assets/js/probe.js', '/assets/js/homenet.js', '/assets/js/connectivity.js'] : []}
+>
+  <IpcxHomeContent info={info} isSelf={isSelf} queryValue={rawQuery && !errorMsg ? info.ip : rawQuery} errorMsg={errorMsg} />
+</IpcxLayout>

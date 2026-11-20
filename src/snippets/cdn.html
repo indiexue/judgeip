@@ -1,0 +1,456 @@
+
+<section class="hero">
+  <h1 class="hero__title">CDN 命中节点</h1>
+  <p class="hero__lede">检测各大 CDN 把你调度到了哪个节点、离你多远、延迟多少。</p>
+</section>
+
+<div class="probe cdn"
+     id="cdn"
+     data-iata="/assets/data/iata.json"
+     data-me="/geo/api?me=1"
+     data-lanes="6"
+     data-timeout="6000"
+     data-body-timeout="4000">
+
+  <div class="probe__bar cdn-live">
+    <button class="probe__run" type="button" data-cdn-run>重新检测</button>
+    <span class="probe__hint" data-cdn-progress>打开页面即自动开始：19 家 CDN 由你的浏览器直接请求，6 路并发，每次请求最长等 6 秒，一家最多约 16 秒。</span>
+  </div>
+
+  <div class="verdict" data-cdn-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-cdn-verdict-title></p>
+      <p class="verdict__note" data-cdn-verdict-note></p>
+    </div>
+  </div>
+
+  <section class="cdnsum cdn-live" aria-labelledby="cdnsum-title">
+    <h2 class="cdnsum__title" id="cdnsum-title">你当前命中</h2>
+    <div class="cdnsum__chips" data-cdn-chips>
+      <span class="dim">检测开始后，这里汇总每一家 CDN 把你调度到的城市。</span>
+    </div>
+    <p class="cdnsum__where" data-cdn-where>距离按本站查到的你的出口 IP 的大致位置计算。</p>
+  </section>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">国际 CDN</h2>
+      <div class="rows cdntable" role="table" aria-label="国际 CDN命中节点">
+        <div class="cdnrow cdnrow--head" role="row">
+          <span role="columnheader">CDN</span>
+          <span role="columnheader">命中节点 · 节点 IP</span>
+          <span class="cdnrow__ms" role="columnheader">延迟</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cloudflare"
+             data-name="Cloudflare"
+             data-url="https://www.cloudflare.com/cdn-cgi/trace"
+             data-method="GET"
+             data-headers=""
+             data-parser="trace">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Cloudflare</span>
+            <span class="cdnrow__note">任播网络，全球三百多个城市</span>
+                        <span class="cdnrow__how" title="GET https://www.cloudflare.com/cdn-cgi/trace">读 trace 里的 colo · <span class="mono">www.cloudflare.com</span></span>
+            <a class="cdnrow__more" href="/cloudflare">各等级网络的节点对比 →</a>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="gcp"
+             data-name="Google Cloud"
+             data-url="https://global.gcping.com/api/ping"
+             data-method="GET"
+             data-headers=""
+             data-regions="{&quot;africa-south1&quot;:[&quot;约翰内斯堡&quot;,&quot;ZA&quot;,-26.2,28.05],&quot;asia-east1&quot;:[&quot;中国台湾彰化&quot;,&quot;TW&quot;,24.07,120.54],&quot;asia-east2&quot;:[&quot;香港&quot;,&quot;HK&quot;,22.32,114.17],&quot;asia-northeast1&quot;:[&quot;东京&quot;,&quot;JP&quot;,35.68,139.69],&quot;asia-northeast2&quot;:[&quot;大阪&quot;,&quot;JP&quot;,34.69,135.5],&quot;asia-northeast3&quot;:[&quot;首尔&quot;,&quot;KR&quot;,37.57,126.98],&quot;asia-south1&quot;:[&quot;孟买&quot;,&quot;IN&quot;,19.08,72.88],&quot;asia-south2&quot;:[&quot;德里&quot;,&quot;IN&quot;,28.61,77.21],&quot;asia-southeast1&quot;:[&quot;新加坡&quot;,&quot;SG&quot;,1.35,103.82],&quot;asia-southeast2&quot;:[&quot;雅加达&quot;,&quot;ID&quot;,-6.21,106.85],&quot;australia-southeast1&quot;:[&quot;悉尼&quot;,&quot;AU&quot;,-33.87,151.21],&quot;australia-southeast2&quot;:[&quot;墨尔本&quot;,&quot;AU&quot;,-37.81,144.96],&quot;europe-central2&quot;:[&quot;华沙&quot;,&quot;PL&quot;,52.23,21.01],&quot;europe-north1&quot;:[&quot;芬兰哈米纳&quot;,&quot;FI&quot;,60.57,27.2],&quot;europe-north2&quot;:[&quot;斯德哥尔摩&quot;,&quot;SE&quot;,59.33,18.07],&quot;europe-southwest1&quot;:[&quot;马德里&quot;,&quot;ES&quot;,40.42,-3.7],&quot;europe-west1&quot;:[&quot;比利时圣吉斯兰&quot;,&quot;BE&quot;,50.45,3.82],&quot;europe-west2&quot;:[&quot;伦敦&quot;,&quot;GB&quot;,51.51,-0.13],&quot;europe-west3&quot;:[&quot;法兰克福&quot;,&quot;DE&quot;,50.11,8.68],&quot;europe-west4&quot;:[&quot;荷兰埃姆斯哈文&quot;,&quot;NL&quot;,53.44,6.83],&quot;europe-west6&quot;:[&quot;苏黎世&quot;,&quot;CH&quot;,47.38,8.54],&quot;europe-west8&quot;:[&quot;米兰&quot;,&quot;IT&quot;,45.46,9.19],&quot;europe-west9&quot;:[&quot;巴黎&quot;,&quot;FR&quot;,48.86,2.35],&quot;europe-west10&quot;:[&quot;柏林&quot;,&quot;DE&quot;,52.52,13.4],&quot;europe-west12&quot;:[&quot;都灵&quot;,&quot;IT&quot;,45.07,7.69],&quot;me-central1&quot;:[&quot;多哈&quot;,&quot;QA&quot;,25.29,51.53],&quot;me-central2&quot;:[&quot;达曼&quot;,&quot;SA&quot;,26.43,50.1],&quot;me-west1&quot;:[&quot;特拉维夫&quot;,&quot;IL&quot;,32.09,34.78],&quot;northamerica-northeast1&quot;:[&quot;蒙特利尔&quot;,&quot;CA&quot;,45.5,-73.57],&quot;northamerica-northeast2&quot;:[&quot;多伦多&quot;,&quot;CA&quot;,43.65,-79.38],&quot;northamerica-south1&quot;:[&quot;墨西哥克雷塔罗&quot;,&quot;MX&quot;,20.59,-100.39],&quot;southamerica-east1&quot;:[&quot;圣保罗&quot;,&quot;BR&quot;,-23.55,-46.63],&quot;southamerica-west1&quot;:[&quot;智利圣地亚哥&quot;,&quot;CL&quot;,-33.45,-70.67],&quot;us-central1&quot;:[&quot;美国爱荷华&quot;,&quot;US&quot;,41.26,-95.86],&quot;us-east1&quot;:[&quot;美国南卡罗来纳&quot;,&quot;US&quot;,33.2,-80.01],&quot;us-east4&quot;:[&quot;美国弗吉尼亚北部&quot;,&quot;US&quot;,39.04,-77.49],&quot;us-east5&quot;:[&quot;美国俄亥俄哥伦布&quot;,&quot;US&quot;,39.96,-83],&quot;us-south1&quot;:[&quot;达拉斯&quot;,&quot;US&quot;,32.78,-96.8],&quot;us-west1&quot;:[&quot;美国俄勒冈&quot;,&quot;US&quot;,45.6,-121.18],&quot;us-west2&quot;:[&quot;洛杉矶&quot;,&quot;US&quot;,34.05,-118.24],&quot;us-west3&quot;:[&quot;盐湖城&quot;,&quot;US&quot;,40.76,-111.89],&quot;us-west4&quot;:[&quot;拉斯维加斯&quot;,&quot;US&quot;,36.17,-115.14]}"
+             data-parser="gcp">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Google Cloud</span>
+            <span class="cdnrow__note">全球负载均衡，落到最近的云区域</span>
+                        <span class="cdnrow__how" title="GET https://global.gcping.com/api/ping">读 返回的区域名 · <span class="mono">global.gcping.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="jsdelivr"
+             data-name="jsDelivr"
+             data-url="https://cdn.jsdelivr.net/npm/latency-test@1.0.0/generate_200"
+             data-method="HEAD"
+             data-headers="server cf-ray x-served-by x-id"
+             data-parser="jsdelivr">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">jsDelivr</span>
+            <span class="cdnrow__note">同时用 Cloudflare 与 Fastly</span>
+                        <span class="cdnrow__how" title="HEAD https://cdn.jsdelivr.net/npm/latency-test@1.0.0/generate_200">读 server / cf-ray / x-served-by · <span class="mono">cdn.jsdelivr.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="fastly"
+             data-name="Fastly"
+             data-url="https://fastly.jsdelivr.net/npm/latency-test@1.0.0/generate_200"
+             data-method="HEAD"
+             data-headers="x-served-by"
+             data-parser="fastly">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Fastly</span>
+            <span class="cdnrow__note">经 jsDelivr 的 Fastly 专线</span>
+                        <span class="cdnrow__how" title="HEAD https://fastly.jsdelivr.net/npm/latency-test@1.0.0/generate_200">读 x-served-by · <span class="mono">fastly.jsdelivr.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cloudfront"
+             data-name="AWS CloudFront"
+             data-url="https://djlzvy5xcvhxt.cloudfront.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-amz-cf-pop"
+             data-parser="cloudfront">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">AWS CloudFront</span>
+            <span class="cdnrow__note">亚马逊云，按 DNS 调度</span>
+                        <span class="cdnrow__how" title="HEAD https://djlzvy5xcvhxt.cloudfront.net/500b-bench.jpg">读 x-amz-cf-pop · <span class="mono">djlzvy5xcvhxt.cloudfront.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="akamai"
+             data-name="Akamai"
+             data-url="https://perfopsrum.akamaized.net/500b-bench.jpg"
+             data-method="GET"
+             data-headers="x-cache2"
+             data-parser="akamai">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Akamai</span>
+            <span class="cdnrow__note">老牌 CDN，节点深入各地运营商</span>
+                        <span class="cdnrow__how" title="GET https://perfopsrum.akamaized.net/500b-bench.jpg">读 x-cache2 · <span class="mono">perfopsrum.akamaized.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bunny"
+             data-name="Bunny"
+             data-url="https://test.b-cdn.net/"
+             data-method="HEAD"
+             data-headers="server"
+             data-parser="bunny">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Bunny</span>
+            <span class="cdnrow__note">斯洛文尼亚起家的低价 CDN</span>
+                        <span class="cdnrow__how" title="HEAD https://test.b-cdn.net/">读 server · <span class="mono">test.b-cdn.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdn77"
+             data-name="CDN77"
+             data-url="https://1596384882.rsc.cdn77.org/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-77-pop"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDN77</span>
+            <span class="cdnrow__note">捷克 DataCamp 旗下</span>
+                        <span class="cdnrow__how" title="HEAD https://1596384882.rsc.cdn77.org/500b-bench.jpg">读 x-77-pop · <span class="mono">1596384882.rsc.cdn77.org</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cachefly"
+             data-name="CacheFly"
+             data-url="https://cdnperf.cachefly.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-cf1"
+             data-parser="cachefly">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CacheFly</span>
+            <span class="cdnrow__note">美国任播 CDN</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf.cachefly.net/500b-bench.jpg">读 x-cf1 · <span class="mono">cdnperf.cachefly.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="medianova"
+             data-name="Medianova"
+             data-url="https://medianova-cdnvperf.mncdn.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-edge-location"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Medianova</span>
+            <span class="cdnrow__note">土耳其 CDN，覆盖中东与欧洲</span>
+                        <span class="cdnrow__how" title="HEAD https://medianova-cdnvperf.mncdn.com/500b-bench.jpg">读 x-edge-location · <span class="mono">medianova-cdnvperf.mncdn.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="zenlayer"
+             data-name="Zenlayer"
+             data-url="https://test-perfops.ecn.zenlayer.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="zenlayer">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">Zenlayer</span>
+            <span class="cdnrow__note">中美两地起家，新兴市场节点多</span>
+                        <span class="cdnrow__how" title="HEAD https://test-perfops.ecn.zenlayer.net/500b-bench.jpg">读 via · <span class="mono">test-perfops.ecn.zenlayer.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="ovh"
+             data-name="OVHcloud"
+             data-url="https://ovh-cdn.perfops.io/500b-bench.jpg"
+             data-method="GET"
+             data-headers="x-cdn-pop"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">OVHcloud</span>
+            <span class="cdnrow__note">法国云厂商自带的 CDN</span>
+                        <span class="cdnrow__how" title="GET https://ovh-cdn.perfops.io/500b-bench.jpg">读 x-cdn-pop · <span class="mono">ovh-cdn.perfops.io</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdnnet"
+             data-name="CDN.net"
+             data-url="https://perfops.r.worldssl.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="x-edge-location"
+             data-parser="location">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDN.net</span>
+            <span class="cdnrow__note">Virtuozzo 旗下</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops.r.worldssl.net/500b-bench.jpg">读 x-edge-location · <span class="mono">perfops.r.worldssl.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="cdnetworks"
+             data-name="CDNetworks"
+             data-url="https://cdnperf-rum.cdnetworks.net/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via x-via"
+             data-parser="via">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">CDNetworks</span>
+            <span class="cdnrow__note">韩国起家，现属网宿科技</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf-rum.cdnetworks.net/500b-bench.jpg">读 via / x-via · <span class="mono">cdnperf-rum.cdnetworks.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="quantil"
+             data-name="QUANTIL"
+             data-url="https://cdnperf-rum.quantil.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via x-via"
+             data-parser="via">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">QUANTIL</span>
+            <span class="cdnrow__note">网宿科技的海外品牌</span>
+                        <span class="cdnrow__how" title="HEAD https://cdnperf-rum.quantil.com/500b-bench.jpg">读 via / x-via · <span class="mono">cdnperf-rum.quantil.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="group">
+      <h2 class="group__title">国内 CDN</h2>
+      <div class="rows cdntable" role="table" aria-label="国内 CDN命中节点">
+        <div class="cdnrow cdnrow--head" role="row">
+          <span role="columnheader">CDN</span>
+          <span role="columnheader">命中节点 · 节点 IP</span>
+          <span class="cdnrow__ms" role="columnheader">延迟</span>
+          <span role="columnheader">状态</span>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="edgeone"
+             data-name="腾讯 EdgeOne"
+             data-url="https://eo-static-perfops.qcloudcdn.com/500b-bench.jpg"
+             data-method="GET"
+             data-headers="xcc"
+             data-parser="edgeone">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">腾讯 EdgeOne</span>
+            <span class="cdnrow__note">腾讯云边缘安全加速平台</span>
+                        <span class="cdnrow__how" title="GET https://eo-static-perfops.qcloudcdn.com/500b-bench.jpg">读 xcc（base64 编码的节点 IP） · <span class="mono">eo-static-perfops.qcloudcdn.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bytedance"
+             data-name="字节跳动 · 国内"
+             data-url="https://perfops.byte-test.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="bytedance">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">字节跳动 · 国内</span>
+            <span class="cdnrow__note">火山引擎 CDN 的境内网络</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops.byte-test.com/500b-bench.jpg">读 via · <span class="mono">perfops.byte-test.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="bytedance-global"
+             data-name="字节跳动 · 海外"
+             data-url="https://perfops2.byte-test.com/500b-bench.jpg"
+             data-method="HEAD"
+             data-headers="via"
+             data-parser="bytedance">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">字节跳动 · 海外</span>
+            <span class="cdnrow__note">BytePlus 的海外网络</span>
+                        <span class="cdnrow__how" title="HEAD https://perfops2.byte-test.com/500b-bench.jpg">读 via · <span class="mono">perfops2.byte-test.com</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+        <div class="cdnrow"
+             role="row"
+             data-cdn="netease"
+             data-name="网易"
+             data-url="https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png"
+             data-method="HEAD"
+             data-headers="cdn-ip cdn-source"
+             data-parser="netease">
+          <div class="cdnrow__id" role="cell">
+            <span class="cdnrow__name">网易</span>
+            <span class="cdnrow__note">网易云存储，背后分给多家 CDN</span>
+                        <span class="cdnrow__how" title="HEAD https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png">读 cdn-ip / cdn-source · <span class="mono">necaptcha.nosdn.127.net</span></span>
+          </div>
+          <div class="cdnrow__node" role="cell" data-cdn-node><span class="dim">—</span></div>
+          <div class="cdnrow__ms mono" role="cell" data-cdn-ms></div>
+          <div class="cdnrow__state" role="cell" data-cdn-state><span class="dim">待检测</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>CDN 节点只有各家 CDN 自己的边缘知道，必须由浏览器直接去问。当前浏览器禁用了 JavaScript，本页只能显示检测清单与说明。
+        你也可以直接在浏览器里打开 <span class="mono">https://www.cloudflare.com/cdn-cgi/trace</span>，
+        其中 <span class="mono">colo=</span> 后面的三个字母就是你命中的 Cloudflare 机房。</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>什么是 CDN 命中节点</h2>
+  <p>
+    CDN（内容分发网络）在世界各地的机房里放着网站内容的副本。你访问一个接入了 CDN 的网站时，
+    请求不会一路跑到网站的源服务器，而是先落到 CDN 的某一个边缘机房（PoP），由它就地把缓存的内容发给你。
+    这个机房就是你的<strong>命中节点</strong>，CDN 通常用就近机场的 IATA 三字码给它命名：HKG 是香港，NRT 是东京成田，LAX 是洛杉矶，FRA 是法兰克福。
+  </p>
+  <p>
+    各家 CDN 把你分到哪个节点，靠的是两种办法。<strong>任播（Anycast）</strong>：同一个 IP 同时在所有机房宣告，
+    由互联网路由决定你落到哪一个——Cloudflare 与 Google Cloud 全球负载均衡是这一类，结果主要取决于你的出口在哪、运营商怎么接。
+    <strong>DNS 调度</strong>：解析域名时按「替你查询的那台 DNS」的位置返回不同机房的地址——CloudFront、Akamai 等多数 CDN 主要靠它，
+    于是 DNS 用的是哪一家、在哪里，会直接改变你命中的节点。同一个人访问不同 CDN，节点差出一个大洲并不罕见。
+  </p>
+
+  <h2>这次检测做了什么</h2>
+  <ol>
+    <li>对清单里的每一家 CDN，向它公开的测试文件发一次跨域请求（不带 Cookie、不带来源页），读出写着节点信息的那个响应头；Cloudflare 读的是 <span class="mono">/cdn-cgi/trace</span> 正文里的 <span class="mono">colo</span>，Google Cloud 读的是返回的区域名。</li>
+    <li>连接建好之后再请求一次，这一次的耗时才记作延迟——第一次里含着 DNS 解析、TCP 与 TLS 握手，不代表日常访问的速度。</li>
+    <li>跨域请求被对方拒绝时，换成只测延迟的不透明请求再试一次，区分「连得上但不让读」与「根本连不上」。</li>
+    <li>把节点代码换成城市；再向本站查询「本站看到的你的 IP」的大致坐标与国家（和首页显示的是同一份数据），算出你与每个节点之间的距离，按下文「怎么读」里的规则分档。各家 CDN 都不告诉网页你在哪，所以这份位置说的是本站看到的那条地址：Cloudflare 一行的 trace 会报出它看到的出口 IP，与本站看到的不是同一个出口时（多见于分流代理），这份坐标就不适用，本页改为只按 Cloudflare 报的国家/地区判断远近、不算距离。分档规则里「出口所在的国家/地区」，读到了 Cloudflare 的 trace 就用它报的那一个——和 <a href="/cloudflare">Cloudflare 节点检测</a>是同一个口径，同一个节点在两页上的结论因此一致；它与本站的记录说法不一时，「你当前命中」下面会写明。trace 没读到时才用本站记录里的国家。</li>
+  </ol>
+  <p>
+    全程 6 路并发，每次请求最长等 6 秒；一家 CDN 最多是「读节点、读正文、再测一次延迟」三段首尾相接，约 16 秒封顶。19 家通常十几秒内全部出结果。探测请求都从你的浏览器直接发往各家 CDN，本站服务器不参与、也收不到任何结果；唯一发回本站的是取大致位置的那一次查询，它不带任何探测数据。
+  </p>
+
+  <h2>怎么读检测结果</h2>
+  <ul>
+        <li><strong>就近接入 / 区域内 / 跨区接入</strong>：读到了节点，并且判断得了远近，分档与 <a href="/cloudflare">Cloudflare 节点检测</a>完全相同。距离在 1000 公里以内，或节点在你出口的周边（如中国大陆访客命中香港、台北、东京、大阪、首尔、新加坡），或与出口同在一个国家/地区且不超过 3000 公里，算<strong>就近接入</strong>；其余 3000 公里以内的，或与出口同在一个国家/地区的（美国、俄罗斯、巴西这样的大国境内跨几千公里也算），算<strong>区域内</strong>；剩下的是<strong>跨区接入</strong>。多数 CDN 都就近接入是理想状态；一两家落在区域内很常见；好几家同时跨区接入，说明你的出口或 DNS 在 CDN 眼里不在你身边。</li>
+    <li><strong>已识别 / 已读取</strong>：读到了节点，但判断不了远近，标签是中性的灰色，不代表好坏。<strong>已识别</strong>是认出了城市或国家，却算不出距离（没拿到你的位置、你的位置不适用于这个出口，或这家只给了国家），也不在你的国家/地区或周边——同国或周边的节点即使没有距离，也直接算就近接入。<strong>已读取</strong>是只拿到了节点编号或节点 IP。读不懂的格式会原样显示，不会被猜成某个城市。</li>
+    <li><strong>可达 · 节点信息未开放</strong>：请求成功，但这家 CDN 没有把节点头开放给其他网站读，只能给出延迟。</li>
+    <li><strong>可达，但不允许跨域读取</strong>：对方压根不接受跨域读取，换成不透明请求才测到延迟。</li>
+    <li><strong>不可达</strong>：超时或连接失败。可能是你的网络到这家 CDN 不通，也可能是测试文件本身下线了；只有一家不可达不必在意。</li>
+  </ul>
+
+  <h2>为什么有的 CDN 只显示延迟</h2>
+  <p>
+    这是浏览器的安全规则决定的，不是检测失败。网页向别的网站发请求，脚本默认只能读到少数几个「安全」的响应头（内容类型、长度、缓存策略之类）；
+    CDN 用来标明节点的 <span class="mono">x-served-by</span>、<span class="mono">x-amz-cf-pop</span>、<span class="mono">via</span> 都不在其中，
+    必须由对方在 <span class="mono">Access-Control-Expose-Headers</span> 里点名开放，其他网站才读得到。
+    jsDelivr 这类面向开发者的公共 CDN 会全部开放，不少测试文件则没有。<strong>对于没有开放的几家，本页如实只给延迟，不会编一个节点出来</strong>；
+    想看它们的节点，只能在浏览器开发者工具的「网络」面板里直接查看这些请求的响应头。
+  </p>
+  <p class="prose__note">
+    Cloudflare 一行只给出命中的机房。它的不同网络（免费版、企业版、中国网络、1.1.1.1）会把同一个人调度到不同节点，
+    完整的对比、出口 IP、HTTP/3 与 WARP 状态见 <a href="/cloudflare">Cloudflare 节点检测</a>；
+    节点普遍偏远、怀疑是 DNS 的问题，可以去 <a href="/dnsleak">DNS 泄露检测</a>看看替你解析的是谁。
+  </p>
+
+  <h2>常见问题</h2>
+  <dl class="faq">
+    <dt>为什么有几家 CDN 只显示延迟，没有显示节点？</dt>
+    <dd>浏览器的跨域规则规定：网页向别的网站发请求时，只能读到对方明确开放的响应头。CDN 把节点代码写在 x-served-by、x-amz-cf-pop、via 这类自定义头里，只有对方在 Access-Control-Expose-Headers 里列出它们，其他网站的脚本才读得到。没有开放的那几家，本页只能确认「连得上、要多久」，读不到节点——这不是你的网络有问题，换任何一个网页版检测工具都一样。</dd>
+    <dt>命中的节点离我很远，是哪里出了问题？</dt>
+    <dd>最常见的原因有三个。一是出口 IP 的归属与你的实际位置不符：用了代理或 VPN，或者 IP 库把这段地址标到了别处，CDN 只认出口。二是 DNS 调度：CloudFront、Akamai 等多数 CDN 按「替你解析域名的那台 DNS」所在的位置分配节点，DNS 用的是境外公共解析或者走了代理，节点就会跟着 DNS 跑。三是运营商互联：中国大陆访问境外 CDN 时，运营商与 CDN 之间缺少好的互联，常被调度到美国西海岸。可以先用 DNS 泄露检测看看替你解析的是谁。</dd>
+    <dt>同一家 CDN 每次检测的节点都不一样，正常吗？</dt>
+    <dd>正常。CDN 会按各机房的负载与链路质量随时调整调度，任播网络的路由也会变化，DNS 调度的结果还受缓存时间影响。在相邻城市之间来回跳（香港与东京、法兰克福与阿姆斯特丹）不必在意；频繁跳到另一个大洲，才值得排查网络。</dd>
+    <dt>挂上代理以后，各家 CDN 命中的城市不一样了，以哪个为准？</dt>
+    <dd>以你要访问的网站所用的那家 CDN 为准。CDN 看到的是你的出口与你的 DNS：全局代理时，各家节点都应该落在代理出口附近；规则分流时，不同 CDN 的域名可能分别走直连与不同的代理节点，命中的城市自然不同——这正好可以用来检查分流规则是否按预期生效。想逐个网站看出口 IP，可以用网站分流测试。</dd>
+    <dt>本站会记录这次检测的结果吗？</dt>
+    <dd>不会。探测请求都由你的浏览器直接发往各家 CDN 公开的测试文件，不带 Cookie、不带来源页，本站服务器收不到任何探测数据。读到的节点与延迟只存在于当前页面，关掉即消失。算距离用的大致位置，是页面向本站查询「本站看到的你的 IP」得到的，和打开首页时的那次查询是同一份数据，请求里不带任何检测结果。</dd>
+  </dl>
+</article>

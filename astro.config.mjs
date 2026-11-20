@@ -1,6 +1,5 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
-import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   site: 'https://judgeip.com',
@@ -10,7 +9,4 @@ export default defineConfig({
     imageService: 'passthrough',
     prerenderEnvironment: 'node',
   }),
-  vite: {
-    plugins: [tailwindcss()],
-  },
 });

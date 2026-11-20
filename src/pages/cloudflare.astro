@@ -1,0 +1,21 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/cloudflare.html?raw";
+import { extractVisitorIp } from "../lib/ip-utils";
+
+const visitorIp = extractVisitorIp(Astro.request);
+const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+---
+
+<IpcxLayout
+  title="Cloudflare 节点检测 — 你命中了哪个 Cloudflare 机房 · JudgeIP"
+  description="检测你当前命中的 Cloudflare 边缘机房、协议、HTTP/3、ECH 与 WARP 状态。"
+  canonicalPath="/cloudflare"
+  bodyClass="page-cloudflare"
+  currentLabel="Cloudflare"
+  activeNav="/cloudflare"
+  extraCss={["/assets/css/cloudflare.css"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/cloudflare.js", "/assets/js/cfturnstile.js"]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

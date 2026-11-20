@@ -1,0 +1,564 @@
+/* ip.cx — 网络连通性：/connectivity 整页与首页「网络连通性」卡片共用。
+   只放这两处才用得到的格子、圆点与分组头；卡片、标签、结论块沿用 app.css 的全站组件。
+
+   颜色一律经由 class，绝不写 style=""：CSP 的 style-src 'self' 会把内联样式整条丢掉，
+   延迟颜色、圆点状态都靠脚本切换类名。 */
+
+/* ---------------------------------------------------------------- 没有 JS 时
+
+   圆点、延迟、状态只有脚本填得进去。没有 JS 的访客与爬虫只看站点清单与说明，
+   不留一排永远灰着的点；首页那张卡片除了「去测」什么也给不了，整块不出现（同 .geo）。 */
+:root:not(.has-js) .conn-live,
+:root:not(.has-js) .conn--home {
+  display: none;
+}
+
+/* 圆点那一行空着时，格子收成一行，名字与字标垂直居中；「地区」组还有国家标注，保留两行 */
+:root:not(.has-js) .conntile:not(.conntile--area) {
+  grid-template-areas: "mark name ms";
+}
+
+:root:not(.has-js) .conntile:not(.conntile--area) .conntile__meta {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- 分组头 */
+
+/* 组名在左，摘要与重测按钮在右，同一行读完「这一组怎么样」 */
+.connhead {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2);
+  margin: 0 0 var(--size-2);
+}
+
+.connhead .group__title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.connhead__count {
+  margin-inline-start: 2px;
+  font-weight: var(--font-weight-5);
+  color: var(--text-mute);
+  letter-spacing: 0;
+}
+
+.connhead__sum {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.connhead__sum.is-good { color: var(--badge-green-fg); }
+.connhead__sum.is-warn { color: var(--badge-amber-fg); }
+.connhead__sum.is-bad  { color: var(--tag-danger-color); }
+
+.connhead__btn {
+  flex: 0 0 auto;
+  min-block-size: 26px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-round);
+  cursor: pointer;
+  transition: color .15s var(--ease-3), border-color .15s var(--ease-3);
+}
+
+.connhead__btn:hover:not(:disabled) {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent-text) 40%, var(--border));
+}
+
+.connhead__btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.connhead__more {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.connhead__more:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------- 图例 */
+
+.connlegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--size-3);
+  margin: calc(var(--size-2) * -1) 0 var(--size-4);
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.connlegend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------------------------------------------------------------- 格子
+
+   字标 | 名字 + 圆点 | 延迟 + 状态。两行而不是一行：
+   一行放下四样东西，688px 三列时名字只剩三四个字的位置。 */
+.conntile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "mark name ms"
+    "mark meta state";
+  align-items: center;
+  /* 同一排有格子展开了详情、整排被撑高时，其余格子的内容仍贴在顶上，不被拉到半空 */
+  align-content: start;
+  gap: 3px var(--size-2);
+  min-inline-size: 0;
+  padding: 10px var(--size-3);
+  background: var(--surface);
+  transition: background-color .15s var(--ease-3);
+}
+
+.conntile:hover,
+.conntile.is-open {
+  background: var(--surface-2);
+}
+
+/* 字标：名字的第一个字，底色跟分组走——国内红、国际蓝，和全站的 tag--cn / tag--global 同一套语义。
+   它也是站点图标的底座（position 给下面的 .favicon 定位用） */
+.conntile__mark {
+  position: relative;
+  grid-area: mark;
+  display: grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  font-size: 13px;
+  font-weight: var(--font-weight-7);
+  line-height: 1;
+  color: var(--badge-gray-fg);
+  background: var(--badge-gray-bg);
+  border-radius: var(--radius-2);
+  user-select: none;
+}
+
+.conntile__mark--cn     { color: var(--tag-cn-fg);     background: var(--tag-cn-bg); }
+.conntile__mark--intl   { color: var(--tag-global-fg); background: var(--tag-global-bg); }
+.conntile__mark--ai     { color: var(--tag-ai-fg);     background: var(--tag-ai-bg); }
+.conntile__mark--social { color: var(--badge-amber-fg); background: var(--badge-amber-bg); }
+.conntile__mark--dev    { color: var(--badge-gray-fg);  background: var(--badge-gray-bg); }
+.conntile__mark--region { color: var(--tag-region-fg); background: var(--tag-region-bg); }
+
+/* 站点图标（favicon.is，见 View::favicon）叠在字标正中，加载完之前是透明的——露出来的是字标。
+   加载成功 app.js 才给字标挂 is-iconed：分组底色让给图标本身的颜色，换成中性的白底细边，字藏起来；
+   加载失败图标被摘掉，字标原样留着。尺寸与偏移都是整像素（28 − 16 两边各留 6，手机上 24 − 16 各留 4），图标不会糊在半个像素上。
+   color-scheme 钉成浅色：深色主题下底座仍是一块浅灰（--favicon-chip-bg），图标得按「落在浅底上」来画。
+   有些站的 SVG 图标自带 prefers-color-scheme 判断，<img> 里它看的是这个元素的 color-scheme——
+   不钉的话跟着页面走深色，换成白色那一套，落在浅底座上正好看不见 */
+.conntile__mark .favicon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 16px;
+  block-size: 16px;
+  color-scheme: only light;
+  opacity: 0;
+  transition: opacity .15s var(--ease-3);
+}
+
+.conntile__mark.is-iconed {
+  color: transparent;
+  background: var(--favicon-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--favicon-chip-border);
+}
+
+.conntile__mark.is-iconed .favicon {
+  opacity: 1;
+}
+
+/* 没有 JS 就没有人报「加载好了」，也就分不出成功失败：直接摆成加载成功的样子。
+   不让字垫在图标下面——多数图标带透明底，字会从镂空处透出来，比哪一种都难看；
+   favicon.is 对没有图标的站也回一张默认图，真正失败多半是整个被拦，那时只剩一个空白小方框，站名就在旁边。 */
+:root:not(.has-js) .conntile__mark {
+  color: transparent;
+  background: var(--favicon-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--favicon-chip-border);
+}
+
+:root:not(.has-js) .conntile__mark .favicon {
+  opacity: 1;
+}
+
+/* 名字放不下就省略，不换行：换行会让同一排格子高低不齐 */
+.conntile__name {
+  grid-area: name;
+  display: flex;
+  min-inline-size: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.conntile__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 第二行左侧：圆点 + 国家标注（只有「地区」组有） */
+.conntile__meta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-inline-size: 0;
+  min-block-size: 18px;
+}
+
+.conntile__area {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-mute);
+}
+
+.conntile__ms {
+  grid-area: ms;
+  justify-self: end;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+.conntile__ms.is-good { color: var(--badge-green-fg); }
+.conntile__ms.is-ok   { color: var(--tier-ok-text); }
+.conntile__ms.is-slow { color: var(--badge-amber-fg); }
+.conntile__ms.is-fail { color: var(--tag-danger-color); }
+
+.conntile__dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.conntile__state {
+  grid-area: state;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-block-size: 18px;
+}
+
+/* 格子里的标签比全站的小一号：一格里最多两个，「良」「不稳定」挤在圆点旁边 */
+.conntile__state .tag {
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+/* ---------------------------------------------------------------- 详情开关
+
+   测完后状态标签外面包着一个 <button>（connectivity.js 的 finish）。它本身只有标签那么大，
+   ::after 把点击区铺满整个格子：手指点在名字、圆点上都算数，不必去瞄 18px 高的小标签。
+   格子是 position:relative 的，铺满的范围就停在这一格里。 */
+.conntile__toggle {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.conntile__toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* 焦点框画在铺满整格的那一层上，而不是标签那一小块：键盘用户看得出「现在选中的是哪一格」 */
+.conntile__toggle:focus-visible {
+  outline: none;
+}
+
+.conntile__toggle:focus-visible::after {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+
+/* 展开 / 收起的小箭头：触屏上没有悬停变色，得有个看得见的记号说明「这里点得开」 */
+.conntile__chev {
+  flex: 0 0 auto;
+  inline-size: 5px;
+  block-size: 5px;
+  margin: 0 2px 3px 3px;
+  border-inline-end: 1.5px solid var(--text-mute);
+  border-block-end: 1.5px solid var(--text-mute);
+  transform: rotate(45deg);
+}
+
+.conntile.is-open .conntile__chev {
+  margin-block: 3px 0;
+  transform: rotate(-135deg);
+}
+
+/* 详情占第三行，与名字左对齐。没展开时 [hidden] 让它不参与布局，格子不会多出一行空隙。
+   叠在点击层之上（z-index）：详情里的探测地址可以选中复制，点它也不会把自己收起来 */
+.conntile__detail {
+  position: relative;
+  z-index: 1;
+  grid-row: 3;
+  grid-column: 2 / -1;
+  min-inline-size: 0;
+  margin-block-start: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+  cursor: auto;
+}
+
+.conntile__detail[hidden] {
+  display: none;
+}
+
+.conntile__line {
+  display: block;
+}
+
+/* display:block 会盖掉 UA 的 [hidden]{display:none}，得再写一遍 */
+.conntile__line[hidden] {
+  display: none;
+}
+
+/* 名字被省略号截断时（Yahoo! JAPAN、两枚标签挤着的 Wikipedia），详情第一行补上全名。
+   不在原位换行显示：名字那一列只有六七十像素，一个英文单词会被拦腰折成两截 */
+.conntile__fullname {
+  font-weight: var(--font-weight-6);
+  color: var(--text);
+}
+
+.conntile__line + .conntile__line {
+  margin-block-start: 2px;
+}
+
+.conntile__url {
+  color: var(--text-mute);
+}
+
+/* 首页卡片没有进度行，检测做不了时（脚本没加载上、浏览器太旧）的说明写在这里 */
+.connnote {
+  margin: 0 0 var(--size-2);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.connnote[hidden] {
+  display: none;
+}
+
+.conntile__wait {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+/* 一次都没连上的格子整体压暗一点，扫一眼就能分出哪几个是死的。
+   用 opacity 而不是另配一套颜色：字标、图标、底座一起往卡片底色上褪——浅色下是变淡，
+   深色下浅灰的图标底座褪成一块中灰，比活着的格子暗一截，两套主题都是「熄了」的意思 */
+.conntile.is-down .conntile__mark {
+  opacity: .55;
+}
+
+/* ---------------------------------------------------------------- 圆点
+
+   每轮一个。深浅两档绿表示快慢，琥珀是慢，红是这一轮失败；
+   空心圆是「已判定不可达、剩下几轮没测」——不能和失败画成一样，那等于冒充测过。
+   .dot 这个名字太通用，限定在 .conn 之内：首页同时加载别的卡片，不能互相串样式。 */
+.conn .dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--dot-idle);
+  border-radius: 50%;
+}
+
+.conn .dot--good { background: var(--dot-good); }
+.conn .dot--ok   { background: var(--dot-ok); }
+.conn .dot--slow { background: var(--score-warn-fill); }
+.conn .dot--fail { background: var(--dot-fail); }
+
+.conn .dot--skip {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--dot-skip);
+}
+
+/* ---------------------------------------------------------------- 整页的格子网格
+
+   每组一张卡片，格子之间用细线分隔。线画在每个格子的右边与下边，
+   网格本身向右、向下各多出 1px，让最外一圈线落在 .rows 的 overflow:hidden 之外——
+   这样不管一行几列、最后一行缺几个，都不需要按列数去数「哪几个是最右、最下」。 */
+.conngrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 -1px -1px 0;
+}
+
+.conngrid > .conntile {
+  border-inline-end: 1px solid var(--border-soft);
+  border-block-end: 1px solid var(--border-soft);
+}
+
+/* ---------------------------------------------------------------- 首页卡片
+
+   左列国内、右列国际，各自一栏。首页的 .groups 只有 468px 宽，两列正好。 */
+.conngrid--home {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.conngrid__col {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.conngrid__col + .conngrid__col {
+  border-inline-start: 1px solid var(--border-soft);
+}
+
+.conngrid__col > .conntile + .conntile {
+  border-block-start: 1px solid var(--border-soft);
+}
+
+.conngrid__cap {
+  padding: var(--size-2) var(--size-3) 2px;
+  font-size: 11.5px;
+  font-weight: var(--font-weight-6);
+  letter-spacing: .12em;
+  color: var(--text-mute);
+}
+
+/* ---------------------------------------------------------------- 正文里的探测地址清单 */
+
+.connurls {
+  margin-block: var(--size-3);
+  font-size: 14px;
+}
+
+.connurls > summary {
+  cursor: pointer;
+  color: var(--accent-text);
+}
+
+.connurls__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px var(--size-4);
+  margin: var(--size-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose .connurls__list li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-2);
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.connurls__name {
+  flex: 0 0 7em;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.connurls__url {
+  min-inline-size: 0;
+  font-size: 12px;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- 窄屏 */
+
+@media (max-width: 640px) {
+  .conngrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  /* 手机上每格只有 170px 左右：字标、内边距都收一点，把位置让给名字 */
+  .conntile {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 3px 6px;
+    padding: var(--size-2) 10px;
+  }
+
+  .conntile__mark {
+    inline-size: 24px;
+    block-size: 24px;
+    font-size: 12px;
+  }
+
+  .conntile__name {
+    font-size: 13.5px;
+  }
+
+  .conntile__ms {
+    font-size: 12px;
+  }
+
+  /* 窄格子里详情也占上字标那一列，多出二十几像素，一行能多放两三个字 */
+  .conntile__detail {
+    grid-column: 1 / -1;
+  }
+
+  .conngrid__cap {
+    padding-inline: 10px;
+  }
+
+  /* 分组头放不下摘要和按钮时，摘要折到下一行，按钮仍贴着组名 */
+  .connhead {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .connhead__sum {
+    order: 3;
+    flex: 1 0 100%;
+    padding-inline-start: 2px;
+  }
+
+  .connurls__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------- 打印 */
+
+@media print {
+  .connhead__btn {
+    display: none;
+  }
+
+  .conntile {
+    break-inside: avoid;
+  }
+}

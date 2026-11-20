@@ -1,0 +1,324 @@
+/* ip.cx — AI 解锁检测（/ai）。
+   只放这一页才用得到的六列行、汇总行与地区名单；卡片、分组标题、标签、结论块沿用 app.css 的全站组件。
+
+   颜色一律经由 class，绝不写 style=""：CSP 的 style-src 'self' 会把内联样式整条丢掉，
+   延迟的快慢、行的失败态都靠脚本切换类名。 */
+
+/* 没有 JS 时「重新检测」按了没反应，「打开页面即自动开始」也不是真的——两样都藏掉，由 <noscript> 那条提示说明情况 */
+:root:not(.has-js) .ai [data-ai-run],
+:root:not(.has-js) .ai [data-ai-progress] {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- 结论
+
+   结论块可能叠着好几条（主结论 + 出口分布 + 不可达清单 + 时区提示），每条一段，段间留一点缝 */
+.ainotes .verdict__note + .verdict__note {
+  margin-block-start: 6px;
+}
+
+/* ---------------------------------------------------------------- 结果行
+
+   服务 | 出口 IP | CF 节点 | 延迟 | 地区 | 状态。688px 的版面里六列都要挤得下：
+   后三列内容是定长的短标签，给固定宽度；前三列按比例分剩下的，服务名那一列最宽（「Claude API / Claude Code」带标签也要一行放下）。
+   出口 IP 那一列按最长的 IPv4（15 个等宽字符）留足下限，长 IPv6 由 compactIp 收成「2001:db8…7334」，完整值在 title 里。 */
+.airow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(7.6rem, 1.25fr) minmax(0, .85fr) 3.9rem 4.4rem 4.4rem;
+  align-items: center;
+  gap: var(--size-2);
+  padding: var(--size-2) var(--size-4);
+  transition: background-color .15s var(--ease-3);
+}
+
+.airow + .airow {
+  border-top: 1px solid var(--border-soft);
+}
+
+.airow:hover {
+  background: var(--surface-2);
+}
+
+/* 正在探测的那几行提亮：四路并发，读者能看见进度落在哪里（与 Claude 检测的信号行同一个处理） */
+.airow.is-active {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+/* 不可达的行把服务名压暗一档，扫一眼就能分出哪几家挂了 */
+.airow.is-down .airow__name {
+  color: var(--text-dim);
+}
+
+/* 表头：比数据行矮一截、字小一号，只负责告诉人每一列是什么。
+   第一张卡片之外的表头带 .sr-only，只给读屏器（见 views/ai.php） */
+.airow--head,
+.airow--head:hover {
+  padding-block: 6px;
+  font-size: 12px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-dim);
+  letter-spacing: .06em;
+  background: var(--surface-2);
+}
+
+/* sr-only 的表头脱离了文档流，紧随其后的第一行就是卡片顶，不需要分隔线。
+   上面那条 padding 的特异度和 .sr-only 相同且加载在后，这里把它撤回来，免得被裁剪的盒子仍有尺寸 */
+.airow--head.sr-only {
+  padding: 0;
+}
+
+.airow--head.sr-only + .airow {
+  border-top: 0;
+}
+
+.airow__id {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.45;
+}
+
+.airow__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.airow__name {
+  font-size: 14.5px;
+  font-weight: var(--font-weight-6);
+}
+
+.airow__title .tag {
+  padding-block: 0;
+  font-size: 11.5px;
+}
+
+/* 测的是哪个地址：给想自己复核的人看的，压一档 */
+.airow__how {
+  margin-block-start: 1px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.airow__ip,
+.airow__colo,
+.airow__lat,
+.airow__region {
+  min-inline-size: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* 地址一行、国家一行：国家是 Cloudflare 判定的，正是这家服务做地区判断时看到的那个 */
+.airow__ip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+.airow__addr {
+  font-size: 13px;
+}
+
+.airow__fam {
+  font-size: 10.5px;
+  font-weight: var(--font-weight-6);
+  color: var(--text-mute);
+  letter-spacing: .04em;
+}
+
+.airow__where {
+  flex: 1 0 100%;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.airow__state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 13px;
+  text-align: right;
+}
+
+.airow__why {
+  font-size: 11.5px;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+.aicolo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 5px;
+}
+
+.aicolo__code {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+/* 延迟三档：与参考站点同一套分界（250 / 500 ms），颜色沿用全站的绿 / 琥珀 / 红 */
+.ailat {
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.ailat--fast { color: var(--badge-green-fg); }
+.ailat--mid  { color: var(--badge-amber-fg); }
+.ailat--slow { color: var(--badge-red-fg); }
+
+/* ---------------------------------------------------------------- 出口与环境对照 */
+
+.aisum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--size-2);
+}
+
+.aisum__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.aisum__tags:empty {
+  display: none;
+}
+
+/* 一个出口一行：国旗 · IP · 「国家 · 哪几家看到的」 */
+.aiexit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  line-height: 1.6;
+}
+
+.aiexit__ip {
+  font-weight: var(--font-weight-6);
+  overflow-wrap: anywhere;
+}
+
+.aiexit__who {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.ailinks {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.ailinks a {
+  color: var(--accent-text);
+  font-weight: var(--font-weight-6);
+  text-decoration: none;
+}
+
+.ailinks a:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------- 地区名单
+
+   判据原样印在页面上：读者能自己核对「为什么说我的出口不行」，名单过时也一眼看得出来 */
+.ailist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ailist__lead {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.ailist .tags {
+  gap: 4px;
+}
+
+.ailist .tag {
+  padding-block: 0;
+  font-size: 11.5px;
+}
+
+.ailist__src {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.ailist__src a {
+  color: var(--accent-text);
+  font-weight: var(--font-weight-6);
+}
+
+.ailist__foot {
+  margin: var(--size-2) 0 0;
+  padding-inline: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- 窄屏
+
+   六列在手机上每列只剩两三个字，改成三行：「服务 ······ 状态」「出口 IP ······ 地区」「节点 ······ 延迟」。
+   表头在这个布局下对不上列，整行藏掉——每一格的内容本身已经足够自明。 */
+@media (max-width: 480px) {
+  .airow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id    state"
+      "ip    region"
+      "colo  lat";
+    gap: 4px var(--size-3);
+    padding-inline: var(--size-3);
+  }
+
+  /* 不用 display:none：那会连读屏器一起藏掉。照 .sr-only 的办法裁掉，表格语义仍然完整 */
+  .airow--head {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .airow--head + .airow {
+    border-top: 0;
+  }
+
+  .airow__id     { grid-area: id; }
+  .airow__ip     { grid-area: ip; }
+  .airow__colo   { grid-area: colo; }
+  .airow__lat    { grid-area: lat; justify-self: end; }
+  .airow__region { grid-area: region; justify-self: end; }
+  .airow__state  { grid-area: state; flex-direction: row; align-items: baseline; }
+
+  .airow__where {
+    flex-basis: auto;
+  }
+
+  /* 桌面上破折号占着列位，表格才对得齐；窄屏没有列可对，空格子直接收起：
+     不可达的行只剩「服务 ······ 不可访问」一行，没有出口的行收掉节点那一格 */
+  .airow.is-down .airow__ip,
+  .airow.is-down .airow__colo,
+  .airow.is-down .airow__lat,
+  .airow.is-down .airow__region,
+  .airow.is-noexit .airow__colo {
+    display: none;
+  }
+}

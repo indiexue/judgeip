@@ -1,0 +1,19 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import rawHtml from "../snippets/terms.html?raw";
+
+const html = rawHtml;
+---
+
+<IpcxLayout
+  title="服务条款 · JudgeIP"
+  description="JudgeIP 服务使用条款与免责声明。"
+  canonicalPath="/terms"
+  bodyClass="page-terms"
+  currentLabel="服务条款"
+  activeNav="/terms"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>
