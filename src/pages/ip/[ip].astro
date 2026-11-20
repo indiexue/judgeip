@@ -3,20 +3,24 @@ import IpcxLayout from '../../layouts/IpcxLayout.astro';
 import IpcxHomeContent from '../../components/IpcxHomeContent.astro';
 import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
+import { localizeLookup } from '../../lib/lookup-en';
+import { getLang, localePath, pick } from '../../lib/i18n';
+
+const lang = getLang(Astro.locals);
 
 const rawIp = Astro.params.ip || '';
 const parsed = parseIp(rawIp);
 if (!parsed) {
-  return Astro.redirect('/');
+  return Astro.redirect(localePath('/', lang));
 }
 
 const visitorIp = extractVisitorIp(Astro.request);
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
 const isVisitor = parsed.normalized === visitorIp;
-const info = await lookupIpFull(parsed.normalized, cfMeta, isVisitor);
+const info = localizeLookup(await lookupIpFull(parsed.normalized, cfMeta, isVisitor), lang);
 
-const title = `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`;
-const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`;
+const title = pick(lang, `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`, `${info.ip}: owner, network type and threat data · JudgeIP`);
+const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`, `Location, ISP, ASN, network type, threat and proxy data for ${info.ip}.`);
 ---
 
 <IpcxLayout
@@ -24,7 +28,7 @@ const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、�
   description={description}
   canonicalPath={`/ip/${info.ip}`}
   bodyClass="page-home"
-  currentLabel="IP 检测"
+  currentLabel={pick(lang, 'IP 检测', 'IP check')}
   activeNav="/"
 >
   <IpcxHomeContent info={info} isSelf={false} queryValue={info.ip} />

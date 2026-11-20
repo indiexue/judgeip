@@ -3,6 +3,10 @@ import IpcxLayout from '../layouts/IpcxLayout.astro';
 import IpcxHomeContent from '../components/IpcxHomeContent.astro';
 import { extractVisitorIp, parseIp } from '../lib/ip-utils';
 import { lookupIpFull } from '../lib/ipcx-lookup';
+import { localizeLookup } from '../lib/lookup-en';
+import { getLang, localePath, pick } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
 
 const visitorIp = extractVisitorIp(Astro.request);
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
@@ -26,15 +30,15 @@ if (rawQuery) {
   if (parsed) {
     targetIp = parsed.normalized;
   } else {
-    errorMsg = `「${rawQuery.slice(0, 60)}」不是有效的 IPv4 或 IPv6 地址，已显示你的本机 IP。`;
+    errorMsg = pick(lang, `「${rawQuery.slice(0, 60)}」不是有效的 IPv4 或 IPv6 地址，已显示你的本机 IP。`, `"${rawQuery.slice(0, 60)}" is not a valid IPv4 or IPv6 address. Showing your own IP instead.`);
   }
 }
 
 const isSelf = targetIp === visitorIp && !rawQuery;
-const info = await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp);
+const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
 
-const title = `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`;
-const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`;
+const title = pick(lang, `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`, `${info.ip}: owner, network type and threat data · JudgeIP`);
+const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`, `Location, ISP, ASN, network type, threat and proxy data for ${info.ip}.`);
 ---
 
 <IpcxLayout
@@ -42,7 +46,7 @@ const description = `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、�
   description={description}
   canonicalPath="/"
   bodyClass="page-home"
-  currentLabel="IP 检测"
+  currentLabel={pick(lang, 'IP 检测', 'IP check')}
   activeNav="/"
   extraCss={['/assets/css/connectivity.css']}
   extraJs={isSelf ? ['/assets/js/probe.js', '/assets/js/homenet.js', '/assets/js/connectivity.js'] : []}

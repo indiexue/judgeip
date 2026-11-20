@@ -3,6 +3,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   /* 复制当前 IP */
   document.addEventListener('click', function (event) {
     var button = event.target.closest('[data-copy-target]');
@@ -14,7 +16,7 @@
     /* 遮罩打开时页面上是 8.8.*.*，但复制要给真值——
        藏起来是为了不让旁边的人看见，不是为了让自己也拿不到。 */
     var text = (source.getAttribute('data-copy-value') || source.textContent).trim();
-    var done = button.getAttribute('data-copy-done') || '已复制';
+    var done = button.getAttribute('data-copy-done') || T('已复制', 'Copied');
 
     /* 按钮里还有一个图标，不能整段替换 textContent——只改文字那一节 */
     var label = button.querySelector('.copy__label') || button;
@@ -37,7 +39,7 @@
       navigator.clipboard.writeText(text).then(function () {
         settle(done, 'is-done');
       }, function () {
-        settle('复制失败', 'is-fail');
+        settle(T('复制失败', 'Copy failed'), 'is-fail');
       });
       return;
     }
@@ -54,14 +56,14 @@
       document.execCommand('copy');
       settle(done, 'is-done');
     } catch (e) {
-      settle('复制失败', 'is-fail');
+      settle(T('复制失败', 'Copy failed'), 'is-fail');
     }
     document.body.removeChild(scratch);
   });
 
   /* 遮罩当前 IP：录屏、截图、投屏时把地址与主机名藏掉，再点一下还原。
      纯显示层的开关，不落存储、不发请求——刷新即回到显示状态。 */
-  var MASK_LABEL = { on: '隐藏 IP 地址', off: '显示 IP 地址' };
+  var MASK_LABEL = { on: T('隐藏 IP 地址', 'Hide IP address'), off: T('显示 IP 地址', 'Show IP address') };
 
   /* IPv4 留前两段（8.8.8.8 → 8.8.*.*）；IPv6 留前两组，其余整体收成两个星号。
      留两段是为了还能看出运营商的大致归属，又不至于定位到具体一户。 */
@@ -110,7 +112,7 @@
   var navbar = document.querySelector('[data-navbar]');
   var navToggle = navbar && navbar.querySelector('[data-nav-toggle]');
   if (navbar && navToggle) {
-    var NAV_LABEL = { open: '关闭导航菜单', closed: '打开导航菜单' };
+    var NAV_LABEL = { open: T('关闭导航菜单', 'Close menu'), closed: T('打开导航菜单', 'Open menu') };
 
     var setNavOpen = function (open) {
       navbar.classList.toggle('is-open', open);
@@ -274,7 +276,7 @@
      这一段与 boot.js 里的首帧判定是同一套规则，改一处必须两边一起改。 */
   (function () {
     var THEME_KEY = 'judgeip-theme';
-    var THEME_LABEL = { light: '切换到深色模式', dark: '切换到浅色模式' };
+    var THEME_LABEL = { light: T('切换到深色模式', 'Switch to dark mode'), dark: T('切换到浅色模式', 'Switch to light mode') };
     var root = document.documentElement;
     var button = document.querySelector('[data-theme-toggle]');
     var prefersDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -397,10 +399,10 @@
        五行因此写法一致、能并排对照；州/省与城市保留各库原样的写法。 */
     var regionNames = null;
     try {
-      if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+      if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames([window.I18N ? I18N.locale : 'zh-CN'], { type: 'region' });
     } catch (e) { regionNames = null; }
     /* 与 probe.js 同一套：Intl 给 HK 的「中国香港特别行政区」太长、给 TW 的「台湾」与站内其余写法不一致 */
-    var SHORT_NAMES = { CN: '中国大陆', HK: '中国香港', MO: '中国澳门', TW: '中国台湾' };
+    var SHORT_NAMES = { CN: T('中国大陆', 'Mainland China'), HK: T('中国香港', 'Hong Kong'), MO: T('中国澳门', 'Macau'), TW: T('中国台湾', 'Taiwan') };
 
     var countryLabel = function (code) {
       if (!/^[A-Z]{2}$/.test(code || '')) return '';
@@ -434,7 +436,7 @@
       if (!parts.length) {
         var empty = document.createElement('span');
         empty.className = 'geo__note';
-        empty.textContent = place ? '库中无位置数据' : note;
+        empty.textContent = place ? T('库中无位置数据', 'No location in this database') : note;
         cell.appendChild(empty);
         return;
       }
@@ -559,9 +561,9 @@
     };
 
     var reasonNote = function (reason) {
-      if (reason === 'limited') return '查询额度已用完';
-      if (reason === 'timeout') return '查询超时';
-      return '查询失败';
+      if (reason === 'limited') return T('查询额度已用完', 'Lookup quota used up');
+      if (reason === 'timeout') return T('查询超时', 'Lookup timed out');
+      return T('查询失败', 'Lookup failed');
     };
 
     /* 向本站服务端要 keys 这几行。服务端最坏要等上游 4 秒超时，这里给 12 秒，过了就按超时落定。
@@ -583,16 +585,16 @@
         try { data = JSON.parse(result.text); } catch (e) { data = null; }
 
         if (result.status === 429 || (data && data.error === 'rate_limited')) {
-          failAll('查询过于频繁');
+          failAll(T('查询过于频繁', 'Too many lookups'));
           return;
         }
         if (!data || !data.ok || !data.sources) {
-          failAll('查询失败');
+          failAll(T('查询失败', 'Lookup failed'));
           return;
         }
         /* 请求里带着页面上这条 IP，回来的理应就是它；万一不是，那是另一条地址的位置，不能填到这条 IP 名下 */
         if (ipKey(data.ip) !== ipKey(geoIp)) {
-          failAll('查询失败');
+          failAll(T('查询失败', 'Lookup failed'));
           return;
         }
 
@@ -602,7 +604,7 @@
           else fillGeo(key, null, reasonNote(item && item.reason));
         });
       }).catch(function (kind) {
-        failAll(kind === 'timeout' ? '查询超时' : '查询失败');
+        failAll(kind === 'timeout' ? T('查询超时', 'Lookup timed out') : T('查询失败', 'Lookup failed'));
       });
     };
 
@@ -648,7 +650,7 @@
 
     var cfRow = geo.querySelector('[data-geo-source="cloudflare"]');
     if (cfRow && !(geoSelf && cfRow.getAttribute('data-geo-url'))) {
-      fillGeo('cloudflare', null, '仅支持查询本机 IP');
+      fillGeo('cloudflare', null, T('仅支持查询本机 IP', 'Only your own IP can be looked up'));
     } else if (cfRow) {
       geoFetch(cfRow.getAttribute('data-geo-url'), thirdParty(), 6000).then(function (result) {
         var trace = {};
@@ -658,17 +660,17 @@
         });
 
         if (result.status !== 200 || !trace.ip) {
-          fillGeo('cloudflare', null, '查询失败');
+          fillGeo('cloudflare', null, T('查询失败', 'Lookup failed'));
         } else if (ipKey(trace.ip) !== ipKey(geoIp)) {
-          fillGeo('cloudflare', null, '出口 IP 不一致，无法对照');
+          fillGeo('cloudflare', null, T('出口 IP 不一致，无法对照', 'Exit IP differs, cannot compare'));
         } else {
           /* loc 查不到时是 XX，Tor 出口是 T1：都不是国家 */
           var loc = geoPlace(trace.loc === 'XX' ? '' : trace.loc, '', '');
-          if (loc.country) fillGeo('cloudflare', loc, '', '仅提供国家');
-          else fillGeo('cloudflare', null, '未给出国家');
+          if (loc.country) fillGeo('cloudflare', loc, '', T('仅提供国家', 'Country only'));
+          else fillGeo('cloudflare', null, T('未给出国家', 'No country given'));
         }
       }).catch(function (kind) {
-        fillGeo('cloudflare', null, kind === 'timeout' ? '查询超时' : '查询失败');
+        fillGeo('cloudflare', null, kind === 'timeout' ? T('查询超时', 'Lookup timed out') : T('查询失败', 'Lookup failed'));
       });
     }
   }
@@ -698,7 +700,7 @@
   var setIdle = function () {
     if (!submit) return;
     submit.disabled = false;
-    submit.textContent = '查询';
+    submit.textContent = T('查询', 'Look up');
   };
 
   var gate = document.querySelector('[data-verify]');
@@ -817,7 +819,7 @@
         pending = false;
         tokenField.value = token;
         closeDialog();
-        setBusy('查询中');
+        setBusy(T('查询中', 'Looking up'));
         /* 走原型上的 submit()：不再触发 submit 事件，也不怕表单里哪天多出一个 name="submit" 的控件 */
         HTMLFormElement.prototype.submit.call(form);
       };
@@ -832,11 +834,12 @@
              预渲染好还没用过的那个，由 start() 对照 freshTheme 换掉 */
           theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
           size: window.innerWidth < 360 ? 'compact' : 'normal',
+          language: window.I18N && I18N.lang === 'en' ? 'en' : 'zh-cn',
           retry: 'never',
           'response-field': false,
           callback: onToken,
           'error-callback': function () {
-            fail('人机验证未通过，请重新点击查询。');
+            fail(T('人机验证未通过，请重新点击查询。', 'Verification failed. Click Look up again.'));
             return true;
           },
           'expired-callback': function () {
@@ -844,10 +847,10 @@
             fresh = false;
           },
           'timeout-callback': function () {
-            fail('验证超时，请重新点击查询。');
+            fail(T('验证超时，请重新点击查询。', 'Verification timed out. Click Look up again.'));
           },
           'unsupported-callback': function () {
-            fail('当前浏览器不支持人机验证，请更换浏览器后再试。');
+            fail(T('当前浏览器不支持人机验证，请更换浏览器后再试。', 'This browser does not support the verification. Try another browser.'));
           },
           'before-interactive-callback': openDialog
         });
@@ -874,18 +877,18 @@
         var current = ++attempt;
         pending = true;
         showError('');
-        setBusy('验证中');
+        setBusy(T('验证中', 'Verifying'));
 
         /* api.js 若在本脚本挂上监听之前就已加载失败（访客网络连不上 Cloudflare），
            load / error 都不会再来——没有这道兜底，按钮会永远停在「验证中」 */
         if (apiState === 'loading') {
-          armWatchdog(12000, '人机验证组件加载失败，请检查网络后刷新页面重试。');
+          armWatchdog(12000, T('人机验证组件加载失败，请检查网络后刷新页面重试。', 'The verification widget failed to load. Check your network and reload the page.'));
         }
 
         withApi(function () {
           if (!pending || current !== attempt) return;
           if (apiState !== 'ready') {
-            fail('人机验证组件加载失败，请检查网络后刷新页面重试。');
+            fail(T('人机验证组件加载失败，请检查网络后刷新页面重试。', 'The verification widget failed to load. Check your network and reload the page.'));
             return;
           }
 
@@ -900,12 +903,12 @@
               render('render');   /* 默认 execution：渲染即开始验证 */
             }
           } catch (e) {
-            fail('人机验证启动失败，请刷新页面重试。');
+            fail(T('人机验证启动失败，请刷新页面重试。', 'The verification failed to start. Reload the page and try again.'));
             return;
           }
 
           /* 兜底：后台验证迟迟没有结论（网络卡住之类）就把按钮还回去 */
-          armWatchdog(30000, '人机验证超时，请重新点击查询。');
+          armWatchdog(30000, T('人机验证超时，请重新点击查询。', 'Verification timed out. Click Look up again.'));
         });
       };
 
@@ -949,7 +952,7 @@
       }
 
       /* 提交后短暂禁用按钮，避免重复提交消耗查询额度 */
-      window.setTimeout(function () { setBusy('查询中'); }, 0);
+      window.setTimeout(function () { setBusy(T('查询中', 'Looking up')); }, 0);
     });
   }
 

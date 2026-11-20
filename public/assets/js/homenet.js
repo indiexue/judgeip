@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+  var lp = function (p) { return window.I18N ? I18N.path(p) : p; };
+
   var root = document.querySelector('[data-homenet]');
   if (!root) return;
 
@@ -34,18 +37,18 @@
       c.textContent = '';
       var span = document.createElement('span');
       span.className = 'geo__note';
-      span.textContent = i === 0 ? message : '未检测';
+      span.textContent = i === 0 ? message : T('未检测', 'Not checked');
       c.appendChild(span);
     });
   }
 
   if (!P) {
-    unavailable('检测脚本加载失败，请刷新页面重试');
+    unavailable(T('检测脚本加载失败，请刷新页面重试', 'Failed to load the check script. Reload the page and try again'));
     return;
   }
 
   if (!window.fetch || !window.Promise) {
-    unavailable('当前浏览器太旧，无法检测');
+    unavailable(T('当前浏览器太旧，无法检测', 'This browser is too old to run the check'));
     return;
   }
 
@@ -136,9 +139,9 @@
 
     if (!ip) {
       if (sameFamily) {
-        fill(cell(key), [group([ipSpan(visibleIp), note('本站看到的地址')])]);
+        fill(cell(key), [group([ipSpan(visibleIp), note(T('本站看到的地址', 'Address seen by this site'))])]);
       } else {
-        fill(cell(key), [note(isV6 ? '未检测到 IPv6 连接' : '未检测到 IPv4 连接')]);
+        fill(cell(key), [note(isV6 ? T('未检测到 IPv6 连接', 'No IPv6 connection detected') : T('未检测到 IPv4 连接', 'No IPv4 connection detected'))]);
       }
       return;
     }
@@ -146,15 +149,15 @@
     var nodes = [ipSpan(ip)];
     if (sameFamily) {
       if (P.sameIp(ip, visibleIp)) {
-        nodes.push(tag('与本站看到的一致', 'ok'));
+        nodes.push(tag(T('与本站看到的一致', 'Same as seen by this site'), 'ok'));
       } else if (samePrefix64(ip, visibleIp)) {
-        nodes.push(tag('与本站同一 /64 网段', 'ok'));
+        nodes.push(tag(T('与本站同一 /64 网段', 'Same /64 as seen by this site'), 'ok'));
       } else {
-        nodes.push(tag('与本站看到的不同', 'warn'));
-        nodes.push(note('访问外部网站走了另一个出口'));
+        nodes.push(tag(T('与本站看到的不同', 'Differs from what this site sees'), 'warn'));
+        nodes.push(note(T('访问外部网站走了另一个出口', 'External sites are reached through a different exit')));
       }
     } else if (!isV6) {
-      nodes.push(tag('当前默认展示', 'ok'));
+      nodes.push(tag(T('当前默认展示', 'Shown by default'), 'ok'));
     }
     fill(cell(key), [group(nodes)]);
   }
@@ -167,9 +170,9 @@
     var hasV6 = !!v6 || (visibleIp !== '' && P.isIPv6(visibleIp));
     var hasV4 = !!v4 || (visibleIp !== '' && !P.isIPv6(visibleIp));
 
-    if (hasV4 && hasV6) wrap.appendChild(tag('双栈', 'ok'));
-    else if (hasV4) wrap.appendChild(tag('仅 IPv4', 'muted'));
-    else if (hasV6) wrap.appendChild(tag('仅 IPv6', 'muted'));
+    if (hasV4 && hasV6) wrap.appendChild(tag(T('双栈', 'Dual stack'), 'ok'));
+    else if (hasV4) wrap.appendChild(tag(T('仅 IPv4', 'IPv4 only'), 'muted'));
+    else if (hasV6) wrap.appendChild(tag(T('仅 IPv6', 'IPv6 only'), 'muted'));
   }
 
   /* ---------------------------------------------------------------- 当首屏是 IPv6 时，自动把顶部卡片与属性表切换为公网 IPv4 */
@@ -197,10 +200,10 @@
     if (!geoSec) return;
     geoSec.setAttribute('data-ip', v4);
 
-    var SHORT_NAMES = { CN: '中国大陆', HK: '中国香港', MO: '中国澳门', TW: '中国台湾' };
+    var SHORT_NAMES = { CN: T('中国大陆', 'Mainland China'), HK: T('中国香港', 'Hong Kong'), MO: T('中国澳门', 'Macau'), TW: T('中国台湾', 'Taiwan') };
     var regionNames = null;
     try {
-      if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+      if (window.Intl && Intl.DisplayNames) regionNames = new Intl.DisplayNames([window.I18N ? I18N.locale : 'zh-CN'], { type: 'region' });
     } catch (e) { regionNames = null; }
 
     function countryLabel(code) {
@@ -229,7 +232,7 @@
       }
       c.textContent = '';
       if (!parts.length) {
-        c.appendChild(P.el('span', 'geo__note', noteText || '库中无位置数据'));
+        c.appendChild(P.el('span', 'geo__note', noteText || T('库中无位置数据', 'No location in this database')));
         return;
       }
       for (var i = 0; i < parts.length; i++) {
@@ -269,10 +272,10 @@
       }
     }
     var cardLink = document.getElementById('share-card-link');
-    if (cardLink) cardLink.href = '/card?ip=' + encodeURIComponent(v4);
-    document.title = v4 + ' 的 IP 归属与威胁情报查询 · JudgeIP';
+    if (cardLink) cardLink.href = lp('/card') + '?ip=' + encodeURIComponent(v4);
+    document.title = v4 + T(' 的 IP 归属与威胁情报查询 · JudgeIP', ': owner, network type and threat data · JudgeIP');
 
-    window.fetch('/api/ipinfo?ip=' + encodeURIComponent(v4), {
+    window.fetch('/api/ipinfo?ip=' + encodeURIComponent(v4) + (window.I18N && I18N.lang === 'en' ? '&lang=en' : ''), {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' }
     })
@@ -285,7 +288,7 @@
           'ipType',
           '<span class="badge badge--' + esc(info.ipTypeTone) + '">' + esc(info.ipTypeLabel) + '</span>' +
           (!info.isBogon
-            ? '<span class="badge badge--' + (info.isNative ? 'green' : 'amber') + '" style="margin-left:6px;">' + (info.isNative ? '原生 IP' : '广播 IP') + '</span>'
+            ? '<span class="badge badge--' + (info.isNative ? 'green' : 'amber') + '" style="margin-left:6px;">' + (info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced IP')) + '</span>'
             : '')
         );
         setFieldText('isp', info.isp);
@@ -293,20 +296,20 @@
         if (info.asn) {
           setFieldHtml(
             'asn',
-            '<a class="asn-link mono" href="/whois?q=' + esc(info.asnCode) + '" title="查看 ' + esc(info.asnCode) + ' 注册信息">' + esc(info.asnCode) + '</a>' +
+            '<a class="asn-link mono" href="' + lp('/whois') + '?q=' + esc(info.asnCode) + T('" title="查看 ', '" title="View registration data for ') + esc(info.asnCode) + T(' 注册信息">', '">') + esc(info.asnCode) + '</a>' +
             '<span class="botratio"><span class="botratio__bracket">[</span><span class="botratio__human">Human ' + esc(info.humanPct) + '</span><span class="botratio__sep">|</span><span class="botratio__bot">Bot ' + esc(info.botPct) + '</span><span class="botratio__bracket">]</span></span>'
           );
         }
         setFieldText('domain', info.domain);
         setFieldText('rirName', info.rirName);
-        setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter ? '是' : '否') + '</span>');
+        setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter ? T('是', 'Yes') : T('否', 'No')) + '</span>');
         setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
         setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
         var gradeBadgeTone = info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger';
         setFieldHtml(
           'score',
           '<span class="score score--' + esc(info.scoreTone) + '">' +
-          '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ' + Number(info.score) + ' 分，满分 100 分">' +
+          T('<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ', '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP score ') + Number(info.score) + T(' 分，满分 100 分">', ' out of 100">') +
           '<rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>' +
           '<rect class="score__fill" x="0" y="0" width="' + Number(info.score) + '" height="6" rx="3"></rect></svg>' +
           '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span>' +
@@ -329,7 +332,7 @@
         setFieldHtml(
           'timezone',
           '<span class="mono">' + esc(info.timezone) + '</span>' +
-          (info.localTimeHm ? '<span class="dim"> · 当地 </span><span class="mono">' + esc(info.localTimeHm) + '</span>' : '')
+          (info.localTimeHm ? T('<span class="dim"> · 当地 </span><span class="mono">', '<span class="dim"> · local </span><span class="mono">') + esc(info.localTimeHm) + '</span>' : '')
         );
         setFieldText('continent', info.continentZh);
 
@@ -348,19 +351,19 @@
               '<span class="row__value"><span class="tag tag--' + esc(rc.tone) + '">' + esc(rc.status) + '</span></span></div>';
           }).join('');
           var bgpCell = info.bgpPrefix && info.bgpPrefix !== '—'
-            ? '<a class="asn-link mono" href="/ip-calc?q=' + encodeURIComponent(info.bgpPrefix) + '">' + esc(info.bgpPrefix) + '</a>'
+            ? '<a class="asn-link mono" href="' + lp('/ip-calc') + '?q=' + encodeURIComponent(info.bgpPrefix) + '">' + esc(info.bgpPrefix) + '</a>'
             : '<span class="mono">—</span>';
           var rpkiTone = info.rpkiStatus === 'valid' ? 'ok' : info.rpkiStatus === 'invalid' ? 'leak' : 'muted';
           var portsCell = info.openPorts && info.openPorts.length > 0
             ? '<span class="mono">' + esc(info.openPorts.join(', ')) + '</span>'
-            : '<span class="geo__note">未发现公网开放端口</span>';
+            : T('<span class="geo__note">未发现公网开放端口</span>', '<span class="geo__note">No open ports found</span>');
           rtHtml +=
-            '<div class="row"><span class="row__label">BGP 路由前缀</span><span class="row__value">' + bgpCell + '</span></div>' +
-            '<div class="row"><span class="row__label">RPKI 路由授权</span><span class="row__value"><span class="tag tag--' + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +
-            '<div class="row"><span class="row__label">反向解析 (PTR)</span><span class="row__value"><span class="mono">' + esc(info.ptrRecord || '—') + '</span></span></div>' +
-            '<div class="row"><span class="row__label">开放服务端口</span><span class="row__value">' + portsCell + '</span></div>';
+            T('<div class="row"><span class="row__label">BGP 路由前缀</span><span class="row__value">', '<div class="row"><span class="row__label">BGP prefix</span><span class="row__value">') + bgpCell + '</span></div>' +
+            T('<div class="row"><span class="row__label">RPKI 路由授权</span><span class="row__value"><span class="tag tag--', '<div class="row"><span class="row__label">RPKI</span><span class="row__value"><span class="tag tag--') + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +
+            T('<div class="row"><span class="row__label">反向解析 (PTR)</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Reverse DNS (PTR)</span><span class="row__value"><span class="mono">') + esc(info.ptrRecord || '—') + '</span></span></div>' +
+            T('<div class="row"><span class="row__label">开放服务端口</span><span class="row__value">', '<div class="row"><span class="row__label">Open ports</span><span class="row__value">') + portsCell + '</span></div>';
           if (info.abuseEmail && info.abuseEmail !== '—') {
-            rtHtml += '<div class="row"><span class="row__label">滥用举报邮箱</span><span class="row__value"><span class="mono">' + esc(info.abuseEmail) + '</span></span></div>';
+            rtHtml += T('<div class="row"><span class="row__label">滥用举报邮箱</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Abuse contact</span><span class="row__value"><span class="mono">') + esc(info.abuseEmail) + '</span></span></div>';
           }
           setFieldHtml('riskTech', rtHtml);
         }
@@ -382,31 +385,31 @@
   function renderTrace(data, colos) {
     var info = P.colo(colos, data.colo);
     var flag = P.flag(info.cc);
-    var more = P.el('a', 'asn-link dim', '详情 ›');
-    more.href = '/cloudflare';
+    var more = P.el('a', 'asn-link dim', T('详情 ›', 'Details ›'));
+    more.href = lp('/cloudflare');
 
     fill(cell('colo'), [group(info.known
       ? [P.el('span', '', (flag ? flag + ' ' : '') + info.city), P.el('span', 'mono dim', info.code), more]
-      : [P.el('span', 'mono', info.code || '未知'), more])]);
+      : [P.el('span', 'mono', info.code || T('未知', 'Unknown')), more])]);
 
     var proto = [httpLabel(data.http), String(data.tls || '').replace(/^TLSv/i, 'TLS ')].filter(Boolean).join(' · ');
     fill(cell('proto'), [group([
-      P.el('span', 'mono', proto || '未知'),
+      P.el('span', 'mono', proto || T('未知', 'Unknown')),
       String(data.sni).toLowerCase() === 'encrypted' ? tag('ECH', 'ok') : null,
-      /mlkem|kyber/i.test(data.kex || '') ? tag('后量子', 'ok') : null
+      /mlkem|kyber/i.test(data.kex || '') ? tag(T('后量子', 'Post-quantum'), 'ok') : null
     ])]);
 
     var warp = String(data.warp || '').toLowerCase();
     fill(cell('warp'), [group([
-      warp === 'plus' ? tag('WARP+ 已开启', 'warn')
-        : warp === 'on' ? tag('WARP 已开启', 'warn')
-          : P.el('span', '', '未启用'),
-      String(data.gateway).toLowerCase() === 'on' ? tag('Zero Trust 网关', 'warn') : null
+      warp === 'plus' ? tag(T('WARP+ 已开启', 'WARP+ on'), 'warn')
+        : warp === 'on' ? tag(T('WARP 已开启', 'WARP on'), 'warn')
+          : P.el('span', '', T('未启用', 'Off')),
+      String(data.gateway).toLowerCase() === 'on' ? tag(T('Zero Trust 网关', 'Zero Trust gateway'), 'warn') : null
     ])]);
   }
 
   function renderTraceFailure(failure) {
-    var text = failure && failure.kind === 'csp' ? 'CSP 未放行' : 'Cloudflare 接口不可达';
+    var text = failure && failure.kind === 'csp' ? T('CSP 未放行', 'Blocked by CSP') : T('Cloudflare 接口不可达', 'Cloudflare endpoint unreachable');
     ['colo', 'proto', 'warp'].forEach(function (key) {
       fill(cell(key), [note(text)]);
     });

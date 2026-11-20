@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
+import { localizeLookup } from '../../lib/lookup-en';
 
 export const GET: APIRoute = async ({ url }) => {
   const raw = url.searchParams.get('ip')?.trim() || '';
@@ -13,7 +14,8 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   try {
-    const info = await lookupIpFull(parsed.normalized, null, false);
+    const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'zh';
+    const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), lang);
     return new Response(JSON.stringify({ ok: true, info }), {
       status: 200,
       headers: {
