@@ -1,75 +1,97 @@
-
 <section class="hero">
   <h1 class="hero__title">全部工具</h1>
-  <p class="hero__lede">judgeip.com 的全部检测与查询工具，按用途分组。</p>
+  <p class="hero__lede">JudgeIP 的全部 IP 纯净度查询、泄露体检、路由与网络诊断工具，按用途分组。</p>
 </section>
 
 <div class="groups">
   <section class="group" id="ip">
-    <h2 class="group__title">IP 查询</h2>
+    <h2 class="group__title">IP 纯净度与查询</h2>
     <div class="rows toollist">
       <a class="toollist__item" href="/">
-        <span class="toollist__name">IP 检测</span>
-        <span class="toollist__desc">归属地、ASN、网络类型、威胁与代理情报、IP 评分，以及多家地理库的多库定位。</span>
+        <span class="toollist__name">IP 纯净度检测</span>
+        <span class="toollist__desc">归属地、ASN、原生 IP、8 大场景适配、风险与 DNSBL 黑名单、BGP/RPKI 及多库定位。</span>
+      </a>
+      <a class="toollist__item" href="/check">
+        <span class="toollist__name">一键环境体检</span>
+        <span class="toollist__desc">同时对 IP 纯净度、WebRTC、DNS、时区语言一致性、自动化指纹与 AI 准入做 6 大维度交叉校验。</span>
       </a>
       <a class="toollist__item" href="/whois">
-        <span class="toollist__name">Whois 查询</span>
-        <span class="toollist__desc">域名、IP 段、ASN 的注册信息，直接来自各注册局的 RDAP 服务。</span>
+        <span class="toollist__name">Whois / RDAP 查询</span>
+        <span class="toollist__desc">域名、IP 段、ASN 的注册信息与生命周期条，直接来自各注册局的 RDAP 服务。</span>
       </a>
-      <a class="toollist__item" href="/ping">
-        <span class="toollist__name">全球 Ping</span>
-        <span class="toollist__desc">从世界各地的探针同时 Ping 一个 IP 或域名，比较各地延迟与丢包。</span>
+      <a class="toollist__item" href="/dns-tools">
+        <span class="toollist__name">DNS 解析与黑名单 (DNSBL)</span>
+        <span class="toollist__desc">查询域名 A/AAAA/MX/TXT/NS 权威记录，或反查 IPv4 PTR 与 4 家主流垃圾黑名单。</span>
+      </a>
+      <a class="toollist__item" href="/ip-calc">
+        <span class="toollist__name">IP / CIDR 子网计算器</span>
+        <span class="toollist__desc">计算 IPv4 与 IPv6 网段的子网掩码、反掩码、首尾可用地址与网段容量。</span>
+      </a>
+      <a class="toollist__item" href="/card">
+        <span class="toollist__name">IP 信息分享卡片</span>
+        <span class="toollist__desc">生成可一键隐私打码的 IP 纯净度报告卡，支持下载高清 PNG 或嵌入论坛 Markdown。</span>
       </a>
     </div>
   </section>
+
   <section class="group" id="net">
     <h2 class="group__title">网络与节点</h2>
     <div class="rows toollist">
+      <a class="toollist__item" href="/ping">
+        <span class="toollist__name">全球 Ping</span>
+        <span class="toollist__desc">从世界各地 13 个地区探针同时 Ping 一个 IP 或域名，比较各地延迟与丢包。</span>
+      </a>
       <a class="toollist__item" href="/connectivity">
         <span class="toollist__name">网络连通性</span>
-        <span class="toollist__desc">国内外网站、AI 服务、社交与开发站点能不能连上、延迟多少。</span>
+        <span class="toollist__desc">国内外 44 个知名网站、AI 服务、社交与开发站点能不能连上、延迟多少。</span>
       </a>
       <a class="toollist__item" href="/cloudflare">
         <span class="toollist__name">Cloudflare 节点检测</span>
-        <span class="toollist__desc">你命中的 Cloudflare 机房、Cloudflare 看到的出口、HTTP/3 与 WARP 状态。</span>
+        <span class="toollist__desc">命中的 Cloudflare 机房距离、Turnstile 人机验证通过率、HTTP/3 与 WARP 状态。</span>
       </a>
       <a class="toollist__item" href="/cdn">
         <span class="toollist__name">CDN 命中节点</span>
-        <span class="toollist__desc">Fastly、CloudFront、Akamai 等十多家 CDN 各自把你调度到哪个城市。</span>
+        <span class="toollist__desc">Fastly、CloudFront、Akamai、EdgeOne 等二十家 CDN 各自把你调度到哪个城市。</span>
       </a>
       <a class="toollist__item" href="/split">
         <span class="toollist__name">网站分流测试</span>
-        <span class="toollist__desc">数十个网站分别看到你的哪个出口 IP，分流规则有没有生效。</span>
+        <span class="toollist__desc">数十个国内外与 AI 网站分别看到你的哪个出口 IP，验证代理分流规则是否生效。</span>
       </a>
       <a class="toollist__item" href="/status">
         <span class="toollist__name">服务状态</span>
-        <span class="toollist__desc">打不开某个服务时，先看是不是对方官方状态页上正在故障。</span>
+        <span class="toollist__desc">汇总主流 AI、云厂商与开发服务官方状态页，排查是不是对方正在故障。</span>
       </a>
     </div>
   </section>
+
   <section class="group" id="leak">
-    <h2 class="group__title">泄露检测</h2>
+    <h2 class="group__title">泄露与指纹检测</h2>
     <div class="rows toollist">
       <a class="toollist__item" href="/webrtc">
         <span class="toollist__name">WebRTC 泄露检测</span>
-        <span class="toollist__desc">国内外 STUN 服务器逐台探测，判断代理有没有漏掉真实地址。</span>
+        <span class="toollist__desc">国内外 STUN 服务器逐台探测，判断代理有没有漏掉真实 UDP 地址。</span>
       </a>
       <a class="toollist__item" href="/dnsleak">
         <span class="toollist__name">DNS 泄露检测</span>
-        <span class="toollist__desc">从本站自持的权威 DNS 反查是谁在替你解析域名。</span>
+        <span class="toollist__desc">并发随机子域探测，找出真正替你解析域名的递归 DNS 服务器与归属网络。</span>
       </a>
       <a class="toollist__item" href="/fingerprint">
         <span class="toollist__name">浏览器指纹检测</span>
-        <span class="toollist__desc">FingerprintJS v3 / v2 与 JA3 / JA4 三种算法看你的浏览器有多好认。</span>
+        <span class="toollist__desc">FingerprintJS v3 / v2 与 TLS JA3 / JA4 三种算法看你的浏览器有多好认。</span>
+      </a>
+      <a class="toollist__item" href="/headers">
+        <span class="toollist__name">HTTP 请求头与 UA 解析</span>
+        <span class="toollist__desc">查看服务器收到的真实 HTTP 标头、语言偏好与 Client Hints，排查透明代理头泄露。</span>
       </a>
     </div>
   </section>
+
   <section class="group" id="ai">
     <h2 class="group__title">AI 相关</h2>
     <div class="rows toollist">
       <a class="toollist__item" href="/ai">
         <span class="toollist__name">AI 解锁检测</span>
-        <span class="toollist__desc">ChatGPT、Claude、Gemini、Grok 等能否访问，出口是否在支持地区。</span>
+        <span class="toollist__desc">ChatGPT、Claude、Gemini、Grok 等能否访问，出口是否在官方支持地区。</span>
       </a>
       <a class="toollist__item" href="/claude">
         <span class="toollist__name">Claude 检测</span>

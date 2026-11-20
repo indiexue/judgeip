@@ -268,6 +268,8 @@
         currentIpEl.textContent = v4;
       }
     }
+    var cardLink = document.getElementById('share-card-link');
+    if (cardLink) cardLink.href = '/card?ip=' + encodeURIComponent(v4);
     document.title = v4 + ' 的 IP 归属与威胁情报查询 · JudgeIP';
 
     window.fetch('/api/ipinfo?ip=' + encodeURIComponent(v4), {
@@ -300,13 +302,16 @@
         setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter ? '是' : '否') + '</span>');
         setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
         setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
+        var gradeBadgeTone = info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger';
         setFieldHtml(
           'score',
           '<span class="score score--' + esc(info.scoreTone) + '">' +
           '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ' + Number(info.score) + ' 分，满分 100 分">' +
           '<rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>' +
           '<rect class="score__fill" x="0" y="0" width="' + Number(info.score) + '" height="6" rx="3"></rect></svg>' +
-          '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span></span>'
+          '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span>' +
+          (info.grade ? '<span class="badge badge--' + gradeBadgeTone + '" style="margin-left:6px;">' + esc(info.grade) + '</span>' : '') +
+          '</span>'
         );
 
         setFieldHtml(
@@ -327,6 +332,38 @@
           (info.localTimeHm ? '<span class="dim"> · 当地 </span><span class="mono">' + esc(info.localTimeHm) + '</span>' : '')
         );
         setFieldText('continent', info.continentZh);
+
+        if (Array.isArray(info.scenes) && info.scenes.length) {
+          var scenesHtml = info.scenes.map(function (sc) {
+            return '<div class="row"><span class="row__label">' + esc(sc.label) + '</span>' +
+              '<span class="row__value"><span class="tags"><span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span>' +
+              '<span class="geo__note">' + esc(sc.note) + '</span></span></span></div>';
+          }).join('');
+          setFieldHtml('scenes', scenesHtml);
+        }
+
+        if (Array.isArray(info.riskChecks)) {
+          var rtHtml = info.riskChecks.map(function (rc) {
+            return '<div class="row"><span class="row__label">' + esc(rc.label) + '</span>' +
+              '<span class="row__value"><span class="tag tag--' + esc(rc.tone) + '">' + esc(rc.status) + '</span></span></div>';
+          }).join('');
+          var bgpCell = info.bgpPrefix && info.bgpPrefix !== '—'
+            ? '<a class="asn-link mono" href="/ip-calc?q=' + encodeURIComponent(info.bgpPrefix) + '">' + esc(info.bgpPrefix) + '</a>'
+            : '<span class="mono">—</span>';
+          var rpkiTone = info.rpkiStatus === 'valid' ? 'ok' : info.rpkiStatus === 'invalid' ? 'leak' : 'muted';
+          var portsCell = info.openPorts && info.openPorts.length > 0
+            ? '<span class="mono">' + esc(info.openPorts.join(', ')) + '</span>'
+            : '<span class="geo__note">未发现公网开放端口</span>';
+          rtHtml +=
+            '<div class="row"><span class="row__label">BGP 路由前缀</span><span class="row__value">' + bgpCell + '</span></div>' +
+            '<div class="row"><span class="row__label">RPKI 路由授权</span><span class="row__value"><span class="tag tag--' + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +
+            '<div class="row"><span class="row__label">反向解析 (PTR)</span><span class="row__value"><span class="mono">' + esc(info.ptrRecord || '—') + '</span></span></div>' +
+            '<div class="row"><span class="row__label">开放服务端口</span><span class="row__value">' + portsCell + '</span></div>';
+          if (info.abuseEmail && info.abuseEmail !== '—') {
+            rtHtml += '<div class="row"><span class="row__label">滥用举报邮箱</span><span class="row__value"><span class="mono">' + esc(info.abuseEmail) + '</span></span></div>';
+          }
+          setFieldHtml('riskTech', rtHtml);
+        }
       })
       .catch(function () {});
 

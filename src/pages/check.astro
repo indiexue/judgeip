@@ -1,0 +1,99 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { extractVisitorIp } from '../lib/ip-utils';
+
+const visitorIp = extractVisitorIp(Astro.request);
+---
+
+<IpcxLayout
+  title="一键环境体检 — 6 大维度泄露、指纹与一致性交叉校验 · JudgeIP"
+  description="一键完成 IP 纯净度、WebRTC 泄露、DNS 泄露、系统时区语言一致性、浏览器自动化指纹与 AI 可用性 6 大维度交叉体检。"
+  canonicalPath="/check"
+  bodyClass="page-check"
+  currentLabel="环境体检"
+  activeNav="/check"
+  extraJs={['/assets/js/check.js']}
+>
+  <section class="hero">
+    <h1 class="hero__title">一键环境体检</h1>
+    <p class="hero__lede">同时对 IP 纯净度、隧道泄露、浏览器时区语言一致性与自动化特征做 6 大维度交叉核验。</p>
+  </section>
+
+  <div class="probe" id="envcheck" data-visible-ip={visitorIp}>
+    <div class="probe__bar">
+      <button class="probe__run" type="button" data-check-run>重新体检</button>
+      <span class="probe__hint" data-check-progress>打开页面即自动开始 6 大维度交叉检测…</span>
+    </div>
+
+    <div class="verdict" data-check-verdict hidden>
+      <span class="verdict__dot" aria-hidden="true"></span>
+      <div class="verdict__body">
+        <p class="verdict__title" data-check-verdict-title></p>
+        <p class="verdict__note" data-check-verdict-note></p>
+      </div>
+    </div>
+
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">体检总览</h2>
+        <div class="rows">
+          <div class="row">
+            <span class="row__label">当前主出口 IP</span>
+            <span class="row__value" data-check-ip><span class="mono">{visitorIp}</span></span>
+          </div>
+          <div class="row">
+            <span class="row__label">环境综合健康分</span>
+            <span class="row__value" data-check-score><span class="dim">计算中…</span></span>
+          </div>
+          <div class="row">
+            <span class="row__label">通过维度</span>
+            <span class="row__value" data-check-passed><span class="dim">计算中…</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group__title">6 大维度交叉核验明细</h2>
+        <div class="rows">
+          <div class="row" data-dim="purity">
+            <span class="row__label">1. IP 纯净度与原生血统</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+          <div class="row" data-dim="webrtc">
+            <span class="row__label">2. WebRTC UDP 旁路泄露</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+          <div class="row" data-dim="dns">
+            <span class="row__label">3. 递归 DNS 跨区泄露</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+          <div class="row" data-dim="consistency">
+            <span class="row__label">4. 时区与语言一致性</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+          <div class="row" data-dim="stealth">
+            <span class="row__label">5. 自动化与防伪装特征</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+          <div class="row" data-dim="ai">
+            <span class="row__label">6. 主流 AI 平台准入</span>
+            <span class="row__value" data-dim-val><span class="dim">待检测</span></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <article class="prose">
+    <h2>为什么要做「6 大维度交叉校验」</h2>
+    <p>
+      单测一个 IP 分数往往具有迷惑性：即便买到了 95 分的原生家庭宽带 IP，如果代理软件漏掉了 UDP（导致 <strong>WebRTC 吐出本地真实 IP</strong>）、
+      分流规则漏掉了域名解析（导致<strong>国内运营商 DNS 抢答</strong>），或者系统仍保留着 <span class="mono">Asia/Shanghai</span> 时区与 <span class="mono">zh-CN</span> 首选语言，
+      TikTok、Amazon、Claude 与支付风控依然会在一秒钟内把这台设备判定为异常伪装环境。
+    </p>
+    <p>
+      本页在一次运行中把网络层（IP 纯净度、WebRTC、DNS）与浏览器环境层（时区语言匹配、WebDriver 自动化标志、AI 地区可用性）拼成一张完整的交叉诊断单；
+      发现哪一项未通过，可直接前往导航栏对应的单项工具做深度排查。
+    </p>
+  </article>
+</IpcxLayout>

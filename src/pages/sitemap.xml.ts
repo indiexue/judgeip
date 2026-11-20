@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 
 const CORE_ROUTES = [
   '/',
+  '/check',
   '/claude',
   '/ai',
   '/webrtc',
@@ -12,7 +13,11 @@ const CORE_ROUTES = [
   '/split',
   '/ping',
   '/whois',
+  '/dns-tools',
+  '/ip-calc',
+  '/headers',
   '/fingerprint',
+  '/card',
   '/status',
   '/tools',
   '/privacy',

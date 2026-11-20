@@ -1,0 +1,213 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { parseIp } from '../lib/ip-utils';
+import { checkIpv4Dnsbl } from '../lib/ipcx-lookup';
+
+const rawQ = (Astro.url.searchParams.get('q') || '').trim();
+const queryTarget = rawQ.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+
+interface DnsRecordItem {
+  type: string;
+  name: string;
+  ttl: number;
+  data: string;
+}
+
+const RECORD_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS'];
+
+async function queryDohType(name: string, rtype: string): Promise<DnsRecordItem[]> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const res = await fetch(`https://1.1.1.1/dns-query?name=${encodeURIComponent(name)}&type=${rtype}`, {
+      signal: ctl.signal,
+      headers: { Accept: 'application/dns-json' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return [];
+    const json = (await res.json()) as {
+      Answer?: Array<{ name?: string; type?: number; TTL?: number; data?: string }>;
+    };
+    const TYPE_CODE_MAP: Record<number, string> = {
+      1: 'A',
+      28: 'AAAA',
+      5: 'CNAME',
+      15: 'MX',
+      16: 'TXT',
+      2: 'NS',
+      12: 'PTR',
+    };
+    return (json.Answer || []).map((a) => ({
+      type: TYPE_CODE_MAP[a.type || 0] || rtype,
+      name: String(a.name || name).replace(/\.$/, ''),
+      ttl: Number(a.TTL || 0),
+      data: String(a.data || ''),
+    }));
+  } catch {
+    clearTimeout(timer);
+    return [];
+  }
+}
+
+let mode: 'idle' | 'ip' | 'domain' | 'invalid' = 'idle';
+let records: DnsRecordItem[] = [];
+let dnsblHits: string[] = [];
+let ptrDomain = '';
+
+if (queryTarget) {
+  const parsedIp = parseIp(queryTarget);
+  if (parsedIp && parsedIp.version === 4) {
+    mode = 'ip';
+    ptrDomain = parsedIp.normalized.split('.').reverse().join('.') + '.in-addr.arpa';
+    const [ptrRes, blRes] = await Promise.all([
+      queryDohType(ptrDomain, 'PTR'),
+      checkIpv4Dnsbl(parsedIp.normalized),
+    ]);
+    records = ptrRes;
+    dnsblHits = blRes;
+  } else if (/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(queryTarget)) {
+    mode = 'domain';
+    const all = await Promise.all(RECORD_TYPES.map((t) => queryDohType(queryTarget, t)));
+    records = all.flat();
+    // Deduplicate identical CNAMEs returned across sub-queries
+    const seen = new Set<string>();
+    records = records.filter((r) => {
+      const k = `${r.type}|${r.name}|${r.data}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  } else {
+    mode = 'invalid';
+  }
+}
+---
+
+<IpcxLayout
+  title="DNS 查询与黑名单 (DNSBL) 检测 — A/AAAA/MX/TXT/NS/PTR · JudgeIP"
+  description="在线查询域名的 A、AAAA、CNAME、MX、TXT、NS 解析记录，或检测 IPv4 地址的反向解析 PTR 与邮件垃圾黑名单 (DNSBL)。"
+  canonicalPath="/dns-tools"
+  bodyClass="page-dnstools"
+  currentLabel="DNS 工具"
+  activeNav="/dns-tools"
+  extraCss={['/assets/css/whois.css']}
+>
+  <section class="hero">
+    <h1 class="hero__title">DNS 解析与 DNSBL 黑名单工具</h1>
+    <p class="hero__lede">输入域名一次拉取全部 A / AAAA / MX / TXT / NS 记录；输入 IPv4 地址反查 PTR 与 4 家主流垃圾黑名单。</p>
+  </section>
+
+  <form class="query whois-query" method="get" action="/dns-tools" role="search">
+    <div class="query__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <path d="m20 20-4.9-4.9"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono"
+        type="text"
+        name="q"
+        value={queryTarget}
+        placeholder="judgeip.com / openai.com / 8.8.8.8"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="要查询的域名或 IPv4"
+      />
+      <button class="query__submit" type="submit">查询</button>
+    </div>
+
+    <p class="whois-examples">
+      <span class="whois-examples__label">试试</span>
+      <a class="whois-examples__item" href="/dns-tools?q=judgeip.com" rel="nofollow">judgeip.com</a>
+      <a class="whois-examples__item" href="/dns-tools?q=openai.com" rel="nofollow">openai.com</a>
+      <a class="whois-examples__item" href="/dns-tools?q=gmail.com" rel="nofollow">gmail.com</a>
+      <a class="whois-examples__item" href="/dns-tools?q=8.8.8.8" rel="nofollow">8.8.8.8</a>
+      <a class="whois-examples__item" href="/dns-tools?q=45.76.12.8" rel="nofollow">45.76.12.8</a>
+    </p>
+
+    {mode === 'invalid' && (
+      <p class="notice" role="alert">
+        <span>输入格式无法识别，请输入有效的域名（如 openai.com）或 IPv4 地址（如 8.8.8.8）。</span>
+      </p>
+    )}
+  </form>
+
+  {mode === 'domain' && (
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">
+          DNS 解析记录 ({queryTarget}) <span class="whois-count">{records.length} 条</span>
+        </h2>
+        <div class="rows">
+          {records.length === 0 ? (
+            <div class="row">
+              <span class="row__label">查询结果</span>
+              <span class="row__value"><span class="dim">未查到公开 DNS 记录（域名不存在或未配置常见记录）。</span></span>
+            </div>
+          ) : (
+            records.map((r) => (
+              <div class="row">
+                <span class="row__label">
+                  <span class="badge badge--gray mono">{r.type}</span>
+                  <span class="dim mono" style="margin-left:8px; font-size:12px;">TTL {r.ttl}s</span>
+                </span>
+                <span class="row__value"><span class="mono">{r.data}</span></span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  )}
+
+  {mode === 'ip' && (
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">反向解析 (rDNS / PTR)</h2>
+        <div class="rows">
+          <div class="row">
+            <span class="row__label">反查区名</span>
+            <span class="row__value"><span class="mono">{ptrDomain}</span></span>
+          </div>
+          <div class="row">
+            <span class="row__label">PTR 主机名</span>
+            <span class="row__value">
+              {records.length > 0 ? (
+                <span class="mono">{records.map((r) => r.data).join(', ')}</span>
+              ) : (
+                <span class="dim">未设置反向解析记录</span>
+              )}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group__title">DNSBL 实时黑名单核查</h2>
+        <div class="rows">
+          {['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT'].map((blName) => {
+            const hit = dnsblHits.includes(blName);
+            return (
+              <div class="row">
+                <span class="row__label">{blName}</span>
+                <span class="row__value">
+                  <span class={`tag tag--${hit ? 'leak' : 'ok'}`}>{hit ? '命中黑名单 (Listed)' : '未收录 (Clean)'}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  )}
+
+  <article class="prose">
+    <h2>关于 DoH 解析与 DNSBL</h2>
+    <p>
+      本工具在服务端通过 Cloudflare <span class="mono">1.1.1.1</span> DNS-over-HTTPS 接口实时查询权威记录，避免本地运营商缓存污染。
+      当输入 IPv4 地址时，系统除了查询 <span class="mono">in-addr.arpa</span> 反向域名外，还会并发核验主流反垃圾邮件与僵尸网络黑名单（DNSBL）——如果发件服务器或静态住宅代理命中其中任意一家，发信进垃圾箱与登录触发验证码的概率会显著上升。
+    </p>
+  </article>
+</IpcxLayout>

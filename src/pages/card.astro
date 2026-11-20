@@ -1,0 +1,215 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { extractVisitorIp, parseIp } from '../lib/ip-utils';
+import { lookupIpFull } from '../lib/ipcx-lookup';
+
+const visitorIp = extractVisitorIp(Astro.request);
+const rawIp = (Astro.url.searchParams.get('ip') || '').trim();
+const parsed = rawIp ? parseIp(rawIp) : null;
+const targetIp = parsed ? parsed.normalized : visitorIp;
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const info = await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp);
+
+const scoreColor = info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
+const nativeText = info.isBogon ? '保留地址' : info.isNative ? '原生 IP (Native)' : '广播 IP (Broadcast)';
+const locationText = [info.countryZh, info.region !== '—' ? info.region : '', info.city !== '—' ? info.city : '']
+  .filter(Boolean)
+  .filter((v, idx, arr) => arr.indexOf(v) === idx)
+  .join(' · ');
+
+const markdownSnippet = `[![JudgeIP ${info.ip}](https://judgeip.com/card.svg?ip=${encodeURIComponent(info.ip)})](https://judgeip.com/?ip=${encodeURIComponent(info.ip)})`;
+const shareReportUrl = `https://judgeip.com/?ip=${encodeURIComponent(info.ip)}`;
+---
+
+<IpcxLayout
+  title={`IP 信息分享卡片 (${info.ip}) · JudgeIP`}
+  description={`生成并下载 ${info.ip} 的高清 IP 纯净度与网络属性报告卡片。`}
+  canonicalPath="/card"
+  bodyClass="page-card"
+  currentLabel="IP 信息卡片"
+  activeNav="/card"
+>
+  <section class="hero">
+    <h1 class="hero__title">IP 信息分享卡片</h1>
+    <p class="hero__lede">生成干净清晰的 IP 纯净度与网络属性信息卡，支持一键隐藏后两段隐私脱敏、下载高清 PNG 图片或复制链接。</p>
+  </section>
+
+  <form class="query" method="get" action="/card" novalidate>
+    <div class="query__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <path d="m20 20-4.9-4.9"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono"
+        type="text"
+        name="ip"
+        value={rawIp ? info.ip : ''}
+        placeholder="输入任意 IP 生成卡片（留空默认本机）"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="query__submit" type="submit">生成</button>
+    </div>
+  </form>
+
+  <div class="probe" id="ip-card-tool" data-ip={info.ip}>
+    <div class="probe__bar" style="flex-wrap:wrap; gap:10px;">
+      <button class="probe__run" type="button" id="btn-download-png">下载 PNG 卡片</button>
+      <button class="copy" type="button" id="btn-toggle-mask" style="padding:8px 14px;">隐藏后两段 (打码)</button>
+      <button class="copy" type="button" data-copy-target="card-share-url" data-copy-done="已复制链接" style="padding:8px 14px;">
+        <span class="copy__label">复制查询链接</span>
+      </button>
+      <span id="card-share-url" hidden>{shareReportUrl}</span>
+    </div>
+
+    <!-- SVG Card Preview (Renders crisply at any DPI and exports cleanly to Canvas PNG) -->
+    <div style="margin: 16px 0 24px; display:flex; justify-content:center;">
+      <svg
+        id="judgeip-svg-card"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 720 380"
+        style="width:100%; max-width:720px; height:auto; border-radius:16px; box-shadow: var(--shadow-2); border: 1px solid var(--border);"
+      >
+        <defs>
+          <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#111827" />
+            <stop offset="100%" stop-color="#0b1120" />
+          </linearGradient>
+        </defs>
+        <rect width="720" height="380" rx="16" fill="url(#cardBg)" />
+        <rect x="1" y="1" width="718" height="378" rx="15" fill="none" stroke="#1f2937" stroke-width="2" />
+
+        <!-- Brand Header -->
+        <text x="36" y="48" font-family="ui-rounded, system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" fill="#3bb982">JudgeIP</text>
+        <text x="142" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#9ca3af">IP 纯净度与网络属性报告 · judgeip.com</text>
+
+        <!-- Target IP -->
+        <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#f9fafb" id="svg-ip-text">{info.ip}</text>
+        <text x="36" y="124" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d1d5db">
+          {locationText || '未知位置'} · {info.asnCode} · {info.isp.slice(0, 38)}
+        </text>
+
+        <!-- Score Box Right -->
+        <rect x="536" y="34" width="148" height="96" rx="14" fill="#172033" stroke={scoreColor} stroke-opacity="0.45" stroke-width="1.5" />
+        <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">纯净度评分</text>
+        <text x="610" y="96" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, monospace" font-size="34" font-weight="800" fill={scoreColor}>{info.score}</text>
+        <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>等级 {info.grade}</text>
+
+        <line x1="36" y1="150" x2="684" y2="150" stroke="#1f2937" stroke-width="1" />
+
+        <!-- Attribute Grid -->
+        <g font-family="system-ui, -apple-system, sans-serif" font-size="13">
+          <text x="36" y="184" fill="#9ca3af">网络类型</text>
+          <text x="135" y="184" fill="#f3f4f6" font-weight="600">{info.ipTypeLabel}</text>
+
+          <text x="36" y="218" fill="#9ca3af">原生血统</text>
+          <text x="135" y="218" fill={info.isNative ? '#34d399' : '#fbbf24'} font-weight="600">{nativeText}</text>
+
+          <text x="36" y="252" fill="#9ca3af">注册机构</text>
+          <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName} ({info.rirCountry || info.countryCode})</text>
+
+          <text x="36" y="286" fill="#9ca3af">路由前缀</text>
+          <text x="135" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">{info.bgpPrefix}</text>
+
+          <text x="376" y="184" fill="#9ca3af">代理状态</text>
+          <text x="476" y="184" fill={info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.proxyLabel}</text>
+
+          <text x="376" y="218" fill="#9ca3af">威胁 / 黑名单</text>
+          <text x="476" y="218" fill={info.hasThreat ? '#f87171' : '#34d399'} font-weight="600">{info.threatLabel}</text>
+
+          <text x="376" y="252" fill="#9ca3af">RPKI 授权</text>
+          <text x="476" y="252" fill={info.rpkiStatus === 'valid' ? '#34d399' : '#d1d5db'} font-weight="600">{info.rpkiLabel}</text>
+
+          <text x="376" y="286" fill="#9ca3af">人机流量比</text>
+          <text x="476" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">Human {info.humanPct} / Bot {info.botPct}</text>
+        </g>
+
+        <line x1="36" y1="316" x2="684" y2="316" stroke="#1f2937" stroke-width="1" />
+        <text x="36" y="348" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#6b7280">
+          Verified by JudgeIP.com · 原始多源路由、WHOIS 与威胁情报交叉核验
+        </text>
+        <text x="684" y="348" text-anchor="end" font-family="ui-monospace, monospace" font-size="12" fill="#6b7280">
+          {new Date().toISOString().slice(0, 10)}
+        </text>
+      </svg>
+    </div>
+
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">论坛 / Markdown 嵌入代码</h2>
+        <div class="rows">
+          <div class="row">
+            <span class="row__label">直链地址</span>
+            <span class="row__value"><span class="mono">{shareReportUrl}</span></span>
+          </div>
+          <div class="row">
+            <span class="row__label">SVG 图片地址</span>
+            <span class="row__value"><span class="mono">https://judgeip.com/card.svg?ip={encodeURIComponent(info.ip)}</span></span>
+          </div>
+          <div class="row">
+            <span class="row__label">Markdown 代码</span>
+            <span class="row__value">
+              <span class="mono" id="md-badge-code">{markdownSnippet}</span>
+              <button class="copy" type="button" data-copy-target="md-badge-code" data-copy-done="已复制" style="margin-left:8px;">
+                <span class="copy__label">复制</span>
+              </button>
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var tool = document.getElementById('ip-card-tool');
+      if (!tool) return;
+      var fullIp = tool.getAttribute('data-ip') || '';
+      var svgIp = document.getElementById('svg-ip-text');
+      var maskBtn = document.getElementById('btn-toggle-mask');
+      var dlBtn = document.getElementById('btn-download-png');
+      var svgEl = document.getElementById('judgeip-svg-card');
+      var masked = false;
+
+      function maskIp(val) {
+        if (val.indexOf(':') !== -1) return val.split(':').slice(0, 2).join(':') + ':*:*';
+        var p = val.split('.');
+        return p.length === 4 ? p[0] + '.' + p[1] + '.*.*' : '*.*.*.*';
+      }
+
+      if (maskBtn && svgIp) {
+        maskBtn.addEventListener('click', function () {
+          masked = !masked;
+          svgIp.textContent = masked ? maskIp(fullIp) : fullIp;
+          maskBtn.textContent = masked ? '显示完整 IP' : '隐藏后两段 (打码)';
+        });
+      }
+
+      if (dlBtn && svgEl) {
+        dlBtn.addEventListener('click', function () {
+          var serializer = new XMLSerializer();
+          var svgStr = serializer.serializeToString(svgEl);
+          var blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+          var url = URL.createObjectURL(blob);
+          var img = new Image();
+          img.onload = function () {
+            var canvas = document.createElement('canvas');
+            canvas.width = 1440;
+            canvas.height = 760;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 1440, 760);
+            URL.revokeObjectURL(url);
+            var a = document.createElement('a');
+            a.download = 'judgeip-' + (masked ? 'masked' : fullIp.replace(/[^a-zA-Z0-9.-]/g, '_')) + '.png';
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+          };
+          img.src = url;
+        });
+      }
+    })();
+  </script>
+</IpcxLayout>

@@ -58,6 +58,13 @@ const encodedIp = encodeURIComponent(info.ip);
         <span class="copy__label">查本机</span>
       </a>
     )}
+    <a class="copy" id="share-card-link" href={`/card?ip=${encodedIp}`} style="text-decoration:none;" title="生成 IP 纯净度分享卡片">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
+        <path d="M7 9h6M7 13h10"></path>
+      </svg>
+      <span class="copy__label">生成卡片</span>
+    </a>
     <button class="mask" type="button" data-mask-toggle aria-pressed="false" aria-label="隐藏 IP 地址" title="隐藏 IP 地址">
       <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
@@ -78,6 +85,16 @@ const encodedIp = encodeURIComponent(info.ip);
     </button>
   </div>
 </div>
+
+{isSelf && (
+  <a class="esim-banner" href="/check">
+    <div class="esim-banner__body">
+      <div class="esim-banner__title">一键环境体检（6 大维度交叉校验）</div>
+      <div class="esim-banner__desc">同时自动核验 IP 纯净度、WebRTC 泄露、DNS 泄露、时区语言一致性、自动化指纹与 AI 平台可用性。</div>
+    </div>
+    <span class="esim-banner__cta">开始体检 ›</span>
+  </a>
+)}
 
 <div class="groups">
   <!-- 1. 网络属性 -->
@@ -153,7 +170,7 @@ const encodedIp = encodeURIComponent(info.ip);
         </span>
       </div>
       <div class="row">
-        <span class="row__label">IP 评分</span>
+        <span class="row__label">IP 纯净度评分</span>
         <span class="row__value" data-field="score">
           <span class={`score score--${info.scoreTone}`}>
             <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={`IP 评分 ${info.score} 分，满分 100 分`}>
@@ -162,6 +179,9 @@ const encodedIp = encodeURIComponent(info.ip);
             </svg>
             <span class="score__num mono">
               {info.score}<span class="score__total">/100</span>
+            </span>
+            <span class={`badge badge--${info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger'}`} style="margin-left:6px;">
+              {info.grade}
             </span>
           </span>
         </span>
@@ -215,7 +235,84 @@ const encodedIp = encodeURIComponent(info.ip);
     </div>
   </section>
 
-  <!-- 3. 多库定位 -->
+  <!-- 3. 场景适配评估（整合自 cleanip.io 核心亮点：8 大高频业务适配度） -->
+  {!info.isBogon && info.scenes.length > 0 && (
+    <section class="group" id="scene-fit">
+      <h2 class="group__title">场景适配</h2>
+      <div class="rows" data-field="scenes">
+        {info.scenes.map((sc) => (
+          <div class="row">
+            <span class="row__label">{sc.label}</span>
+            <span class="row__value">
+              <span class="tags">
+                <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
+                <span class="geo__note">{sc.note}</span>
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- 4. 风险检测与技术指标（整合自 cleanip.io：代理匿名 / DNSBL / 端口 / BGP 前缀 / RPKI / PTR） -->
+  {!info.isBogon && (
+    <section class="group" id="risk-tech">
+      <h2 class="group__title">风险与技术指标</h2>
+      <div class="rows" data-field="riskTech">
+        {info.riskChecks.map((rc) => (
+          <div class="row">
+            <span class="row__label">{rc.label}</span>
+            <span class="row__value">
+              <span class={`tag tag--${rc.tone}`}>{rc.status}</span>
+            </span>
+          </div>
+        ))}
+        <div class="row">
+          <span class="row__label">BGP 路由前缀</span>
+          <span class="row__value">
+            {info.bgpPrefix !== '—' ? (
+              <a class="asn-link mono" href={`/ip-calc?q=${encodeURIComponent(info.bgpPrefix)}`} title="在子网计算器中查看该网段">
+                {info.bgpPrefix}
+              </a>
+            ) : (
+              <span class="mono">—</span>
+            )}
+          </span>
+        </div>
+        <div class="row">
+          <span class="row__label">RPKI 路由授权</span>
+          <span class="row__value">
+            <span class={`tag tag--${info.rpkiStatus === 'valid' ? 'ok' : info.rpkiStatus === 'invalid' ? 'leak' : 'muted'}`}>
+              {info.rpkiLabel}
+            </span>
+          </span>
+        </div>
+        <div class="row">
+          <span class="row__label">反向解析 (PTR)</span>
+          <span class="row__value"><span class="mono">{info.ptrRecord}</span></span>
+        </div>
+        <div class="row">
+          <span class="row__label">开放服务端口</span>
+          <span class="row__value">
+            {info.openPorts.length > 0 ? (
+              <span class="mono">{info.openPorts.join(', ')}</span>
+            ) : (
+              <span class="geo__note">{info.version === 4 ? '未发现公网开放端口' : 'IPv6 免被动扫描'}</span>
+            )}
+          </span>
+        </div>
+        {info.abuseEmail !== '—' && (
+          <div class="row">
+            <span class="row__label">滥用举报邮箱</span>
+            <span class="row__value"><span class="mono">{info.abuseEmail}</span></span>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- 5. 多库定位 -->
   {!info.isBogon && (
     <section class="group geo" data-geo data-ip={info.ip} data-self={isSelf ? '1' : '0'}>
       <h2 class="group__title">多库定位</h2>
@@ -264,7 +361,7 @@ const encodedIp = encodeURIComponent(info.ip);
     </section>
   )}
 
-  <!-- 4. 本机网络 -->
+  <!-- 6. 本机网络 -->
   {isSelf && (
     <section
       class="group"
@@ -309,7 +406,7 @@ const encodedIp = encodeURIComponent(info.ip);
     </section>
   )}
 
-  <!-- 5. 网络连通性 -->
+  <!-- 7. 网络连通性 -->
   {isSelf && (
     <section class="group conn conn--home" data-conn data-conn-auto="view" data-rounds="4">
       <div class="connhead">
