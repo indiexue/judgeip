@@ -24,8 +24,8 @@
     <div class="fixnote" data-webrtc-fix hidden>
     <p class="fixnote__title">建议装一个扩展把这条旁路堵上</p>
     <p class="fixnote__note">
-      WebRTC 已经在你的浏览器上拿到了地址，任何一个网页都能用同样的方式拿到它。
-      WebRTC Protect 是 Chrome 应用商店里的一键拦截扩展，装完回到本页重测一次即可验证效果。
+      WebRTC 已经在你的浏览器上拿到了地址，任何网页都能用同样的方法拿到。
+      WebRTC Protect 是 Chrome 应用商店里的一键拦截扩展，装好后回到本页重测即可确认。
     </p>
     <a class="fixnote__link"
        href="https://chromewebstore.google.com/detail/bkmmlbllpjdpgcgdohbaghfaecnddhni"
@@ -141,7 +141,7 @@
 
   <noscript>
     <p class="notice" role="alert">
-      <span>WebRTC 探测必须在浏览器里执行。当前浏览器禁用了 JavaScript，本页只能显示服务器清单与说明，无法出结果——不过换个角度说，禁用 JS 的浏览器本身就不会通过网页发起 WebRTC 探测。</span>
+      <span>WebRTC 检测必须在浏览器里运行。当前浏览器禁用了 JavaScript，本页只能显示服务器清单与说明。禁用 JavaScript 时，网页本身也无法发起 WebRTC 探测。</span>
     </p>
   </noscript>
 </div>
@@ -150,24 +150,24 @@
   <h2>什么是 WebRTC 泄露</h2>
   <p>
     WebRTC（Web Real-Time Communication）是浏览器内置的实时音视频与点对点数据传输能力，
-    网页版的视频会议、屏幕共享、在线客服、云游戏串流几乎都建立在它之上。
-    点对点通信要先解决一个问题：<strong>两台设备各自躲在 NAT 后面，谁也不知道对方的公网地址</strong>。
-    WebRTC 的解法是 ICE 框架——浏览器主动向 STUN 服务器发一个请求，
-    服务器把「我看到你来自哪个地址和端口」原样回给它，这个结果叫 srflx（server reflexive）候选地址。
+    网页版视频会议、屏幕共享、在线客服、云游戏串流基本都用它。
+    点对点通信要先解决一个问题：<strong>两台设备都在 NAT 后面，彼此不知道对方的公网地址</strong>。
+    WebRTC 用 ICE 框架解决：浏览器向 STUN 服务器发一个请求，
+    服务器把「我看到你来自哪个地址和端口」返回给它，这个结果叫 srflx（server reflexive）候选地址。
   </p>
   <p>
-    问题出在这一步的实现细节上：ICE 的地址收集走的是 <strong>UDP，直接由操作系统的网络栈发出</strong>，
-    不经过浏览器的 HTTP 代理设置。于是就出现了这样一种局面——
-    你的网页流量老老实实走着 VPN 或代理，网站看到的是代理出口的地址；
-    与此同时，同一个页面里的一段 JavaScript 悄悄发起 ICE 收集，
+    问题在于：ICE 收集地址走的是 <strong>UDP，直接由操作系统的网络栈发出</strong>，
+    不经过浏览器的 HTTP 代理设置。
+    所以网页流量走着 VPN 或代理，网站看到的是代理出口；
+    同一个页面里的 JavaScript 发起 ICE 收集，
     拿到的却是你本地宽带的真实公网地址。这就是 WebRTC 泄露（WebRTC Leak）。
   </p>
   <p>
-    泄露的还不止公网地址。ICE 同时会收集 host 类型的候选地址，也就是网卡上的内网地址
-    （192.168.x.x、10.x.x.x 这类），足以暴露你所在局域网的网段结构。
-    Chrome、Edge、Firefox 自 2019 年前后起默认用 mDNS 主机名
-    （形如 <span class="mono">a1b2c3d4-….local</span>）替换掉真实内网地址，这一部分风险已经小了很多，
-    但公网地址那一条通道至今仍然开着。
+    泄露的不只是公网地址。ICE 还会收集 host 类型的候选地址，也就是网卡上的内网地址
+    （192.168.x.x、10.x.x.x 这类），能暴露你所在局域网的网段。
+    Chrome、Edge、Firefox 大约从 2019 年起默认用 mDNS 主机名
+    （形如 <span class="mono">a1b2c3d4-….local</span>）替换真实内网地址，这部分风险已经小了很多，
+    但公网地址这条路至今仍然开着。
   </p>
 
   <h2>这次检测做了什么</h2>
@@ -178,30 +178,30 @@
     <li>把探到的公网地址与<strong>本站在 HTTP 层看到的地址</strong>逐一比对，得出最终结论。</li>
   </ol>
   <p>
-    之所以要一台一台单独测，而不是把十台一起塞进 <span class="mono">iceServers</span>：
-    混在一起时浏览器只会给出去重后的候选地址，你无法知道究竟是哪台服务器回的、哪台根本没通。
-    分开测才能看出「国内的 STUN 通、国外的全超时」这类真实网络状况——
-    这也是清单里国内外服务器各占一半的原因。某一台超时不代表你安全，只代表那台没连上。
+    为什么一台一台单独测，而不是把所有服务器一起放进 <span class="mono">iceServers</span>：
+    放在一起时浏览器只给出去重后的候选地址，分不清是哪台服务器回的、哪台没通。
+    分开测才能看出「国内的 STUN 通、国外的全超时」这类情况，
+    这也是清单里国内外服务器都有的原因。某一台超时不代表你安全，只说明那台没连上。
   </p>
 
   <h2>怎么读检测结果</h2>
   <ul>
     <li><strong>没有探到任何公网地址</strong>：浏览器没能通过 WebRTC 拿到你的公网地址，这是最安全的状态。</li>
     <li><strong>探到的公网地址与 HTTP 可见地址一致</strong>：没有额外泄露。你没有使用代理，或者代理已经正确接管了 UDP 流量。</li>
-    <li><strong>探到的公网地址与 HTTP 可见地址不一致</strong>：这就是典型的 WebRTC 泄露。
-        网站以为你在代理出口那一端，而任何一个网页都能通过这段 JavaScript 拿到你的真实地址。</li>
+    <li><strong>探到的公网地址与 HTTP 可见地址不一致</strong>：典型的 WebRTC 泄露。
+        网站以为你在代理出口那边，而任何网页都能用这段 JavaScript 拿到你的真实地址。</li>
     <li><strong>探到 192.168 / 10.x 开头的内网地址</strong>：你的浏览器没有启用 mDNS 混淆，局域网网段被暴露了。</li>
   </ul>
 
   <h2>如何防止 WebRTC 泄露</h2>
   <p>
-    最直接的办法是装一个扩展，从浏览器层面管住 WebRTC 的地址收集策略。
-    下面两个都是 Chrome 应用商店里的现成方案，装完刷新本页重测即可验证效果：
+    最直接的办法是装一个扩展，在浏览器里限制 WebRTC 的地址收集。
+    下面两个都是 Chrome 应用商店里现成的扩展，装好后刷新本页重测即可确认：
   </p>
   <ul class="linklist">
     <li>
       <a href="https://chromewebstore.google.com/detail/webrtc-network-limiter/npeicpdbkakmehahjeeohfdhnlpdklia" target="_blank" rel="noopener external">WebRTC Network Limiter</a>
-      <span class="linklist__note">Google 官方出品，改的是 Chrome 的 WebRTC 策略而不是页面本身：可以只用代理走过的那条通道，保留视频通话能力的同时不再暴露真实地址。</span>
+      <span class="linklist__note">由 Google 发布，修改的是 Chrome 的 WebRTC 策略：只使用代理所走的那条路径，保留视频通话功能，同时不再暴露真实地址。</span>
     </li>
     <li>
       <a href="https://chromewebstore.google.com/detail/webrtc-protect-protect-ip/bkmmlbllpjdpgcgdohbaghfaecnddhni" target="_blank" rel="noopener external">WebRTC Protect — Protect IP Leak</a>
@@ -209,24 +209,24 @@
     </li>
   </ul>
   <p>
-    除了装扩展，还有几条路：Firefox 用户可以在 <span class="mono">about:config</span> 里把
+    除了装扩展，还有几种做法：Firefox 用户可以在 <span class="mono">about:config</span> 里把
     <span class="mono">media.peerconnection.enabled</span> 设为 <span class="mono">false</span>，
-    代价是网页版音视频通话彻底不可用；
-    使用支持全局 TUN / TAP 模式的 VPN 客户端，让 UDP 也一并走隧道，从根上消除这条旁路；
-    或者在路由器上直接封掉 STUN 常用的 3478 端口。
-    需要提醒的是：<strong>禁用 WebRTC 会让 Google Meet、腾讯会议网页版、Discord 网页版这类服务失效</strong>，
-    如果你日常要用，优先选择 Network Limiter 这种「限制策略」而不是「彻底关闭」的方案。
+    代价是网页版音视频通话完全不可用；
+    使用支持全局 TUN / TAP 模式的 VPN 客户端，让 UDP 也走隧道，从根本上去掉这条旁路；
+    或者在路由器上封掉 STUN 常用的 3478 端口。
+    注意：<strong>禁用 WebRTC 会让 Google Meet、腾讯会议网页版、Discord 网页版这类服务失效</strong>，
+    如果日常要用，优先选 Network Limiter 这种限制策略的方案，而不是完全关闭。
   </p>
 
   <h2>常见问题</h2>
   <dl class="faq">
     <dt>用了 VPN，为什么还会被查到真实 IP？</dt>
-    <dd>多数浏览器插件式代理和 SOCKS / HTTP 代理只接管 TCP 上的 HTTP(S) 流量，WebRTC 的 ICE 收集走的是 UDP，直接从物理网卡发出，绕过了代理设置。这不是 VPN 的 bug，是分层的必然结果——除非 VPN 工作在 TUN 模式下接管整个网络栈。</dd>
+    <dd>多数浏览器插件式代理和 SOCKS / HTTP 代理只接管 TCP 上的 HTTP(S) 流量，WebRTC 的 ICE 收集走 UDP，直接从物理网卡发出，绕过了代理设置。这不是 VPN 的 bug，而是分层设计的结果，除非 VPN 以 TUN 模式接管整个网络栈。</dd>
     <dt>检测显示全部超时，是不是说明我很安全？</dt>
-    <dd>不能这么推断。超时只说明那些 STUN 服务器当前连不上（网络限制、服务器故障、UDP 被封）。换一个网络环境、换一台服务器，结果可能完全不同。请以「至少有一台通了且没探到额外地址」作为安全的判断依据。</dd>
+    <dd>不能这么判断。超时只说明这些 STUN 服务器当前连不上（网络限制、服务器故障、UDP 被封）。换个网络、换台服务器，结果可能完全不同。至少有一台连通且没有探到额外地址，才能认为是安全的。</dd>
     <dt>内网地址显示成一串 .local 是什么意思？</dt>
     <dd>这是 mDNS 混淆，浏览器用一个随机主机名替换了真实内网地址。这是预期中的正常行为，说明你的浏览器版本已经带上了这项保护。</dd>
     <dt>本站会保存 WebRTC 检测结果吗？</dt>
-    <dd>不会。整个探测过程完全在你的浏览器里完成，候选地址从未被发送回本站服务器。页面上出现的所有地址都只存在于当前这个标签页里，关掉即消失。</dd>
+    <dd>不会。整个检测都在你的浏览器里完成，候选地址不会发回本站服务器。页面上的地址只存在于当前标签页，关掉即消失。</dd>
   </dl>
 </article>

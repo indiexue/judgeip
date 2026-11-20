@@ -1,18 +1,21 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/webrtc.html?raw";
+import zhHtml from "../snippets/webrtc.html?raw";
+import enHtml from "../snippets/en/webrtc.html?raw";
 import { extractVisitorIp } from "../lib/ip-utils";
+import { getLang, pick } from "../lib/i18n";
 
+const lang = getLang(Astro.locals);
 const visitorIp = extractVisitorIp(Astro.request);
-const html = rawHtml.replaceAll("__VISITOR_IP__", visitorIp);
+const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
 ---
 
 <IpcxLayout
-  title="WebRTC 泄露检测 — 检查 VPN／代理是否泄露真实 IP · JudgeIP"
-  description="逐台探测国内外 STUN 服务器，检查浏览器 WebRTC 是否绕过代理泄露真实 IP 地址。"
+  title={pick(lang, 'WebRTC 泄露检测 — 检查 VPN／代理是否泄露真实 IP · JudgeIP', 'WebRTC leak test: does your VPN or proxy leak your real IP · JudgeIP')}
+  description={pick(lang, '逐台探测国内外 STUN 服务器，检查浏览器 WebRTC 是否绕过代理泄露真实 IP 地址。', 'Probe STUN servers in and outside China one by one to check whether WebRTC bypasses your proxy and leaks your real IP.')}
   canonicalPath="/webrtc"
   bodyClass="page-webrtc"
-  currentLabel="WebRTC 泄露检测"
+  currentLabel={pick(lang, 'WebRTC 泄露检测', 'WebRTC leak test')}
   activeNav="/webrtc"
   extraCss={[]}
   extraJs={["/assets/js/webrtc.js"]}

@@ -8,6 +8,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('webrtc');
   if (!root) return;
 
@@ -158,7 +160,7 @@
 
   /* ---------------------------------------------------------------- 渲染 */
 
-  var ERRORS = { timeout: '超时', failed: '连接失败', reject: '不可用' };
+  var ERRORS = { timeout: T('超时', 'Timeout'), failed: T('连接失败', 'Connection failed'), reject: T('不可用', 'Unavailable') };
 
   function renderRow(cell, result) {
     var nodes = [];
@@ -170,9 +172,9 @@
         nodes.push(el('span', 'tag ' + (leaked ? 'tag--leak' : 'tag--ok') + ' mono', address));
       });
     } else if (result.error) {
-      nodes.push(el('span', 'tag tag--muted', ERRORS[result.error] || '失败'));
+      nodes.push(el('span', 'tag tag--muted', ERRORS[result.error] || T('失败', 'Failed')));
     } else {
-      nodes.push(el('span', 'tag tag--ok', '无公网候选'));
+      nodes.push(el('span', 'tag tag--ok', T('无公网候选', 'No public candidate')));
     }
 
     nodes.push(el('span', 'stun__ms mono', result.ms + ' ms'));
@@ -201,36 +203,36 @@
       ? publics.map(function (a) {
           return el('span', 'tag ' + (visibleIp !== '' && a !== visibleIp ? 'tag--leak' : 'tag--ok') + ' mono', a);
         })
-      : [el('span', 'dim', '未探测到')]);
+      : [el('span', 'dim', T('未探测到', 'Not found'))]);
 
     fill(localCell, locals.length
       ? locals.map(function (a) {
           return el('span', 'tag ' + (isMdns(a) ? 'tag--ok' : isPrivate(a) ? 'tag--warn' : 'tag--ok') + ' mono', a);
         })
-      : [el('span', 'dim', '未探测到')]);
+      : [el('span', 'dim', T('未探测到', 'Not found'))]);
 
     var tone, title, note;
 
     if (leaked.length) {
       tone = 'is-bad';
-      title = '检测到 WebRTC 泄露';
-      note = 'WebRTC 探到的 ' + leaked.join('、') + ' 与本站看到的 ' + visibleIp +
-             ' 不是同一个地址。任何网页都能用同样的方式拿到前者——你的代理没有兜住 UDP 流量。';
+      title = T('检测到 WebRTC 泄露', 'WebRTC leak detected');
+      note = T('WebRTC 探到的 ', 'WebRTC found ') + leaked.join(T('、', ', ')) + T(' 与本站看到的 ', ', but this site sees ') + visibleIp +
+             T(' 不是同一个地址。任何网页都能用同样的方法拿到前者，你的代理没有接管 UDP 流量。', '. Any web page can get the former the same way; your proxy does not handle UDP traffic.');
     } else if (publics.length) {
       tone = 'is-warn';
-      title = '有公网地址暴露，但没有额外泄露';
-      note = 'WebRTC 探到的地址与本站看到的一致，说明没有暴露出第二个身份。'
-           + '若你并未使用代理，这就是正常状态；若你正在用代理，说明它已经正确接管了 UDP。';
+      title = T('有公网地址暴露，但没有额外泄露', 'Public address visible, but no extra leak');
+      note = T('WebRTC 探到的地址与本站看到的一致，没有暴露出第二个地址。', 'The address WebRTC found matches what this site sees, so no second address is exposed.')
+           + T('如果你没用代理，这是正常情况；如果在用代理，说明它已经正确接管了 UDP。', ' If you don\'t use a proxy, this is normal; if you do, it handles UDP correctly.');
     } else if (reachable === 0) {
       tone = 'is-warn';
-      title = '所有 STUN 服务器都没有响应';
-      note = '这不等于安全，只说明当前网络到这些服务器的 UDP 不通（可能被防火墙拦下）。'
-           + '换个网络环境重测一次，才能确认浏览器本身有没有这条旁路。';
+      title = T('所有 STUN 服务器都没有响应', 'No STUN server responded');
+      note = T('这不等于安全，只说明当前网络到这些服务器的 UDP 不通（可能被防火墙拦下）。', 'This doesn\'t mean you are safe, only that UDP from this network to these servers doesn\'t get through (possibly blocked by a firewall).')
+           + T('换个网络再测一次，才能确认浏览器有没有这条旁路。', ' Test again on another network to confirm whether the browser has this leak path.');
     } else {
       tone = 'is-good';
-      title = '未发现公网地址泄露';
-      note = reachable + ' 台服务器有响应，均未拿到你的公网地址。'
-           + (realLocals.length ? '不过内网地址 ' + realLocals.join('、') + ' 仍然可见。' : '内网地址也未暴露。');
+      title = T('未发现公网地址泄露', 'No public address leak found');
+      note = reachable + T(' 台服务器有响应，均未拿到你的公网地址。', ' servers responded, and none got your public address.')
+           + (realLocals.length ? T('不过内网地址 ', ' Local addresses ') + realLocals.join(T('、', ', ')) + T(' 仍然可见。', ' are still visible, though.') : T('内网地址也没有暴露。', ' No local address exposed either.'));
     }
 
     verdict.className = 'verdict ' + tone;
@@ -249,8 +251,8 @@
     if (!PeerConnection) {
       verdict.className = 'verdict is-warn';
       verdict.hidden = false;
-      verdictTitle.textContent = '当前浏览器不支持 WebRTC';
-      verdictNote.textContent = '没有 RTCPeerConnection 就没有这条旁路——从泄露的角度看，这是最安全的状态。';
+      verdictTitle.textContent = T('当前浏览器不支持 WebRTC', 'This browser doesn\'t support WebRTC');
+      verdictNote.textContent = T('没有 RTCPeerConnection 就没有这条旁路，从泄露的角度看这是最安全的情况。', 'Without RTCPeerConnection there is no leak path; from a leak standpoint this is the safest case.');
       runButton.disabled = true;
       return;
     }
@@ -259,7 +261,7 @@
     verdict.hidden = true;
     if (fixNote) fixNote.hidden = true;
     rows.forEach(function (row) {
-      fill(row.querySelector('[data-stun-result]'), [el('span', 'dim', '探测中…')]);
+      fill(row.querySelector('[data-stun-result]'), [el('span', 'dim', T('探测中…', 'Probing…'))]);
     });
 
     var results = [];
@@ -269,15 +271,15 @@
        超时数会虚高，测出来的「不通」并不真实。 */
     function next() {
       if (index >= rows.length) {
-        progress.textContent = '检测完成，共 ' + rows.length + ' 台服务器。';
+        progress.textContent = T('检测完成，共 ', 'Done, ') + rows.length + T(' 台服务器。', ' servers in total.');
         renderSummary(results);
         runButton.disabled = false;
-        runButton.textContent = '重新检测';
+        runButton.textContent = T('重新检测', 'Run again');
         return;
       }
 
       var row = rows[index];
-      progress.textContent = '正在探测第 ' + (index + 1) + ' / ' + rows.length + ' 台…';
+      progress.textContent = T('正在探测第 ', 'Probing ') + (index + 1) + ' / ' + rows.length + T(' 台…', '…');
 
       probe(row.getAttribute('data-stun-url')).then(function (result) {
         results.push(result);

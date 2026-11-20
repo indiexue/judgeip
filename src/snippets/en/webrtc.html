@@ -1,0 +1,232 @@
+
+<section class="hero">
+  <h1 class="hero__title">WebRTC leak test</h1>
+  <p class="hero__lede">Check whether WebRTC bypasses your proxy and leaks your real IP address.</p>
+</section>
+
+<div class="probe"
+     id="webrtc"
+     data-visible-ip="__VISITOR_IP__">
+
+  <div class="probe__bar">
+    <button class="probe__run" type="button" data-webrtc-run>Start</button>
+    <span class="probe__hint" data-webrtc-progress>8 servers, tested one by one: a few seconds when they respond, up to about a minute if none do.</span>
+  </div>
+
+  <div class="verdict" data-webrtc-verdict hidden>
+    <span class="verdict__dot" aria-hidden="true"></span>
+    <div class="verdict__body">
+      <p class="verdict__title" data-webrtc-verdict-title></p>
+      <p class="verdict__note" data-webrtc-verdict-note></p>
+    </div>
+  </div>
+
+    <div class="fixnote" data-webrtc-fix hidden>
+    <p class="fixnote__title">Block this path with an extension</p>
+    <p class="fixnote__note">
+      WebRTC has already obtained an address in your browser, and any web page can get it the same way.
+      WebRTC Protect is a one-click blocking extension in the Chrome Web Store; after installing it, come back and test again to confirm.
+    </p>
+    <a class="fixnote__link"
+       href="https://chromewebstore.google.com/detail/bkmmlbllpjdpgcgdohbaghfaecnddhni"
+       target="_blank"
+       rel="noopener external">Install WebRTC Protect from the Chrome Web Store →</a>
+  </div>
+
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">Address summary</h2>
+      <div class="rows">
+        <div class="row">
+          <div class="row__label">Address seen over HTTP</div>
+          <div class="row__value"><span class="mono">__VISITOR_IP__</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">WebRTC public address</div>
+          <div class="row__value" data-webrtc-public><span class="dim">Not checked yet</span></div>
+        </div>
+        <div class="row">
+          <div class="row__label">WebRTC local address</div>
+          <div class="row__value" data-webrtc-local><span class="dim">Not checked yet</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2 class="group__title">STUN servers</h2>
+      <div class="rows">
+        <div class="stun" data-stun-url="stun:cn.stun.im:3478">
+          <div class="stun__meta">
+            <span class="tag tag--cn">China</span>
+            <span class="tag tag--name">JudgeIP China</span>
+          </div>
+          <div class="stun__url mono">stun:cn.stun.im:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:stun.chat.bilibili.com:3478">
+          <div class="stun__meta">
+            <span class="tag tag--cn">China</span>
+            <span class="tag tag--name">Bilibili</span>
+          </div>
+          <div class="stun__url mono">stun:stun.chat.bilibili.com:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:jp.stun.im:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">JudgeIP Japan</span>
+          </div>
+          <div class="stun__url mono">stun:jp.stun.im:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:us.stun.im:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">JudgeIP US</span>
+          </div>
+          <div class="stun__url mono">stun:us.stun.im:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:global.stun.twilio.com:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">Twilio</span>
+          </div>
+          <div class="stun__url mono">stun:global.stun.twilio.com:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:stun.nextcloud.com:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">NextCloud</span>
+          </div>
+          <div class="stun__url mono">stun:stun.nextcloud.com:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:stun.voip.blackberry.com:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">BlackBerry</span>
+          </div>
+          <div class="stun__url mono">stun:stun.voip.blackberry.com:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+        <div class="stun" data-stun-url="stun:stun.freeswitch.org:3478">
+          <div class="stun__meta">
+            <span class="tag tag--global">Global</span>
+            <span class="tag tag--name">FreeSWITCH</span>
+          </div>
+          <div class="stun__url mono">stun:stun.freeswitch.org:3478</div>
+          <div class="stun__result" data-stun-result>
+            <span class="dim">Pending</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>The WebRTC test has to run in the browser. JavaScript is disabled, so this page can only show the server list and notes. With JavaScript disabled, web pages can't start WebRTC probes either.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What a WebRTC leak is</h2>
+  <p>
+    WebRTC (Web Real-Time Communication) is the browser's built-in support for real-time audio, video and peer-to-peer data,
+    used by most web-based video meetings, screen sharing, live chat and cloud gaming.
+    Peer-to-peer connections first have to solve one problem: <strong>both devices sit behind NAT and don't know each other's public address</strong>.
+    WebRTC solves it with ICE: the browser sends a request to a STUN server,
+    which replies with the address and port it saw the request come from. That result is called an srflx (server reflexive) candidate.
+  </p>
+  <p>
+    The catch: ICE gathers addresses over <strong>UDP, sent directly by the operating system's network stack</strong>,
+    bypassing the browser's HTTP proxy settings.
+    So while web traffic goes through the VPN or proxy and websites see the proxy exit,
+    JavaScript on the same page can start ICE gathering
+    and get the real public address of your home connection. That is a WebRTC leak.
+  </p>
+  <p>
+    It's not only the public address. ICE also gathers host candidates, the local addresses on your network adapter
+    (192.168.x.x, 10.x.x.x and so on), which reveal your LAN's subnet.
+    Since around 2019, Chrome, Edge and Firefox replace real local addresses with mDNS host names by default
+    (like <span class="mono">a1b2c3d4-….local</span>), which reduces that risk a lot,
+    but the public-address path is still open.
+  </p>
+
+  <h2>What this check does</h2>
+  <ol>
+    <li>For each STUN server on the list, create a separate <span class="mono">RTCPeerConnection</span> with only that server as the ICE server.</li>
+    <li>Create a data channel and generate an offer, which makes the browser start gathering ICE candidates.</li>
+    <li>Read each gathered candidate and sort by type: srflx / relay are public addresses, host is a local address.</li>
+    <li>Compare each public address found with <strong>the address this site sees over HTTP</strong> and draw a conclusion.</li>
+  </ol>
+  <p>
+    Why test servers one at a time instead of putting them all in <span class="mono">iceServers</span>:
+    together, the browser only returns deduplicated candidates, so you can't tell which server answered and which never connected.
+    Testing separately shows cases like "STUN in China works, everything abroad times out",
+    which is also why the list has servers both in and outside China. One server timing out doesn't mean you are safe, only that it didn't connect.
+  </p>
+
+  <h2>Reading the results</h2>
+  <ul>
+    <li><strong>No public address found</strong>: the browser could not get your public address through WebRTC. This is the safest result.</li>
+    <li><strong>Public address matches the HTTP address</strong>: no extra leak. Either you use no proxy, or the proxy handles UDP traffic correctly.</li>
+    <li><strong>Public address differs from the HTTP address</strong>: a typical WebRTC leak.
+        Websites think you are at the proxy exit, but any web page can get your real address with this JavaScript.</li>
+    <li><strong>Local address starting with 192.168 / 10.x found</strong>: your browser doesn't use mDNS masking, so your LAN subnet is exposed.</li>
+  </ul>
+
+  <h2>How to prevent WebRTC leaks</h2>
+  <p>
+    The most direct fix is an extension that restricts WebRTC address gathering in the browser.
+    Both of these are in the Chrome Web Store; after installing, reload this page and test again to confirm:
+  </p>
+  <ul class="linklist">
+    <li>
+      <a href="https://chromewebstore.google.com/detail/webrtc-network-limiter/npeicpdbkakmehahjeeohfdhnlpdklia" target="_blank" rel="noopener external">WebRTC Network Limiter</a>
+      <span class="linklist__note">Published by Google. It changes Chrome's WebRTC policy to use only the path your proxy takes, so video calls keep working without exposing your real address.</span>
+    </li>
+    <li>
+      <a href="https://chromewebstore.google.com/detail/webrtc-protect-protect-ip/bkmmlbllpjdpgcgdohbaghfaecnddhni" target="_blank" rel="noopener external">WebRTC Protect — Protect IP Leak</a>
+      <span class="linklist__note">A one-click blocking extension that disables WebRTC address gathering outright. Good for people who never use audio or video calls in the browser.</span>
+    </li>
+  </ul>
+  <p>
+    Besides extensions, there are a few other options: in Firefox, set
+    <span class="mono">media.peerconnection.enabled</span> to <span class="mono">false</span> in <span class="mono">about:config</span>,
+    at the cost of losing web-based audio and video calls entirely;
+    use a VPN client with a global TUN / TAP mode so UDP also goes through the tunnel, which removes this path at the root;
+    or block port 3478, commonly used by STUN, on your router.
+    Note: <strong>disabling WebRTC breaks services such as Google Meet, the Tencent Meeting web app and the Discord web app</strong>.
+    If you use them regularly, prefer a policy-limiting option like Network Limiter over turning WebRTC off.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>I use a VPN. How can my real IP still show up?</dt>
+    <dd>Most browser-extension proxies and SOCKS / HTTP proxies only take over HTTP(S) traffic over TCP. WebRTC's ICE gathering uses UDP, sent straight from the physical adapter, bypassing the proxy settings. This isn't a VPN bug but a result of how the layers work, unless the VPN runs in TUN mode and takes over the whole network stack.</dd>
+    <dt>Every server timed out. Does that mean I'm safe?</dt>
+    <dd>Not necessarily. A timeout only means those STUN servers can't be reached right now (network restrictions, server failure, UDP blocked). On another network or with another server, the result may be completely different. Only when at least one server connects and no extra address is found can you consider it safe.</dd>
+    <dt>What does a local address shown as a .local string mean?</dt>
+    <dd>This is mDNS masking: the browser replaced the real local address with a random host name. It is expected and means your browser version has this protection.</dd>
+    <dt>Does this site store WebRTC test results?</dt>
+    <dd>No. The whole test runs in your browser, and candidate addresses are never sent back to this site's server. The addresses on the page exist only in this tab and disappear when you close it.</dd>
+  </dl>
+</article>
