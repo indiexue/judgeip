@@ -1,0 +1,167 @@
+
+<section class="hero">
+  <h1 class="hero__title">Browser fingerprint</h1>
+  <p class="hero__lede">See how unique your browser fingerprint is, and whether sites can recognize you without cookies.</p>
+</section>
+
+<div class="fp" id="fingerprint">
+  <div class="tabs" role="tablist" aria-label="Algorithm">
+    <button class="tabs__item is-active"
+            type="button"
+            role="tab"
+            id="fp-tab-v3"
+            aria-selected="true"
+            aria-controls="fp-panel"
+            data-fp-method="v3"
+            data-fp-note="The current open-source version. Collects only signals that stay stable across sessions and outputs a 32-hex-digit visitorId.">
+      <span class="tabs__name">FingerprintJS</span>
+      <span class="tabs__tag">v3+</span>
+    </button>
+    <button class="tabs__item"
+            type="button"
+            role="tab"
+            id="fp-tab-v2"
+            aria-selected="false"
+            aria-controls="fp-panel"
+            data-fp-method="v2"
+            data-fp-note="The older version from 2015 on. Collects more, and more aggressively, including signals modern browsers have weakened or blocked.">
+      <span class="tabs__name">FingerprintJS2</span>
+      <span class="tabs__tag">Legacy</span>
+    </button>
+    <button class="tabs__item"
+            type="button"
+            role="tab"
+            id="fp-tab-ja3"
+            aria-selected="false"
+            aria-controls="fp-panel"
+            data-fp-method="ja3"
+            data-fp-note="TLS handshake fingerprint. It ignores JavaScript and looks only at the ClientHello message: it changes when you switch browsers, not necessarily when you switch devices.">
+      <span class="tabs__name">JA3 / JA4</span>
+      <span class="tabs__tag">TLS</span>
+    </button>
+  </div>
+
+  <div class="fp__panel" id="fp-panel" role="tabpanel" aria-labelledby="fp-tab-v3">
+    <p class="fp__desc" data-fp-desc>The current open-source version. Collects only signals that stay stable across sessions and outputs a 32-hex-digit visitorId.</p>
+
+    <div class="hash">
+      <span class="hash__eyebrow" data-fp-eyebrow>Fingerprint</span>
+      <span class="hash__value mono" id="fp-hash" data-fp-hash>Computing…</span>
+      <div class="hash__actions">
+        <button class="copy" type="button" data-copy-target="fp-hash" data-copy-done="Copied">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
+            <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
+          </svg>
+          <span class="copy__label">Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="fp__meta" data-fp-meta></p>
+
+    <div class="groups" data-fp-groups>
+      <section class="group">
+        <h2 class="group__title">Signals collected</h2>
+        <div class="rows" data-fp-rows>
+          <div class="row">
+            <div class="row__label">Status</div>
+            <div class="row__value dim">Computing…</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <noscript>
+    <p class="notice" role="alert">
+      <span>Fingerprints are computed entirely in the browser and need JavaScript. JavaScript is disabled here, which by itself defeats most JS-based fingerprinting.</span>
+    </p>
+  </noscript>
+</div>
+
+<article class="prose">
+  <h2>What a browser fingerprint is</h2>
+  <p>
+    Browser fingerprinting is a <strong>stateless</strong> way to identify you.
+    A cookie is a marker a site writes to your device and reads back on the next visit; you can delete or refuse it.
+    A fingerprint writes nothing. It collects the attributes your browser <strong>already tells every site</strong>
+    and computes a hash as your ID. Deleting cookies doesn't help, nor does private mode, because nothing is stored.
+  </p>
+  <p>
+    A single attribute carries little information; billions of people use Chrome. But combine dozens and the chance of a match drops fast:
+    a 2560×1440 screen, the Asia/Shanghai time zone, 187 installed fonts, an Apple M2 GPU,
+    a specific trailing digit in a floating-point value from the audio stack… each extra attribute multiplies the number of possible combinations.
+    The EFF's Panopticlick experiment in 2010 showed that
+    among browsers with Flash or Java enabled, more than 90% of samples were unique.
+  </p>
+
+  <h2>How the three algorithms differ</h2>
+  <h3>FingerprintJS v3+</h3>
+  <p>
+    The mainstream open-source implementation today. The biggest change in v3 is <strong>what it keeps</strong>:
+    instead of collecting as much as possible, it keeps only signals that stay stable across sessions.
+    Fields like User-Agent, which change with every update and are easy to fake, are heavily down-weighted or dropped;
+    signals tied to hardware and the OS, such as Canvas rendering differences, WebGL GPU and driver info, audio processing traits and font metrics, carry the weight.
+    The result is more stable: on the same device, the visitorId usually stays the same across networks and time zones.
+    This page loads v3.4.2, the MIT-licensed open-source version, computed entirely locally without network access.
+  </p>
+  <h3>FingerprintJS2 (legacy)</h3>
+  <p>
+    The version widely used from 2015 to 2020, with a broader scope:
+    plugin list, Flash fonts, touch support, CPU class, the Do-Not-Track flag and more.
+    Browsers have since weakened or blocked most of these (Chrome stopped exposing the real plugin list long ago),
+    so on modern browsers the legacy hash is actually less stable than v3.
+    It's kept for comparison: when the two algorithms disagree on the same device, that shows how much browsers have tightened privacy in recent years.
+  </p>
+  <h3>JA3 / JA4</h3>
+  <p>
+    The first two run in JavaScript and can be disrupted by changing browser settings or installing an anti-fingerprinting extension.
+    JA3 / JA4 work at a different layer: they read the first message the client sends in the TLS handshake (the ClientHello)
+    and hash the TLS version, cipher suites, extensions, elliptic curves and point formats concatenated in a fixed order.
+    These are set by the browser's underlying TLS library and can't be changed by JavaScript on a page,
+    so they identify which version of which browser (or which scraping library) you use, not which device.
+    JA4, released in 2023, splits the hash into readable segments and is harder to evade.
+    CDNs and fraud systems use it heavily to spot automation pretending to be a browser:
+    a UA that says Chrome with a TLS handshake that looks like Python requests is easy to catch.
+  </p>
+  <p class="prose__note">
+    Note: JA3 / JA4 have to be computed by a server that can read the raw TLS handshake, and this site's web server doesn't have access to that layer.
+    So this option makes <strong>your browser send one request directly to a third-party TLS echo service</strong> and fetch the result.
+    The request does not go through this site, and this site neither receives nor stores the response. If you don't want that external request, don't select this option.
+  </p>
+
+  <h2>What fingerprints are used for</h2>
+  <ul>
+    <li><strong>Fraud prevention</strong>: banks, payment providers and e-commerce sites use it to spot mass sign-ups, promo abuse and account takeover from one device. This is the main and most legitimate use.</li>
+    <li><strong>Ad tracking</strong>: as third-party cookies are phased out, fingerprints have become an alternative for cross-site tracking: products you viewed on site A show up in ads on site B.</li>
+    <li><strong>Bot detection</strong>: JA3 / JA4 in particular are used to tell real browsers from disguised automation.</li>
+    <li><strong>Account linking</strong>: platforms use it to tell whether several accounts come from one device, to ban alt accounts or catch fake-order rings.</li>
+  </ul>
+
+  <h2>How to make fingerprinting harder</h2>
+  <ul>
+    <li><strong>Tor Browser</strong>: the most thorough option today. Instead of hiding, it makes every user look the same: uniform window sizes, a uniform font list, and blocked Canvas reads.</li>
+    <li><strong>Firefox resistFingerprinting</strong>: set <span class="mono">privacy.resistFingerprinting</span> to true in <span class="mono">about:config</span> to spoof the time zone and block Canvas and WebGL reads. Some sites may display incorrectly.</li>
+    <li><strong>Brave</strong>: by default adds random noise to Canvas and audio signals per site and per session, so fingerprints don't match across sites.</li>
+    <li><strong>Anti-detect browsers</strong>: common for running many accounts; each profile gets its own consistent set of fingerprint parameters.</li>
+  </ul>
+  <p>
+    One counterintuitive point: <strong>piling on anti-fingerprinting extensions can make you easier to recognize</strong>.
+    A browser with randomized Canvas output, a decade-old UA and WebGL blocked
+    is a statistically rare combination, and that alone becomes a conspicuous fingerprint.
+    What works is looking like most other users, not standing out.
+  </p>
+
+  <h2>FAQ</h2>
+  <dl class="faq">
+    <dt>Does private mode prevent fingerprinting?</dt>
+    <dd>No. Private mode deals with local traces: no history is saved and cookies are cleared on exit. Fingerprints don't depend on stored data; they read hardware and system attributes, which are identical in a private window. Open this page in a private window to compare.</dd>
+    <dt>Does changing IP or using a VPN change my fingerprint?</dt>
+    <dd>No. FingerprintJS v3 and v2 compute attributes of the browser and device, unrelated to your network exit; JA3 / JA4 compute the TLS handshake, which is also unrelated to IP. That is why fingerprints can link the same device across different IPs.</dd>
+    <dt>Why does the legacy value change on every reload?</dt>
+    <dd>Some signals the legacy version relies on (Canvas in particular) get fresh noise each time in browsers with anti-fingerprinting protection, so the result is unstable. It also shows your browser does have some protection on.</dd>
+    <dt>Does this site store my browser fingerprint?</dt>
+    <dd>No. v3 and v2 are computed entirely in your browser, and the results are not sent back to this site. JA3 / JA4 need one request to a third-party TLS echo service; the result likewise stays on this page and does not pass through this site's server.</dd>
+  </dl>
+</article>

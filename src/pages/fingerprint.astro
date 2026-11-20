@@ -1,16 +1,20 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
-import rawHtml from "../snippets/fingerprint.html?raw";
+import zhHtml from "../snippets/fingerprint.html?raw";
+import enHtml from "../snippets/en/fingerprint.html?raw";
+import { getLang, pick } from "../lib/i18n";
 
-const html = rawHtml;
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
 ---
 
 <IpcxLayout
-  title="浏览器指纹检测 — FingerprintJS v3／v2 与 JA3 / JA4 在线测试 · JudgeIP"
-  description="使用 FingerprintJS v3、v2 与 TLS JA3/JA4 检测当前浏览器的唯一指纹特征。"
+  title={pick(lang, '浏览器指纹检测 — FingerprintJS v3／v2 与 JA3 / JA4 在线测试 · JudgeIP', 'Browser fingerprint test: FingerprintJS v3 / v2 and JA3 / JA4 · JudgeIP')}
+  description={pick(lang, '使用 FingerprintJS v3、v2 与 TLS JA3/JA4 检测当前浏览器的唯一指纹特征。', 'Check how unique your browser fingerprint is with FingerprintJS v3, v2 and TLS JA3 / JA4.')}
   canonicalPath="/fingerprint"
   bodyClass="page-fingerprint"
-  currentLabel="浏览器指纹"
+  currentLabel={pick(lang, '浏览器指纹', 'Browser fingerprint')}
   activeNav="/fingerprint"
   extraCss={[]}
   extraJs={["/assets/vendor/fingerprintjs3.min.js", "/assets/vendor/fingerprintjs2.min.js", "/assets/js/fingerprint.js"]}

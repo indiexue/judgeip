@@ -7,6 +7,8 @@
 (function () {
   'use strict';
 
+  var T = window.T || function (zh) { return zh; };
+
   var root = document.getElementById('fingerprint');
   if (!root) return;
 
@@ -27,26 +29,26 @@
   /* 组件名的中文对照。没收录的键原样显示——宁可露出一个英文键，
      也好过为了整齐把一个不认识的信号硬翻成中文。 */
   var LABELS = {
-    fonts: '字体列表', domBlockers: '广告拦截器', fontPreferences: '字体度量',
-    audio: '音频指纹', screenFrame: '屏幕边框', canvas: 'Canvas 渲染',
-    osCpu: '系统 CPU', languages: '语言', colorDepth: '色深',
-    deviceMemory: '设备内存', screenResolution: '屏幕分辨率', hardwareConcurrency: 'CPU 线程数',
-    timezone: '时区', sessionStorage: 'sessionStorage', localStorage: 'localStorage',
-    indexedDB: 'IndexedDB', openDatabase: 'WebSQL', cpuClass: 'CPU 类型',
-    platform: '平台', plugins: '插件列表', touchSupport: '触摸支持',
-    vendor: '浏览器厂商', vendorFlavors: '厂商特征', cookiesEnabled: 'Cookie 可用',
-    colorGamut: '色域', invertedColors: '反色模式', forcedColors: '强制配色',
-    monochrome: '单色显示', contrast: '对比度偏好', reducedMotion: '减少动效',
-    reducedTransparency: '减少透明', hdr: 'HDR', math: '数学函数特征',
-    pdfViewerEnabled: 'PDF 阅读器', architecture: '指令集架构', applePay: 'Apple Pay',
-    privateClickMeasurement: '私密点击度量', webGlBasics: 'WebGL 基本信息',
-    webGlExtensions: 'WebGL 扩展', userAgent: 'User-Agent', webdriver: '自动化标志',
-    language: '语言', deviceMemoryMB: '设备内存', pixelRatio: '像素比',
-    availableScreenResolution: '可用分辨率', timezoneOffset: '时区偏移',
-    adBlock: '广告拦截', hasLiedLanguages: '语言伪装', hasLiedResolution: '分辨率伪装',
-    hasLiedOs: '系统伪装', hasLiedBrowser: '浏览器伪装', webgl: 'WebGL 指纹',
-    webglVendorAndRenderer: 'WebGL 显卡', enumerateDevices: '媒体设备',
-    addBehavior: 'IE addBehavior', doNotTrack: 'Do Not Track', canvasHash: 'Canvas 哈希'
+    fonts: T('字体列表', 'Fonts'), domBlockers: T('广告拦截器', 'Ad blockers'), fontPreferences: T('字体度量', 'Font metrics'),
+    audio: T('音频指纹', 'Audio'), screenFrame: T('屏幕边框', 'Screen frame'), canvas: T('Canvas 渲染', 'Canvas rendering'),
+    osCpu: T('系统 CPU', 'OS CPU'), languages: T('语言', 'Languages'), colorDepth: T('色深', 'Color depth'),
+    deviceMemory: T('设备内存', 'Device memory'), screenResolution: T('屏幕分辨率', 'Screen resolution'), hardwareConcurrency: T('CPU 线程数', 'CPU threads'),
+    timezone: T('时区', 'Time zone'), sessionStorage: 'sessionStorage', localStorage: 'localStorage',
+    indexedDB: 'IndexedDB', openDatabase: 'WebSQL', cpuClass: T('CPU 类型', 'CPU class'),
+    platform: T('平台', 'Platform'), plugins: T('插件列表', 'Plugins'), touchSupport: T('触摸支持', 'Touch support'),
+    vendor: T('浏览器厂商', 'Vendor'), vendorFlavors: T('厂商特征', 'Vendor flavors'), cookiesEnabled: T('Cookie 可用', 'Cookies enabled'),
+    colorGamut: T('色域', 'Color gamut'), invertedColors: T('反色模式', 'Inverted colors'), forcedColors: T('强制配色', 'Forced colors'),
+    monochrome: T('单色显示', 'Monochrome'), contrast: T('对比度偏好', 'Contrast preference'), reducedMotion: T('减少动效', 'Reduced motion'),
+    reducedTransparency: T('减少透明', 'Reduced transparency'), hdr: 'HDR', math: T('数学函数特征', 'Math functions'),
+    pdfViewerEnabled: T('PDF 阅读器', 'PDF viewer'), architecture: T('指令集架构', 'Architecture'), applePay: 'Apple Pay',
+    privateClickMeasurement: T('私密点击度量', 'Private Click Measurement'), webGlBasics: T('WebGL 基本信息', 'WebGL basics'),
+    webGlExtensions: T('WebGL 扩展', 'WebGL extensions'), userAgent: 'User-Agent', webdriver: T('自动化标志', 'Automation flag'),
+    language: T('语言', 'Languages'), deviceMemoryMB: T('设备内存', 'Device memory'), pixelRatio: T('像素比', 'Pixel ratio'),
+    availableScreenResolution: T('可用分辨率', 'Available resolution'), timezoneOffset: T('时区偏移', 'Time zone offset'),
+    adBlock: T('广告拦截', 'Ad block'), hasLiedLanguages: T('语言伪装', 'Spoofed languages'), hasLiedResolution: T('分辨率伪装', 'Spoofed resolution'),
+    hasLiedOs: T('系统伪装', 'Spoofed OS'), hasLiedBrowser: T('浏览器伪装', 'Spoofed browser'), webgl: T('WebGL 指纹', 'WebGL fingerprint'),
+    webglVendorAndRenderer: T('WebGL 显卡', 'WebGL GPU'), enumerateDevices: T('媒体设备', 'Media devices'),
+    addBehavior: 'IE addBehavior', doNotTrack: 'Do Not Track', canvasHash: T('Canvas 哈希', 'Canvas hash')
   };
 
   /* ---------------------------------------------------------------- 渲染工具 */
@@ -71,7 +73,7 @@
       text = String(value);
     }
 
-    return text.length > 160 ? text.slice(0, 160) + ' …（共 ' + text.length + ' 字符）' : text;
+    return text.length > 160 ? text.slice(0, 160) + T(' …（共 ', ' … (') + text.length + T(' 字符）', ' characters total)') : text;
   }
 
   function row(label, value) {
@@ -86,23 +88,23 @@
   function setRows(nodes) {
     rowsEl.textContent = '';
     if (!nodes.length) {
-      rowsEl.appendChild(row('状态', '本次没有取到任何信号'));
+      rowsEl.appendChild(row(T('状态', 'Status'), T('本次没有取到任何信号', 'No signals collected this time')));
       return;
     }
     for (var i = 0; i < nodes.length; i++) rowsEl.appendChild(nodes[i]);
   }
 
   function busy(method) {
-    eyebrowEl.textContent = EYEBROW[method] || '指纹';
-    hashEl.textContent = '计算中…';
+    eyebrowEl.textContent = EYEBROW[method] || T('指纹', 'Fingerprint');
+    hashEl.textContent = T('计算中…', 'Computing…');
     metaEl.textContent = '';
-    setRows([row('状态', '正在采集…')]);
+    setRows([row(T('状态', 'Status'), T('正在采集…', 'Collecting…'))]);
   }
 
   function fail(message) {
-    hashEl.textContent = '计算失败';
+    hashEl.textContent = T('计算失败', 'Failed');
     metaEl.textContent = message;
-    setRows([row('状态', message)]);
+    setRows([row(T('状态', 'Status'), message)]);
   }
 
   /* ---------------------------------------------------------------- 三种算法 */
@@ -110,7 +112,7 @@
   /* v3：monitoring 必须显式关掉。开源版默认会向 openfpcdn.io 发一个统计信标，
      本站 CSP 的 connect-src 只有 'self'，那个请求注定失败并在控制台留一条红字。 */
   function runV3(mine) {
-    if (!window.FingerprintJS) { fail('FingerprintJS v3 未能加载。'); return; }
+    if (!window.FingerprintJS) { fail(T('FingerprintJS v3 未能加载。', 'FingerprintJS v3 failed to load.')); return; }
 
     window.FingerprintJS.load({ monitoring: false })
       .then(function (agent) { return agent.get(); })
@@ -118,22 +120,22 @@
         if (!mine()) return;
 
         hashEl.textContent = result.visitorId;
-        metaEl.textContent = '算法 FingerprintJS v' + result.version +
-          '　置信度 ' + Math.round((result.confidence && result.confidence.score || 0) * 100) + '%' +
-          '　共 ' + Object.keys(result.components).length + ' 项信号';
+        metaEl.textContent = T('算法 FingerprintJS v', 'Algorithm FingerprintJS v') + result.version +
+          T('　置信度 ', '   Confidence ') + Math.round((result.confidence && result.confidence.score || 0) * 100) + '%' +
+          T('　共 ', '   ') + Object.keys(result.components).length + T(' 项信号', ' signals');
 
         var nodes = Object.keys(result.components).sort().map(function (key) {
           var component = result.components[key];
-          return row(LABELS[key] || key, component.error ? '采集失败' : brief(component.value));
+          return row(LABELS[key] || key, component.error ? T('采集失败', 'Failed') : brief(component.value));
         });
         setRows(nodes);
       })
-      .catch(function (e) { if (mine()) fail('计算失败：' + (e && e.message ? e.message : e)); });
+      .catch(function (e) { if (mine()) fail(T('计算失败：', 'Failed: ') + (e && e.message ? e.message : e)); });
   }
 
   /* v2：回调式 API，且拿到的是组件数组，哈希要自己算 */
   function runV2(mine) {
-    if (!window.Fingerprint2) { fail('FingerprintJS2 未能加载。'); return; }
+    if (!window.Fingerprint2) { fail(T('FingerprintJS2 未能加载。', 'FingerprintJS2 failed to load.')); return; }
 
     try {
       window.Fingerprint2.get(function (components) {
@@ -141,14 +143,14 @@
 
         var values = components.map(function (c) { return String(c.value); });
         hashEl.textContent = window.Fingerprint2.x64hash128(values.join(''), 31);
-        metaEl.textContent = '算法 FingerprintJS2 v2.1.4　共 ' + components.length + ' 项信号';
+        metaEl.textContent = T('算法 FingerprintJS2 v2.1.4　共 ', 'Algorithm FingerprintJS2 v2.1.4   ') + components.length + T(' 项信号', ' signals');
 
         setRows(components.map(function (c) {
           return row(LABELS[c.key] || c.key, brief(c.value));
         }));
       });
     } catch (e) {
-      if (mine()) fail('计算失败：' + (e && e.message ? e.message : e));
+      if (mine()) fail(T('计算失败：', 'Failed: ') + (e && e.message ? e.message : e));
     }
   }
 
@@ -169,10 +171,10 @@
         ['JA3 Hash', tls.ja3_hash],
         ['JA3', tls.ja3],
         ['JA4', tls.ja4],
-        ['JA4 全量', tls.ja4_r],
-        ['HTTP/2 指纹', data.http2 && data.http2.akamai_fingerprint],
-        ['HTTP 版本', data.http_version],
-        ['TLS 协商版本', tls.tls_version_negotiated]
+        [T('JA4 全量', 'JA4 raw'), tls.ja4_r],
+        [T('HTTP/2 指纹', 'HTTP/2 fingerprint'), data.http2 && data.http2.akamai_fingerprint],
+        [T('HTTP 版本', 'HTTP version'), data.http_version],
+        [T('TLS 协商版本', 'Negotiated TLS version'), tls.tls_version_negotiated]
       ]
     };
   }
@@ -184,8 +186,8 @@
         ['JA3 Hash', data.ja3_hash],
         ['JA3', data.ja3_text],
         ['JA3N Hash', data.ja3n_hash],
-        ['HTTP/2 指纹', data.akamai_text],
-        ['HTTP/2 哈希', data.akamai_hash]
+        [T('HTTP/2 指纹', 'HTTP/2 fingerprint'), data.akamai_text],
+        [T('HTTP/2 哈希', 'HTTP/2 hash'), data.akamai_hash]
       ]
     };
   }
@@ -194,7 +196,7 @@
     index = index || 0;
 
     if (index >= TLS_ENDPOINTS.length) {
-      fail('未能取到 TLS 指纹：所有回显服务都没有响应。');
+      fail(T('未能取到 TLS 指纹：所有回显服务都没有响应。', 'Could not get a TLS fingerprint: no echo service responded.'));
       return;
     }
 
@@ -209,10 +211,10 @@
         if (!mine()) return;
 
         var parsed = endpoint.parse(data);
-        if (!parsed.hash) throw new Error('返回内容里没有指纹字段');
+        if (!parsed.hash) throw new Error(T('返回内容里没有指纹字段', 'No fingerprint field in the response'));
 
         hashEl.textContent = parsed.hash;
-        metaEl.textContent = '来源 ' + endpoint.url.replace(/^https:\/\//, '') + '　指纹取自 TLS ClientHello，与 IP 无关';
+        metaEl.textContent = T('来源 ', 'Source ') + endpoint.url.replace(/^https:\/\//, '') + T('　指纹取自 TLS ClientHello，与 IP 无关', '   From the TLS ClientHello, unrelated to IP');
 
         setRows(parsed.rows
           .filter(function (pair) { return pair[1]; })
