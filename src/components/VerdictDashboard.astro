@@ -1,0 +1,679 @@
+---
+import { UI_COPY, type Locale } from '../lib/i18n';
+import type { IpVerdictReport, VerdictGrade, PlatformStatus } from '../lib/verdict-engine';
+
+interface Props {
+  report: IpVerdictReport;
+  locale: Locale;
+  isVisitor: boolean;
+  scenarioSubtitle?: string;
+}
+
+const { report, locale, isVisitor, scenarioSubtitle } = Astro.props;
+const t = UI_COPY[locale];
+const basePrefix = locale === 'zh' ? '/zh' : '';
+const switchLangHref = locale === 'zh' ? (report ? `/ip/${report.ip}` : '/') : (isVisitor ? '/zh' : `/ip/${report.ip}?lang=zh`);
+
+const gradeColorMap: Record<VerdictGrade, { ring: string; text: string; bg: string; glow: string; stroke: string }> = {
+  S: {
+    ring: 'border-emerald-400/40',
+    text: 'text-emerald-400',
+    bg: 'bg-emerald-500/12',
+    glow: 'shadow-[0_0_45px_-10px_rgba(16,185,129,0.45)]',
+    stroke: '#10b981',
+  },
+  A: {
+    ring: 'border-teal-400/40',
+    text: 'text-teal-300',
+    bg: 'bg-teal-500/12',
+    glow: 'shadow-[0_0_45px_-10px_rgba(45,212,191,0.38)]',
+    stroke: '#2dd4bf',
+  },
+  B: {
+    ring: 'border-amber-400/40',
+    text: 'text-amber-300',
+    bg: 'bg-amber-500/12',
+    glow: 'shadow-[0_0_45px_-10px_rgba(251,191,36,0.35)]',
+    stroke: '#fbbf24',
+  },
+  C: {
+    ring: 'border-orange-500/45',
+    text: 'text-orange-400',
+    bg: 'bg-orange-500/12',
+    glow: 'shadow-[0_0_45px_-10px_rgba(249,115,22,0.38)]',
+    stroke: '#f97316',
+  },
+  D: {
+    ring: 'border-rose-500/50',
+    text: 'text-rose-400',
+    bg: 'bg-rose-500/12',
+    glow: 'shadow-[0_0_45px_-10px_rgba(244,63,94,0.45)]',
+    stroke: '#f43f5e',
+  },
+};
+
+const theme = gradeColorMap[report.grade];
+const radius = 56;
+const circumference = 2 * Math.PI * radius;
+const dashOffset = circumference - (report.score / 100) * circumference;
+
+function platformBadgeStyle(st: PlatformStatus) {
+  if (st === 'pass') return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+  if (st === 'warn') return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  return 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+}
+
+function factorBadgeStyle(sev: 'good' | 'info' | 'warn' | 'bad') {
+  if (sev === 'good') return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+  if (sev === 'info') return 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+  if (sev === 'warn') return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  return 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+}
+
+const locationDisplay = [report.geo.city, report.geo.region, report.geo.countryName]
+  .filter(Boolean)
+  .filter((v, idx, arr) => arr.indexOf(v) === idx)
+  .join(', ');
+---
+
+<!-- Top Navigation -->
+<header class="sticky top-0 z-30 border-b border-slate-800/80 bg-[#060911]/85 backdrop-blur-md">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+    <a href={basePrefix || '/'} class="flex items-center gap-3 group">
+      <div class="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/35 bg-emerald-500/10 text-emerald-400 transition group-hover:border-emerald-400">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.5 4.5l5 5-3 3-5-5 3-3zM12 7l5 5-9.5 9.5-5-5L12 7zM4 21h10" />
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-bold tracking-tight text-white">Judge<span class="text-emerald-400">IP</span></span>
+          <span class="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            Edge v1
+          </span>
+        </div>
+        <p class="hidden text-[11px] text-slate-400 sm:block">{t.brandSubtitle}</p>
+      </div>
+    </a>
+
+    <nav class="flex items-center gap-2 sm:gap-5 text-sm">
+      <a href={`${basePrefix || '/'}#verdict`} class="hidden text-slate-300 hover:text-emerald-400 transition md:inline">{t.navCheck}</a>
+      <a href="#browser-probe" class="hidden text-slate-300 hover:text-emerald-400 transition md:inline">{t.navLeak}</a>
+      <a href="#cli-api" class="hidden text-slate-300 hover:text-emerald-400 transition md:inline">{t.navApi}</a>
+      <div class="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 p-1 text-xs">
+        <a
+          href={isVisitor ? '/' : `/ip/${report.ip}`}
+          class={`rounded px-2 py-1 font-medium transition ${locale === 'en' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'}`}
+        >
+          EN
+        </a>
+        <a
+          href={isVisitor ? '/zh' : `/ip/${report.ip}?lang=zh`}
+          class={`rounded px-2 py-1 font-medium transition ${locale === 'zh' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'}`}
+        >
+          中文
+        </a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8">
+  <!-- Hero & Search Bar -->
+  <section class="text-center max-w-3xl mx-auto space-y-4">
+    <div class="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-1 text-[11px] font-semibold tracking-wider text-emerald-300">
+      <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      {t.heroBadge}
+    </div>
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+      {scenarioSubtitle || t.heroTitle}
+    </h1>
+    <p class="text-sm sm:text-base text-slate-400 leading-relaxed">
+      {t.heroDesc}
+    </p>
+
+    <form id="ip-lookup-form" action="/ip-lookup" method="get" class="mt-6 flex flex-col sm:flex-row gap-2.5 max-w-2xl mx-auto">
+      <input type="hidden" name="lang" value={locale} />
+      <div class="relative flex-1">
+        <input
+          id="ip-search-input"
+          name="ip"
+          type="text"
+          defaultValue={isVisitor ? '' : report.ip}
+          placeholder={t.inputPlaceholder}
+          autocomplete="off"
+          spellcheck="false"
+          class="w-full rounded-xl border border-slate-700/80 bg-slate-900/90 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono-num"
+        />
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="flex-1 sm:flex-none rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition cursor-pointer shadow-lg shadow-emerald-500/15"
+        >
+          {t.inspectBtn}
+        </button>
+        <a
+          href={locale === 'zh' ? '/zh' : '/'}
+          class="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm font-medium text-slate-200 hover:border-slate-500 hover:text-white transition"
+        >
+          {t.myIpBtn}
+        </a>
+      </div>
+    </form>
+
+    <!-- Preset Instant Benchmark Pills -->
+    <div class="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-slate-400">
+      <a
+        href={`/ip/73.162.88.1${locale === 'zh' ? '?lang=zh' : ''}`}
+        class="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1 hover:border-emerald-500/40 hover:text-emerald-300 transition"
+      >
+        {t.sampleResidential} (73.162.88.1)
+      </a>
+      <a
+        href={`/ip/45.76.12.8${locale === 'zh' ? '?lang=zh' : ''}`}
+        class="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1 hover:border-orange-500/40 hover:text-orange-300 transition"
+      >
+        {t.sampleVps} (45.76.12.8)
+      </a>
+      <a
+        href={`/ip/185.156.46.12${locale === 'zh' ? '?lang=zh' : ''}`}
+        class="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1 hover:border-rose-500/40 hover:text-rose-300 transition"
+      >
+        {t.sampleVpn} (185.156.46.12)
+      </a>
+      <a
+        href={`/ip/8.8.8.8${locale === 'zh' ? '?lang=zh' : ''}`}
+        class="rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1 hover:border-sky-500/40 hover:text-sky-300 transition"
+      >
+        {t.sampleGoogle} (8.8.8.8)
+      </a>
+    </div>
+  </section>
+
+  <!-- Primary Verdict Card -->
+  <section
+    id="verdict"
+    class={`rounded-2xl border ${theme.ring} bg-slate-900/75 p-6 sm:p-8 backdrop-blur-sm ${theme.glow}`}
+  >
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+      <!-- Left: IP + Verdict Copy -->
+      <div class="space-y-4 flex-1">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            {t.yourCurrentIp}
+          </span>
+          <span class={`rounded-full px-2.5 py-0.5 text-xs font-semibold border ${isVisitor ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300' : 'border-sky-500/35 bg-sky-500/15 text-sky-300'}`}>
+            {isVisitor ? t.visitorTag : t.lookupTag}
+          </span>
+          <span class="rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-xs font-mono-num text-slate-300">
+            IPv{report.version} · {report.latencyMs}ms
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-baseline gap-3">
+          <h2 class="text-3xl sm:text-4xl font-extrabold font-mono-num tracking-tight text-white break-all">
+            {report.ip}
+          </h2>
+          <span class={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${theme.ring} ${theme.bg} ${theme.text}`}>
+            {t.gradePrefix} {report.grade}
+          </span>
+        </div>
+
+        <div class="space-y-1.5">
+          <p class={`text-lg sm:text-xl font-bold ${theme.text}`}>
+            {locale === 'zh' ? report.verdictTitleZh : report.verdictTitleEn}
+          </p>
+          <p class="text-sm text-slate-300 leading-relaxed max-w-2xl">
+            {locale === 'zh' ? report.verdictSummaryZh : report.verdictSummaryEn}
+          </p>
+        </div>
+
+        <!-- Quick Signal Tags -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          <span class={`rounded-lg border px-3 py-1 text-xs font-semibold ${
+            report.network.usageType === 'residential' || report.network.usageType === 'mobile'
+              ? 'border-emerald-500/35 bg-emerald-500/12 text-emerald-300'
+              : 'border-rose-500/35 bg-rose-500/12 text-rose-300'
+          }`}>
+            {t.usageTypeLabels[report.network.usageType]}
+          </span>
+
+          <span class={`rounded-lg border px-3 py-1 text-xs font-semibold ${
+            report.network.nativeStatus === 'native'
+              ? 'border-emerald-500/35 bg-emerald-500/12 text-emerald-300'
+              : report.network.nativeStatus === 'broadcast'
+                ? 'border-amber-500/35 bg-amber-500/12 text-amber-300'
+                : 'border-slate-700 bg-slate-800 text-slate-300'
+          }`}>
+            {t.nativeLabels[report.network.nativeStatus]} (RIR: {report.network.rirCountryCode})
+          </span>
+
+          <span class="rounded-lg border border-slate-700/80 bg-slate-800/70 px-3 py-1 text-xs font-medium text-slate-300">
+            {report.network.asnCode} · {report.geo.countryCode}
+          </span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button
+            id="copy-report-btn"
+            data-share-url={`https://judgeip.com/ip/${report.ip}${locale === 'zh' ? '?lang=zh' : ''}`}
+            data-copied-label={t.copiedBtn}
+            data-default-label={t.copyReportBtn}
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:border-emerald-400/60 hover:text-white transition cursor-pointer"
+          >
+            <svg class="h-3.5 w-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+            <span>{t.copyReportBtn}</span>
+          </button>
+
+          <a
+            href={`/api/v1/verdict?ip=${encodeURIComponent(report.ip)}`}
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950/70 px-3.5 py-2 text-xs font-mono-num text-slate-400 hover:border-slate-600 hover:text-slate-200 transition"
+          >
+            <span>{`{ }`}</span>
+            <span>{t.jsonApiBtn}</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Circular Purity Score Gauge -->
+      <div class="flex items-center justify-center lg:pl-6 lg:border-l lg:border-slate-800/90">
+        <div class="flex flex-col items-center">
+          <div class="relative h-36 w-36 flex items-center justify-center">
+            <svg class="h-36 w-36 -rotate-90 transform" viewBox="0 0 136 136">
+              <circle cx="68" cy="68" r={radius} stroke="#1e293b" stroke-width="10" fill="transparent" />
+              <circle
+                cx="68"
+                cy="68"
+                r={radius}
+                stroke={theme.stroke}
+                stroke-width="10"
+                stroke-dasharray={circumference}
+                stroke-dashoffset={dashOffset}
+                stroke-linecap="round"
+                fill="transparent"
+              />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class={`text-4xl font-extrabold font-mono-num ${theme.text}`}>{report.score}</span>
+              <span class="text-[10px] font-bold tracking-widest text-slate-400">/ 100</span>
+            </div>
+          </div>
+          <span class="mt-2 text-[11px] font-bold tracking-widest text-slate-300">{t.purityScoreLabel}</span>
+          <span class="mt-0.5 text-xs text-slate-400 font-mono-num">
+            {t.fraudRiskLabel}: <strong class="text-slate-200">{report.fraudRisk}%</strong>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Network Lineage & Client Tunnel Probe Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Network & RIR Lineage (7 cols) -->
+    <section class="lg:col-span-7 rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-3.5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+          {t.sectionIdentity}
+        </h3>
+        <span class="text-xs font-mono-num text-slate-400">{report.network.asnCode}</span>
+      </div>
+
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldLocation}</dt>
+          <dd class="mt-1 font-semibold text-slate-100">{locationDisplay || report.geo.countryCode}</dd>
+        </div>
+
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldIsp}</dt>
+          <dd class="mt-1 font-semibold text-slate-100 truncate" title={report.network.isp}>{report.network.isp}</dd>
+        </div>
+
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldNative}</dt>
+          <dd class="mt-1 font-semibold flex items-center gap-2">
+            <span class={report.network.nativeStatus === 'native' ? 'text-emerald-400' : report.network.nativeStatus === 'broadcast' ? 'text-amber-300' : 'text-slate-200'}>
+              {t.nativeLabels[report.network.nativeStatus]}
+            </span>
+            <span class="text-xs font-mono-num text-slate-400">
+              ({report.network.rirCountryCode} → {report.geo.countryCode})
+            </span>
+          </dd>
+        </div>
+
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldTimezone}</dt>
+          <dd class="mt-1 font-semibold font-mono-num text-slate-100">{report.geo.timezone}</dd>
+        </div>
+
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldPorts}</dt>
+          <dd class="mt-1 font-mono-num text-xs font-semibold">
+            {report.signals.openPorts.length > 0 ? (
+              <span class="text-amber-300">{report.signals.openPorts.join(', ')}</span>
+            ) : (
+              <span class="text-emerald-400">{t.noOpenPorts}</span>
+            )}
+          </dd>
+        </div>
+
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/50 p-3.5">
+          <dt class="text-xs text-slate-400">{t.fieldHostnames}</dt>
+          <dd class="mt-1 font-mono-num text-xs text-slate-300 truncate" title={report.signals.hostnames.join(', ')}>
+            {report.signals.hostnames[0] || t.noPtr}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-slate-500">
+        <span>Verified Sources:</span>
+        {report.sources.map((src) => (
+          <span class="rounded bg-slate-800/70 px-2 py-0.5 text-slate-400">{src}</span>
+        ))}
+      </div>
+    </section>
+
+    <!-- Live Browser WebRTC & Fingerprint Consistency Probe (5 cols) -->
+    <section
+      id="browser-probe"
+      data-is-visitor={isVisitor ? '1' : '0'}
+      data-expected-ip={report.ip}
+      data-expected-tz={report.geo.timezone}
+      data-expected-cc={report.geo.countryCode}
+      data-label-clean={t.probeClean}
+      data-label-mismatch={t.probeMismatch}
+      class="lg:col-span-5 rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 space-y-4"
+    >
+      <div class="border-b border-slate-800/80 pb-3.5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-sky-400"></span>
+            {t.sectionClientProbe}
+          </h3>
+          <span id="probe-overall-badge" class="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-0.5 text-[11px] font-semibold text-slate-300">
+            {isVisitor ? '...' : 'N/A'}
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400">{t.sectionClientProbeDesc}</p>
+      </div>
+
+      {!isVisitor ? (
+        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-400 leading-relaxed">
+          {t.probeSkippedLookup}
+        </div>
+      ) : (
+        <div class="space-y-2.5 text-xs">
+          <div class="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/55 px-3.5 py-2.5">
+            <span class="text-slate-400">{t.probeWebrtc}</span>
+            <span id="probe-webrtc-val" class="font-mono-num font-semibold text-slate-200">{t.probeRunning}</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/55 px-3.5 py-2.5">
+            <span class="text-slate-400">{t.probeTz}</span>
+            <span id="probe-tz-val" class="font-mono-num font-semibold text-slate-200">...</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/55 px-3.5 py-2.5">
+            <span class="text-slate-400">{t.probeLang}</span>
+            <span id="probe-lang-val" class="font-mono-num font-semibold text-slate-200">...</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/55 px-3.5 py-2.5">
+            <span class="text-slate-400">{t.probeWebdriver}</span>
+            <span id="probe-webdriver-val" class="font-mono-num font-semibold text-slate-200">...</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/55 px-3.5 py-2.5">
+            <span class="text-slate-400">{t.probeRtt}</span>
+            <span id="probe-rtt-val" class="font-mono-num font-semibold text-slate-200">...</span>
+          </div>
+        </div>
+      )}
+    </section>
+  </div>
+
+  <!-- Platform Survival Verdict Matrix -->
+  {report.platforms.length > 0 && (
+    <section class="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 sm:p-7 space-y-5">
+      <div>
+        <h3 class="text-lg font-bold text-white">{t.sectionPlatforms}</h3>
+        <p class="text-xs sm:text-sm text-slate-400 mt-0.5">{t.sectionPlatformsDesc}</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {report.platforms.map((p) => (
+          <div class="rounded-xl border border-slate-800/90 bg-slate-950/60 p-4 flex flex-col justify-between gap-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-bold text-sm text-white">
+                  {locale === 'zh' ? p.nameZh : p.nameEn}
+                </span>
+                <span class={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${platformBadgeStyle(p.status)}`}>
+                  {locale === 'zh' ? p.badgeZh : p.badgeEn}
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                {locale === 'zh' ? p.reasonZh : p.reasonEn}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- Explainable Score Evidence Chain -->
+  <section class="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 sm:p-7 space-y-5">
+    <div>
+      <h3 class="text-lg font-bold text-white">{t.sectionFactors}</h3>
+      <p class="text-xs sm:text-sm text-slate-400 mt-0.5">{t.sectionFactorsDesc}</p>
+    </div>
+
+    <div class="space-y-3">
+      {report.factors.map((f) => (
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-slate-950/55 p-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+              <span class={`rounded border px-2 py-0.5 text-xs font-mono-num font-bold ${factorBadgeStyle(f.severity)}`}>
+                {f.delta > 0 ? `+${f.delta}` : f.delta === 0 ? 'VERIFIED' : `${f.delta}`}
+              </span>
+              <h4 class="font-semibold text-sm text-slate-100">
+                {locale === 'zh' ? f.titleZh : f.titleEn}
+              </h4>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              {locale === 'zh' ? f.detailZh : f.detailEn}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- CLI & Developer Edge API Section (Dual-Domain JudgeIP + IPNano.io) -->
+  <section id="cli-api" class="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-6 sm:p-7 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div>
+        <h3 class="text-lg font-bold text-white">{t.cliSectionTitle}</h3>
+        <p class="text-xs sm:text-sm text-slate-400">{t.cliSectionDesc}</p>
+      </div>
+      <span class="text-xs font-mono-num text-emerald-400">judgeip.com × ipnano.io</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono-num text-xs">
+      <div class="rounded-xl border border-slate-800 bg-[#05070d] p-4 space-y-2 overflow-x-auto">
+        <div class="text-slate-500"># Instant Plain-Text / JSON CLI via IPNano Edge</div>
+        <div class="text-emerald-300">$ curl -sL ipnano.io</div>
+        <div class="text-slate-400">{report.ip}</div>
+        <div class="text-emerald-300 pt-1">$ curl -sL ipnano.io/json</div>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-[#05070d] p-4 space-y-2 overflow-x-auto">
+        <div class="text-slate-500"># Full Explainable Verdict JSON via JudgeIP API</div>
+        <div class="text-sky-300">$ curl -s "https://judgeip.com/api/v1/verdict?ip={report.ip}"</div>
+        <div class="text-slate-400">{`{ "score": ${report.score}, "grade": "${report.grade}", "nativeStatus": "${report.network.nativeStatus}" }`}</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="border-t border-slate-800/80 bg-[#050810] py-8 mt-12">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+    <div>
+      <strong class="text-slate-300">JudgeIP.com</strong> — {t.footerTagline}
+    </div>
+    <div class="flex flex-wrap items-center gap-4">
+      <a href="/tiktok-ip-check" class="hover:text-slate-300 transition">TikTok IP Check</a>
+      <a href="/claude-ip-check" class="hover:text-slate-300 transition">Claude / AI Check</a>
+      <a href="/native-ip-check" class="hover:text-slate-300 transition">Native IP Check</a>
+      <a href="/api/v1/verdict" class="hover:text-slate-300 transition">API</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Share button clipboard handler
+  const copyBtn = document.getElementById('copy-report-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const shareUrl = copyBtn.getAttribute('data-share-url') || window.location.href;
+      const copiedText = copyBtn.getAttribute('data-copied-label') || 'Copied!';
+      const defaultText = copyBtn.getAttribute('data-default-label') || 'Copy Link';
+      const labelSpan = copyBtn.querySelector('span');
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        if (labelSpan) labelSpan.textContent = copiedText;
+        setTimeout(() => {
+          if (labelSpan) labelSpan.textContent = defaultText;
+        }, 2000);
+      } catch {
+        window.prompt('Copy report link:', shareUrl);
+      }
+    });
+  }
+
+  // Client-side WebRTC + Timezone + WebDriver + Edge RTT probe
+  const probeEl = document.getElementById('browser-probe');
+  if (probeEl && probeEl.getAttribute('data-is-visitor') === '1') {
+    const expectedIp = probeEl.getAttribute('data-expected-ip') || '';
+    const expectedTz = probeEl.getAttribute('data-expected-tz') || '';
+    const expectedCc = (probeEl.getAttribute('data-expected-cc') || '').toUpperCase();
+    const labelClean = probeEl.getAttribute('data-label-clean') || 'Aligned';
+    const labelMismatch = probeEl.getAttribute('data-label-mismatch') || 'Warning';
+
+    const badgeEl = document.getElementById('probe-overall-badge');
+    const webrtcEl = document.getElementById('probe-webrtc-val');
+    const tzEl = document.getElementById('probe-tz-val');
+    const langEl = document.getElementById('probe-lang-val');
+    const wdEl = document.getElementById('probe-webdriver-val');
+    const rttEl = document.getElementById('probe-rtt-val');
+
+    let warnings = 0;
+
+    // 1. Timezone alignment check
+    const sysTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+    if (tzEl) {
+      const tzAligned = !expectedTz || expectedTz === 'UTC' || sysTz === expectedTz || sysTz.split('/')[0] === expectedTz.split('/')[0];
+      tzEl.textContent = tzAligned ? `${sysTz} ✓` : `${sysTz} ≠ ${expectedTz}`;
+      tzEl.className = `font-mono-num font-semibold ${tzAligned ? 'text-emerald-400' : 'text-amber-300'}`;
+      if (!tzAligned) warnings++;
+    }
+
+    // 2. Navigator language leak check (e.g., zh-CN locale while using US proxy)
+    const navLangs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(', ');
+    if (langEl) {
+      const hasZhLocaleOnForeignIp = expectedCc && !['CN', 'HK', 'TW', 'SG', 'MO', 'LO'].includes(expectedCc) && /zh/i.test(navLangs);
+      langEl.textContent = navLangs;
+      langEl.className = `font-mono-num font-semibold ${hasZhLocaleOnForeignIp ? 'text-amber-300' : 'text-emerald-400'}`;
+      if (hasZhLocaleOnForeignIp) warnings++;
+    }
+
+    // 3. Automation / Headless WebDriver check
+    const isAutomated = Boolean(navigator.webdriver);
+    if (wdEl) {
+      wdEl.textContent = isAutomated ? 'navigator.webdriver = true ⚠️' : 'Stealth (Clean) ✓';
+      wdEl.className = `font-mono-num font-semibold ${isAutomated ? 'text-rose-400' : 'text-emerald-400'}`;
+      if (isAutomated) warnings++;
+    }
+
+    // 4. Edge HTTP RTT measurement + TCP RTT comparison
+    (async () => {
+      try {
+        const t0 = performance.now();
+        const resp = await fetch('/api/v1/ping', { cache: 'no-store' });
+        const httpRtt = Math.round(performance.now() - t0);
+        const data = await resp.json();
+        if (rttEl) {
+          const colo = data.colo || 'EDGE';
+          const tcpPart = typeof data.clientTcpRtt === 'number' ? ` (TCP ${data.clientTcpRtt}ms)` : '';
+          rttEl.textContent = `${httpRtt}ms via ${colo}${tcpPart}`;
+          rttEl.className = `font-mono-num font-semibold ${httpRtt > 450 ? 'text-amber-300' : 'text-emerald-400'}`;
+        }
+      } catch {
+        if (rttEl) rttEl.textContent = 'Unavailable';
+      }
+    })();
+
+    // 5. WebRTC STUN ICE Candidate Leak Probe
+    (async () => {
+      if (typeof RTCPeerConnection === 'undefined') {
+        if (webrtcEl) {
+          webrtcEl.textContent = 'Disabled (Safe) ✓';
+          webrtcEl.className = 'font-mono-num font-semibold text-emerald-400';
+        }
+        finalizeBadge();
+        return;
+      }
+
+      const discoveredIps = new Set<string>();
+      try {
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }],
+        });
+        pc.createDataChannel('judgeip');
+        pc.onicecandidate = (event) => {
+          const cand = event.candidate?.candidate || '';
+          const ipMatch = cand.match(/(?:\b(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\b)|(?:\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b)/);
+          if (ipMatch && !ipMatch[0].startsWith('192.168.') && !ipMatch[0].startsWith('10.') && !ipMatch[0].endsWith('.local')) {
+            discoveredIps.add(ipMatch[0]);
+          }
+        };
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await new Promise((r) => setTimeout(r, 1400));
+        pc.close();
+      } catch {
+        // Ignore RTCPeerConnection restrictions
+      }
+
+      if (webrtcEl) {
+        if (discoveredIps.size === 0) {
+          webrtcEl.textContent = 'Shielded / mDNS Masked ✓';
+          webrtcEl.className = 'font-mono-num font-semibold text-emerald-400';
+        } else {
+          const list = Array.from(discoveredIps);
+          const leaked = expectedIp && !list.includes(expectedIp);
+          webrtcEl.textContent = leaked ? `LEAK: ${list[0]} ⚠️` : `${list[0]} ✓`;
+          webrtcEl.className = `font-mono-num font-semibold ${leaked ? 'text-rose-400' : 'text-emerald-400'}`;
+          if (leaked) warnings++;
+        }
+      }
+      finalizeBadge();
+    })();
+
+    function finalizeBadge() {
+      if (!badgeEl) return;
+      if (warnings === 0) {
+        badgeEl.textContent = labelClean;
+        badgeEl.className = 'rounded-full border border-emerald-500/35 bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300';
+      } else {
+        badgeEl.textContent = `${warnings} ${labelMismatch}`;
+        badgeEl.className = 'rounded-full border border-amber-500/35 bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300';
+      }
+    }
+  }
+</script>

@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import VerdictDashboard from '../../components/VerdictDashboard.astro';
+import { extractVisitorIp } from '../../lib/ip-utils';
+import { evaluateIpVerdict } from '../../lib/verdict-engine';
+import { getEdgeEnv } from '../../lib/edge-env';
+
+const visitorIp = extractVisitorIp(Astro.request);
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const kvNamespace = getEdgeEnv().IP_CACHE;
+
+const report = await evaluateIpVerdict(visitorIp, {
+  cfMetadata: cfMeta,
+  isDirectVisitor: true,
+  kvNamespace,
+});
+
+const title = 'JudgeIP (IP判官) — 免费 IP 纯净度检测 · 原生 IP 识别 · TikTok/Claude 防封自检';
+const description =
+  '一眼识破假家宽与广播 IP：提供 0-100 可解释纯净度评分、五大 RIR 注册局原生血统验真、Shodan 端口透视、WebRTC 泄漏检测与跨境业务通关诊断。';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/zh" locale="zh">
+  <VerdictDashboard report={report} locale="zh" isVisitor={true} />
+</BaseLayout>

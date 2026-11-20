@@ -1,0 +1,20 @@
+name = "judgeip"
+main = "@astrojs/cloudflare/entrypoints/server"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+# Optional KV namespace binding for caching upstream IP intelligence lookups
+# Uncomment after running: `npx wrangler kv namespace create IP_CACHE`
+# [[kv_namespaces]]
+# binding = "IP_CACHE"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+[vars]
+PUBLIC_SITE_URL = "https://judgeip.com"
+PUBLIC_PROBE_DOMAIN = "ipnano.io"

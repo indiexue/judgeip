@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VerdictDashboard from '../components/VerdictDashboard.astro';
+import { extractVisitorIp } from '../lib/ip-utils';
+import { evaluateIpVerdict } from '../lib/verdict-engine';
+import { detectLocale } from '../lib/i18n';
+import { getEdgeEnv } from '../lib/edge-env';
+
+const locale = detectLocale(Astro.url, Astro.request);
+const visitorIp = extractVisitorIp(Astro.request);
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const report = await evaluateIpVerdict(visitorIp, {
+  cfMetadata: cfMeta,
+  isDirectVisitor: true,
+  kvNamespace: getEdgeEnv().IP_CACHE,
+});
+
+const title =
+  locale === 'zh'
+    ? '真假原生 IP 检测 — RIR 注册局分配国 vs 广播 IP 鉴别 | JudgeIP'
+    : 'True Native IP Checker — RIR WHOIS vs Broadcasted Geo-Fed IP | JudgeIP';
+const description =
+  locale === 'zh'
+    ? '交叉比对 ARIN/RIPE/APNIC 注册局原始分配国与当前 BGP 物理归属地，一秒识破商家宣传的“假原生广播 IP”。'
+    : 'Compare RIR WHOIS original country allocation against live BGP geolocation to distinguish genuine Native IPs from broadcasted prefixes.';
+const heading =
+  locale === 'zh'
+    ? 'RIR 注册局溯源 · 真原生 vs 广播 IP 照妖镜'
+    : 'RIR WHOIS Native vs Broadcasted IP Forensics';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/native-ip-check" locale={locale}>
+  <VerdictDashboard report={report} locale={locale} isVisitor={true} scenarioSubtitle={heading} />
+</BaseLayout>

@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import VerdictDashboard from '../../components/VerdictDashboard.astro';
+import { parseIp, extractVisitorIp } from '../../lib/ip-utils';
+import { evaluateIpVerdict } from '../../lib/verdict-engine';
+import { detectLocale } from '../../lib/i18n';
+import { getEdgeEnv } from '../../lib/edge-env';
+
+const rawIp = Astro.params.ip || '';
+const parsed = parseIp(rawIp);
+const locale = detectLocale(Astro.url, Astro.request);
+
+if (!parsed) {
+  return Astro.redirect(locale === 'zh' ? '/zh' : '/');
+}
+
+const visitorIp = extractVisitorIp(Astro.request);
+const isVisitor = parsed.normalized === visitorIp;
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const kvNamespace = getEdgeEnv().IP_CACHE;
+
+const report = await evaluateIpVerdict(parsed.normalized, {
+  cfMetadata: cfMeta,
+  isDirectVisitor: isVisitor,
+  kvNamespace,
+});
+
+const title =
+  locale === 'zh'
+    ? `${report.ip} IP 纯净度裁决：${report.score}/100 (${report.grade}级) · ${report.network.isp} | JudgeIP`
+    : `${report.ip} IP Purity Score: ${report.score}/100 (Grade ${report.grade}) · ${report.network.isp} | JudgeIP`;
+
+const description =
+  locale === 'zh'
+    ? `IP ${report.ip} (${report.geo.countryName} · ${report.network.asnCode} ${report.network.isp}) 终审得分 ${report.score}/100，血统判定：${report.network.nativeStatus}。查看完整欺诈风险与端口暴露证据链。`
+    : `Forensic IP verdict for ${report.ip} (${report.geo.countryName}, ${report.network.asnCode} ${report.network.isp}): Purity Score ${report.score}/100, RIR status: ${report.network.nativeStatus}.`;
+---
+
+<BaseLayout title={title} description={description} canonicalPath={`/ip/${report.ip}`} locale={locale}>
+  <VerdictDashboard report={report} locale={locale} isVisitor={isVisitor} />
+</BaseLayout>

@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VerdictDashboard from '../components/VerdictDashboard.astro';
+import { extractVisitorIp } from '../lib/ip-utils';
+import { evaluateIpVerdict } from '../lib/verdict-engine';
+import { detectLocale } from '../lib/i18n';
+import { getEdgeEnv } from '../lib/edge-env';
+
+const locale = detectLocale(Astro.url, Astro.request);
+const visitorIp = extractVisitorIp(Astro.request);
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const report = await evaluateIpVerdict(visitorIp, {
+  cfMetadata: cfMeta,
+  isDirectVisitor: true,
+  kvNamespace: getEdgeEnv().IP_CACHE,
+});
+
+const title =
+  locale === 'zh'
+    ? 'Claude / ChatGPT 封号风险与降智 IP 纯净度检测 | JudgeIP'
+    : 'Claude & ChatGPT IP Check — Anti-Ban & PoW Degradation Test | JudgeIP';
+const description =
+  locale === 'zh'
+    ? '专门针对 Anthropic Claude 自动封号与 OpenAI ChatGPT 降智验证设计的 IP 纯净度检测工具，精准识别高污染云机房与受限地区。'
+    : 'Audit your IP before logging into Claude Pro or ChatGPT Plus. Detect flagged VPN ASNs, unsupported regions, and high-abuse exits.';
+const heading =
+  locale === 'zh'
+    ? 'Claude / ChatGPT 账号防封与防降智专项审计'
+    : 'Claude & ChatGPT Account Safety Verdict';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/claude-ip-check" locale={locale}>
+  <VerdictDashboard report={report} locale={locale} isVisitor={true} scenarioSubtitle={heading} />
+</BaseLayout>

@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VerdictDashboard from '../components/VerdictDashboard.astro';
+import { extractVisitorIp } from '../lib/ip-utils';
+import { evaluateIpVerdict } from '../lib/verdict-engine';
+import { detectLocale } from '../lib/i18n';
+import { getEdgeEnv } from '../lib/edge-env';
+
+const locale = detectLocale(Astro.url, Astro.request);
+const visitorIp = extractVisitorIp(Astro.request);
+const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
+const kvNamespace = getEdgeEnv().IP_CACHE;
+
+const report = await evaluateIpVerdict(visitorIp, {
+  cfMetadata: cfMeta,
+  isDirectVisitor: true,
+  kvNamespace,
+});
+
+const title =
+  locale === 'zh'
+    ? 'JudgeIP (IP判官) — 免费 IP 纯净度检测 · 原生家宽验真 · 欺诈风险评分'
+    : 'JudgeIP — Free IP Purity Check, Fraud Score & Native ISP Verdict';
+
+const description =
+  locale === 'zh'
+    ? '毫秒级免费 IP 纯净度检测与风险终审：0-100 透明评分、RIR 原生/广播 IP 血统鉴别、机房/住宅代理识别、Shodan 端口暴露扫描及 TikTok/Claude 通关矩阵。'
+    : 'Instant IP purity score (0-100), RIR native vs broadcasted IP verification, residential vs datacenter ASN detection, WebRTC leak check, and TikTok/Claude survival matrix.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/" locale={locale}>
+  <VerdictDashboard report={report} locale={locale} isVisitor={true} />
+</BaseLayout>
