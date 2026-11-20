@@ -335,9 +335,9 @@
 
         if (Array.isArray(info.scenes) && info.scenes.length) {
           var scenesHtml = info.scenes.map(function (sc) {
-            return '<div class="row"><span class="row__label">' + esc(sc.label) + '</span>' +
-              '<span class="row__value"><span class="tags"><span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span>' +
-              '<span class="geo__note">' + esc(sc.note) + '</span></span></span></div>';
+            return '<div class="scene-card"><div class="scene-card__top"><span class="scene-card__name">' + esc(sc.label) + '</span>' +
+              '<span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span></div>' +
+              '<span class="scene-card__note">' + esc(sc.note) + '</span></div>';
           }).join('');
           setFieldHtml('scenes', scenesHtml);
         }

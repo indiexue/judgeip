@@ -102,7 +102,7 @@
   /* 导航折叠的断点，与 app.css 里「窄屏折叠」那段 media query 保持一致（改一处必须两边一起改）。
      下面开合菜单、下拉组两段都只读这一条，「宽屏」一律写成它不成立，不另写一条 min-width：
      缩放或非整数的设备像素比会让视口宽度落在 1030 与 1031 之间，两条各写各的就会有一段谁都不认。 */
-  var NAV_COLLAPSED = '(max-width: 1030px)';
+  var NAV_COLLAPSED = '(max-width: 1080px)';
 
   /* 窄屏导航的开合。样式那边只在 :root.has-js 且视口落在 NAV_COLLAPSED 时才把导航折叠起来，
      所以这里不判断屏幕宽度：宽屏上按钮根本不显示，点不到。
@@ -273,7 +273,7 @@
      存储读写都包在 try 里：隐私模式下 localStorage 可能一碰就抛异常，那时只是记不住，切换本身照常。
      这一段与 boot.js 里的首帧判定是同一套规则，改一处必须两边一起改。 */
   (function () {
-    var THEME_KEY = 'ipcx-theme';
+    var THEME_KEY = 'judgeip-theme';
     var THEME_LABEL = { light: '切换到深色模式', dark: '切换到浅色模式' };
     var root = document.documentElement;
     var button = document.querySelector('[data-theme-toggle]');

@@ -25,7 +25,7 @@ const encodedIp = encodeURIComponent(info.ip);
       type="text"
       name="ip"
       value={queryValue}
-      placeholder="8.8.8.8"
+      placeholder="输入任意 IPv4 或 IPv6 查询归属、纯净度与路由风险（如 8.8.8.8、73.162.88.1）"
       inputmode="text"
       enterkeyhint="search"
       autocomplete="off"
@@ -47,23 +47,34 @@ const encodedIp = encodeURIComponent(info.ip);
   )}
 </form>
 
+<!-- Primary IP Inspection Bar -->
 <div class="current" data-current-card data-is-self={isSelf ? '1' : '0'} data-initial-version={String(info.version)}>
   <div class="current__line">
-    <span class="current__eyebrow">{isSelf ? '你的公网 IP' : '查询的 IP 地址'}</span>
+    <span class="current__eyebrow">{isSelf ? '当前出口 IP' : '查询目标 IP'}</span>
     <span class="current__ip mono" id="current-ip">{info.ip}</span>
+    {info.ptrRecord && info.ptrRecord !== '—' && (
+      <span class="current__host" data-field="heroPtr">{info.ptrRecord}</span>
+    )}
   </div>
   <div class="current__actions">
     {!isSelf && (
       <a class="copy" href="/" style="text-decoration:none;">
-        <span class="copy__label">查本机</span>
+        <span class="copy__label">返回本机</span>
       </a>
     )}
-    <a class="copy" id="share-card-link" href={`/card?ip=${encodedIp}`} style="text-decoration:none;" title="生成 IP 纯净度分享卡片">
+    <button class="copy" type="button" data-copy-target="current-ip" data-copy-done="已复制">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
+        <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
+      </svg>
+      <span class="copy__label">复制</span>
+    </button>
+    <a class="copy" id="share-card-link" href={`/card?ip=${encodedIp}`} style="text-decoration:none;" title="生成可下载的 IP 报告卡片">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
         <path d="M7 9h6M7 13h10"></path>
       </svg>
-      <span class="copy__label">生成卡片</span>
+      <span class="copy__label">分享卡</span>
     </a>
     <button class="mask" type="button" data-mask-toggle aria-pressed="false" aria-label="隐藏 IP 地址" title="隐藏 IP 地址">
       <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -76,33 +87,44 @@ const encodedIp = encodeURIComponent(info.ip);
         <path d="M4 4l16 16"></path>
       </svg>
     </button>
-    <button class="copy" type="button" data-copy-target="current-ip" data-copy-done="已复制">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
-        <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
-      </svg>
-      <span class="copy__label">复制</span>
-    </button>
   </div>
 </div>
 
 {isSelf && (
   <a class="esim-banner" href="/check">
     <div class="esim-banner__body">
-      <div class="esim-banner__title">一键环境体检（6 大维度交叉校验）</div>
-      <div class="esim-banner__desc">同时自动核验 IP 纯净度、WebRTC 泄露、DNS 泄露、时区语言一致性、自动化指纹与 AI 平台可用性。</div>
+      <div class="esim-banner__title">一键 6 维环境交叉体检</div>
+      <div class="esim-banner__desc">同步核验 IP 纯净度、WebRTC 泄露、DNS 跨区抢答、时区语言一致性与自动化指纹。</div>
     </div>
-    <span class="esim-banner__cta">开始体检 ›</span>
+    <span class="esim-banner__cta">立即体检 ›</span>
   </a>
 )}
 
-<div class="groups">
-  <!-- 1. 网络属性 -->
+<!-- High-Efficiency 2-Column Bento Dashboard -->
+<div class="groups groups--bento">
+  <!-- Left Col 1: 网络与信誉属性 -->
   <section class="group">
-    <h2 class="group__title">网络属性</h2>
+    <h2 class="group__title">网络与信誉属性</h2>
     <div class="rows">
       <div class="row">
-        <span class="row__label">IP 类型</span>
+        <span class="row__label">纯净度评分</span>
+        <span class="row__value" data-field="score">
+          <span class={`score score--${info.scoreTone}`}>
+            <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={`IP 评分 ${info.score} 分，满分 100 分`}>
+              <rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>
+              <rect class="score__fill" x="0" y="0" width={info.score} height="6" rx="3"></rect>
+            </svg>
+            <span class="score__num mono">
+              {info.score}<span class="score__total">/100</span>
+            </span>
+            <span class={`badge badge--${info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger'}`}>
+              {info.grade}
+            </span>
+          </span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="row__label">网络类型</span>
         <span class="row__value" data-field="ipType">
           <span class={`badge badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
           {!info.isBogon && (
@@ -113,15 +135,15 @@ const encodedIp = encodeURIComponent(info.ip);
         </span>
       </div>
       <div class="row">
-        <span class="row__label">ISP</span>
+        <span class="row__label">运营商 (ISP)</span>
         <span class="row__value" data-field="isp">{info.isp}</span>
       </div>
       <div class="row">
-        <span class="row__label">所属组织</span>
+        <span class="row__label">所属机构</span>
         <span class="row__value" data-field="org">{info.org}</span>
       </div>
       <div class="row">
-        <span class="row__label">ASN</span>
+        <span class="row__label">ASN 自治系统</span>
         <span class="row__value" data-field="asn">
           {info.asn ? (
             <>
@@ -143,14 +165,14 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">关联域名</span>
-        <span class="row__value" data-field="domain">{info.domain}</span>
+        <span class="row__value" data-field="domain"><span class="mono">{info.domain}</span></span>
       </div>
       <div class="row">
-        <span class="row__label">注册机构</span>
+        <span class="row__label">RIR 注册局</span>
         <span class="row__value" data-field="rirName">{info.rirName}</span>
       </div>
       <div class="row">
-        <span class="row__label">数据中心</span>
+        <span class="row__label">IDC 机房托管</span>
         <span class="row__value" data-field="datacenter">
           <span class={`badge badge--${info.isDatacenter ? 'danger' : 'green'}`}>
             {info.isDatacenter ? '是' : '否'}
@@ -158,107 +180,138 @@ const encodedIp = encodeURIComponent(info.ip);
         </span>
       </div>
       <div class="row">
-        <span class="row__label">威胁状态</span>
-        <span class="row__value" data-field="threat">
-          <span class={`badge badge--${info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">代理状态</span>
+        <span class="row__label">代理与匿名</span>
         <span class="row__value" data-field="proxy">
           <span class={`badge badge--${info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
         </span>
       </div>
       <div class="row">
-        <span class="row__label">IP 纯净度评分</span>
-        <span class="row__value" data-field="score">
-          <span class={`score score--${info.scoreTone}`}>
-            <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={`IP 评分 ${info.score} 分，满分 100 分`}>
-              <rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>
-              <rect class="score__fill" x="0" y="0" width={info.score} height="6" rx="3"></rect>
-            </svg>
-            <span class="score__num mono">
-              {info.score}<span class="score__total">/100</span>
-            </span>
-            <span class={`badge badge--${info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger'}`} style="margin-left:6px;">
-              {info.grade}
-            </span>
-          </span>
+        <span class="row__label">威胁与黑名单</span>
+        <span class="row__value" data-field="threat">
+          <span class={`badge badge--${info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
         </span>
       </div>
     </div>
   </section>
 
-  <!-- 2. 地理位置 -->
-  <section class="group">
-    <h2 class="group__title">地理位置</h2>
-    <div class="rows">
-      <div class="row">
-        <span class="row__label">国家/地区</span>
-        <span class="row__value" data-field="country">
-          {info.flagEmoji && <span class="flag">{info.flagEmoji}</span>} {info.countryZh}{' '}
-          {info.countryCode && <span class="dim mono">{info.countryCode}</span>}
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">省/州</span>
-        <span class="row__value" data-field="region">{info.region}</span>
-      </div>
-      <div class="row">
-        <span class="row__label">城市</span>
-        <span class="row__value" data-field="city">{info.city}</span>
-      </div>
-      <div class="row">
-        <span class="row__label">经纬度</span>
-        <span class="row__value" data-field="coords">
-          <span class="mono">
-            {info.latitude !== null && info.longitude !== null ? `${info.latitude}, ${info.longitude}` : '—'}
+  <!-- Right Col 1: 地理位置 + 多库对照 -->
+  <div class="groups">
+    <section class="group">
+      <h2 class="group__title">地理位置</h2>
+      <div class="rows">
+        <div class="row">
+          <span class="row__label">国家 / 地区</span>
+          <span class="row__value" data-field="country">
+            {info.flagEmoji && <span class="flag">{info.flagEmoji}</span>} {info.countryZh}{' '}
+            {info.countryCode && <span class="dim mono">{info.countryCode}</span>}
           </span>
-        </span>
+        </div>
+        <div class="row">
+          <span class="row__label">省 / 州 · 城市</span>
+          <span class="row__value">
+            <span data-field="region">{info.region}</span>
+            <span class="geo__sep">/</span>
+            <span data-field="city">{info.city}</span>
+          </span>
+        </div>
+        <div class="row">
+          <span class="row__label">参考坐标</span>
+          <span class="row__value" data-field="coords">
+            <span class="mono">
+              {info.latitude !== null && info.longitude !== null ? `${info.latitude}, ${info.longitude}` : '—'}
+            </span>
+          </span>
+        </div>
+        <div class="row">
+          <span class="row__label">时区与时间</span>
+          <span class="row__value" data-field="timezone">
+            <span class="mono">{info.timezone}</span>
+            {info.localTimeHm && (
+              <>
+                <span class="dim"> · </span>
+                <span class="mono">{info.localTimeHm}</span>
+              </>
+            )}
+          </span>
+        </div>
+        <div class="row">
+          <span class="row__label">所属大洲</span>
+          <span class="row__value" data-field="continent">{info.continentZh}</span>
+        </div>
       </div>
-      <div class="row">
-        <span class="row__label">时区</span>
-        <span class="row__value" data-field="timezone">
-          <span class="mono">{info.timezone}</span>
-          {info.localTimeHm && (
-            <>
-              <span class="dim"> · 当地 </span>
-              <span class="mono">{info.localTimeHm}</span>
-            </>
-          )}
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">大洲</span>
-        <span class="row__value" data-field="continent">{info.continentZh}</span>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- 3. 场景适配评估（整合自 cleanip.io 核心亮点：8 大高频业务适配度） -->
+    {!info.isBogon && (
+      <section class="group geo" data-geo data-ip={info.ip} data-self={isSelf ? '1' : '0'}>
+        <h2 class="group__title">多库定位对照</h2>
+        <div class="rows">
+          <div
+            class="row"
+            data-geo-source="cloudflare"
+            data-geo-url={isSelf ? 'https://speed.cloudflare.com/cdn-cgi/trace' : ''}
+            data-geo-fields=""
+          >
+            <span class="row__label">Cloudflare</span>
+            <span class="row__value"><span class="geo__note">查询中…</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="ip2location"
+            data-geo-url={`https://api.ip2location.io/?ip=${encodedIp}&format=json`}
+            data-geo-fields="ip country_code region_name city_name"
+          >
+            <span class="row__label">IP2Location</span>
+            <span class="row__value"><span class="geo__note">查询中…</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="dbip"
+            data-geo-url={`https://api.db-ip.com/v2/free/${encodedIp}`}
+            data-geo-fields="ipAddress countryCode stateProv city"
+          >
+            <span class="row__label">DB-IP</span>
+            <span class="row__value"><span class="geo__note">查询中…</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="ipinfo"
+            data-geo-url={`https://ipinfo.io/${encodedIp}/json`}
+            data-geo-fields="ip country region city"
+          >
+            <span class="row__label">IPinfo.io</span>
+            <span class="row__value"><span class="geo__note">查询中…</span></span>
+          </div>
+          <div class="row" data-geo-source="maxmind" data-geo-url="" data-geo-fields="">
+            <span class="row__label">MaxMind</span>
+            <span class="row__value"><span class="geo__note">查询中…</span></span>
+          </div>
+        </div>
+      </section>
+    )}
+  </div>
+
+  <!-- Full-Width Span: 8-Category Compact Scene Fit Grid -->
   {!info.isBogon && info.scenes.length > 0 && (
-    <section class="group" id="scene-fit">
-      <h2 class="group__title">场景适配</h2>
-      <div class="rows" data-field="scenes">
+    <section class="group group--span2" id="scene-fit">
+      <h2 class="group__title">业务场景适配评估</h2>
+      <div class="scene-grid" data-field="scenes">
         {info.scenes.map((sc) => (
-          <div class="row">
-            <span class="row__label">{sc.label}</span>
-            <span class="row__value">
-              <span class="tags">
-                <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
-                <span class="geo__note">{sc.note}</span>
-              </span>
-            </span>
+          <div class="scene-card">
+            <div class="scene-card__top">
+              <span class="scene-card__name">{sc.label}</span>
+              <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
+            </div>
+            <span class="scene-card__note">{sc.note}</span>
           </div>
         ))}
       </div>
     </section>
   )}
 
-  <!-- 4. 风险检测与技术指标（整合自 cleanip.io：代理匿名 / DNSBL / 端口 / BGP 前缀 / RPKI / PTR） -->
+  <!-- Row 3 Left: 风险与路由技术指标 -->
   {!info.isBogon && (
     <section class="group" id="risk-tech">
-      <h2 class="group__title">风险与技术指标</h2>
+      <h2 class="group__title">风险与路由技术指标</h2>
       <div class="rows" data-field="riskTech">
         {info.riskChecks.map((rc) => (
           <div class="row">
@@ -293,7 +346,7 @@ const encodedIp = encodeURIComponent(info.ip);
           <span class="row__value"><span class="mono">{info.ptrRecord}</span></span>
         </div>
         <div class="row">
-          <span class="row__label">开放服务端口</span>
+          <span class="row__label">公网开放端口</span>
           <span class="row__value">
             {info.openPorts.length > 0 ? (
               <span class="mono">{info.openPorts.join(', ')}</span>
@@ -302,66 +355,11 @@ const encodedIp = encodeURIComponent(info.ip);
             )}
           </span>
         </div>
-        {info.abuseEmail !== '—' && (
-          <div class="row">
-            <span class="row__label">滥用举报邮箱</span>
-            <span class="row__value"><span class="mono">{info.abuseEmail}</span></span>
-          </div>
-        )}
       </div>
     </section>
   )}
 
-  <!-- 5. 多库定位 -->
-  {!info.isBogon && (
-    <section class="group geo" data-geo data-ip={info.ip} data-self={isSelf ? '1' : '0'}>
-      <h2 class="group__title">多库定位</h2>
-      <div class="rows">
-        <div
-          class="row"
-          data-geo-source="cloudflare"
-          data-geo-url={isSelf ? 'https://speed.cloudflare.com/cdn-cgi/trace' : ''}
-          data-geo-fields=""
-        >
-          <span class="row__label">Cloudflare</span>
-          <span class="row__value"><span class="geo__note">查询中…</span></span>
-        </div>
-        <div
-          class="row"
-          data-geo-source="ip2location"
-          data-geo-url={`https://api.ip2location.io/?ip=${encodedIp}&format=json`}
-          data-geo-fields="ip country_code region_name city_name"
-        >
-          <span class="row__label">IP2Location</span>
-          <span class="row__value"><span class="geo__note">查询中…</span></span>
-        </div>
-        <div
-          class="row"
-          data-geo-source="dbip"
-          data-geo-url={`https://api.db-ip.com/v2/free/${encodedIp}`}
-          data-geo-fields="ipAddress countryCode stateProv city"
-        >
-          <span class="row__label">DB-IP</span>
-          <span class="row__value"><span class="geo__note">查询中…</span></span>
-        </div>
-        <div
-          class="row"
-          data-geo-source="ipinfo"
-          data-geo-url={`https://ipinfo.io/${encodedIp}/json`}
-          data-geo-fields="ip country region city"
-        >
-          <span class="row__label">IPinfo.io</span>
-          <span class="row__value"><span class="geo__note">查询中…</span></span>
-        </div>
-        <div class="row" data-geo-source="maxmind" data-geo-url="" data-geo-fields="">
-          <span class="row__label">MaxMind</span>
-          <span class="row__value"><span class="geo__note">查询中…</span></span>
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- 6. 本机网络 -->
+  <!-- Row 3 Right: 本机双栈与边缘连接 -->
   {isSelf && (
     <section
       class="group"
@@ -372,18 +370,18 @@ const encodedIp = encodeURIComponent(info.ip);
       data-v4="https://ipv4.icanhazip.com/ https://v4.ident.me/ https://checkip.amazonaws.com/"
       data-v6="https://api6.ipify.org?format=json https://ipv6.icanhazip.com/"
     >
-      <h2 class="group__title">本机网络</h2>
+      <h2 class="group__title">本机双栈与边缘协议</h2>
       <div class="rows">
         <div class="row" data-net="v4">
-          <span class="row__label">IPv4</span>
+          <span class="row__label">IPv4 出口</span>
           <span class="row__value"><span class="geo__note">检测中…</span></span>
         </div>
         <div class="row" data-net="v6">
-          <span class="row__label">IPv6</span>
+          <span class="row__label">IPv6 出口</span>
           <span class="row__value"><span class="geo__note">检测中…</span></span>
         </div>
         <div class="row" data-net="family">
-          <span class="row__label">访问本站使用</span>
+          <span class="row__label">连接协议栈</span>
           <span class="row__value">
             <span class="tags">
               <span class="mono">IPv{info.version}</span>
@@ -391,32 +389,32 @@ const encodedIp = encodeURIComponent(info.ip);
           </span>
         </div>
         <div class="row" data-net="colo">
-          <span class="row__label">Cloudflare 节点</span>
+          <span class="row__label">边缘接入机房</span>
           <span class="row__value"><span class="geo__note">检测中…</span></span>
         </div>
         <div class="row" data-net="proto">
-          <span class="row__label">协议</span>
+          <span class="row__label">传输与加密</span>
           <span class="row__value"><span class="geo__note">检测中…</span></span>
         </div>
         <div class="row" data-net="warp">
-          <span class="row__label">WARP</span>
+          <span class="row__label">Cloudflare WARP</span>
           <span class="row__value"><span class="geo__note">检测中…</span></span>
         </div>
       </div>
     </section>
   )}
 
-  <!-- 7. 网络连通性 -->
+  <!-- Full-Width Span: 网络连通性 -->
   {isSelf && (
-    <section class="group conn conn--home" data-conn data-conn-auto="view" data-rounds="4">
+    <section class="group group--span2 conn conn--home" data-conn data-conn-auto="view" data-rounds="4">
       <div class="connhead">
-        <h2 class="group__title">网络连通性</h2>
-        <a class="connhead__more" href="/connectivity">查看全部 ›</a>
+        <h2 class="group__title">国内外核心节点连通性</h2>
+        <a class="connhead__more" href="/connectivity">完整 44 站测速 ›</a>
       </div>
       <p class="connnote" data-conn-notice hidden></p>
       <div class="rows conngrid conngrid--home">
         <div class="conngrid__col">
-          <div class="conngrid__cap">国内</div>
+          <div class="conngrid__cap">国内直连</div>
           {[
             { key: 'baidu', url: 'https://www.baidu.com/favicon.ico', mark: '百', dom: 'baidu.com', label: '百度' },
             { key: 'wechat', url: 'https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico', mark: '微', dom: 'weixin.qq.com', label: '微信' },
@@ -440,7 +438,7 @@ const encodedIp = encodeURIComponent(info.ip);
           ))}
         </div>
         <div class="conngrid__col">
-          <div class="conngrid__cap">国际</div>
+          <div class="conngrid__cap">国际与 AI</div>
           {[
             { key: 'google', url: 'https://www.google.com/generate_204', mark: 'G', dom: 'google.com', label: 'Google', grp: 'intl' },
             { key: 'youtube', url: 'https://www.youtube.com/generate_204', mark: 'Y', dom: 'youtube.com', label: 'YouTube', grp: 'intl' },

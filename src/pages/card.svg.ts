@@ -33,7 +33,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240">
   <rect width="680" height="240" rx="14" fill="#0f172a"/>
   <rect x="1" y="1" width="678" height="238" rx="13" fill="none" stroke="#1e293b" stroke-width="2"/>
-  <text x="28" y="40" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="900" fill="#3bb982">JudgeIP</text>
+  <text x="28" y="40" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#f8fafc">Judge<tspan fill="#3b82f6">IP</tspan></text>
   <text x="118" y="39" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#94a3b8">judgeip.com</text>
   <text x="28" y="84" font-family="ui-monospace,Menlo,monospace" font-size="26" font-weight="700" fill="#f8fafc">${escXml(displayIp)}</text>
   <text x="28" y="110" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#cbd5e1">${escXml(loc)} · ${escXml(info.asnCode)} · ${escXml(info.isp.slice(0, 34))}</text>
