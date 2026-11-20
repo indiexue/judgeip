@@ -47,7 +47,7 @@ const encodedIp = encodeURIComponent(info.ip);
   )}
 </form>
 
-<div class="current">
+<div class="current" data-current-card data-is-self={isSelf ? '1' : '0'} data-initial-version={String(info.version)}>
   <div class="current__line">
     <span class="current__eyebrow">{isSelf ? '你的公网 IP' : '查询的 IP 地址'}</span>
     <span class="current__ip mono" id="current-ip">{info.ip}</span>
@@ -86,7 +86,7 @@ const encodedIp = encodeURIComponent(info.ip);
     <div class="rows">
       <div class="row">
         <span class="row__label">IP 类型</span>
-        <span class="row__value">
+        <span class="row__value" data-field="ipType">
           <span class={`badge badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
           {!info.isBogon && (
             <span class={`badge badge--${info.isNative ? 'green' : 'amber'}`} style="margin-left:6px;">
@@ -97,15 +97,15 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">ISP</span>
-        <span class="row__value">{info.isp}</span>
+        <span class="row__value" data-field="isp">{info.isp}</span>
       </div>
       <div class="row">
         <span class="row__label">所属组织</span>
-        <span class="row__value">{info.org}</span>
+        <span class="row__value" data-field="org">{info.org}</span>
       </div>
       <div class="row">
         <span class="row__label">ASN</span>
-        <span class="row__value">
+        <span class="row__value" data-field="asn">
           {info.asn ? (
             <>
               <a class="asn-link mono" href={`/whois?q=${info.asnCode}`} title={`查看 ${info.asnCode} 注册信息`}>
@@ -126,15 +126,15 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">关联域名</span>
-        <span class="row__value">{info.domain}</span>
+        <span class="row__value" data-field="domain">{info.domain}</span>
       </div>
       <div class="row">
         <span class="row__label">注册机构</span>
-        <span class="row__value">{info.rirName}</span>
+        <span class="row__value" data-field="rirName">{info.rirName}</span>
       </div>
       <div class="row">
         <span class="row__label">数据中心</span>
-        <span class="row__value">
+        <span class="row__value" data-field="datacenter">
           <span class={`badge badge--${info.isDatacenter ? 'danger' : 'green'}`}>
             {info.isDatacenter ? '是' : '否'}
           </span>
@@ -142,19 +142,19 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">威胁状态</span>
-        <span class="row__value">
+        <span class="row__value" data-field="threat">
           <span class={`badge badge--${info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
         </span>
       </div>
       <div class="row">
         <span class="row__label">代理状态</span>
-        <span class="row__value">
+        <span class="row__value" data-field="proxy">
           <span class={`badge badge--${info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
         </span>
       </div>
       <div class="row">
         <span class="row__label">IP 评分</span>
-        <span class="row__value">
+        <span class="row__value" data-field="score">
           <span class={`score score--${info.scoreTone}`}>
             <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={`IP 评分 ${info.score} 分，满分 100 分`}>
               <rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>
@@ -175,22 +175,22 @@ const encodedIp = encodeURIComponent(info.ip);
     <div class="rows">
       <div class="row">
         <span class="row__label">国家/地区</span>
-        <span class="row__value">
+        <span class="row__value" data-field="country">
           {info.flagEmoji && <span class="flag">{info.flagEmoji}</span>} {info.countryZh}{' '}
           {info.countryCode && <span class="dim mono">{info.countryCode}</span>}
         </span>
       </div>
       <div class="row">
         <span class="row__label">省/州</span>
-        <span class="row__value">{info.region}</span>
+        <span class="row__value" data-field="region">{info.region}</span>
       </div>
       <div class="row">
         <span class="row__label">城市</span>
-        <span class="row__value">{info.city}</span>
+        <span class="row__value" data-field="city">{info.city}</span>
       </div>
       <div class="row">
         <span class="row__label">经纬度</span>
-        <span class="row__value">
+        <span class="row__value" data-field="coords">
           <span class="mono">
             {info.latitude !== null && info.longitude !== null ? `${info.latitude}, ${info.longitude}` : '—'}
           </span>
@@ -198,7 +198,7 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">时区</span>
-        <span class="row__value">
+        <span class="row__value" data-field="timezone">
           <span class="mono">{info.timezone}</span>
           {info.localTimeHm && (
             <>
@@ -210,7 +210,7 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
       <div class="row">
         <span class="row__label">大洲</span>
-        <span class="row__value">{info.continentZh}</span>
+        <span class="row__value" data-field="continent">{info.continentZh}</span>
       </div>
     </div>
   </section>
@@ -264,7 +264,7 @@ const encodedIp = encodeURIComponent(info.ip);
     </section>
   )}
 
-  <!-- 4. 本机网络（仅在查看本机 IP 时显示，与 ip.cx 完全一致） -->
+  <!-- 4. 本机网络 -->
   {isSelf && (
     <section
       class="group"
@@ -272,7 +272,7 @@ const encodedIp = encodeURIComponent(info.ip);
       data-visible-ip={info.ip}
       data-iata="/assets/data/iata.json"
       data-trace="speed.cloudflare.com"
-      data-v4="https://ipv4.icanhazip.com/ https://v4.ident.me/"
+      data-v4="https://ipv4.icanhazip.com/ https://v4.ident.me/ https://checkip.amazonaws.com/"
       data-v6="https://api6.ipify.org?format=json https://ipv6.icanhazip.com/"
     >
       <h2 class="group__title">本机网络</h2>
@@ -309,7 +309,7 @@ const encodedIp = encodeURIComponent(info.ip);
     </section>
   )}
 
-  <!-- 5. 网络连通性（仅查看本机时显示 8 个站点快速测速卡片） -->
+  <!-- 5. 网络连通性 -->
   {isSelf && (
     <section class="group conn conn--home" data-conn data-conn-auto="view" data-rounds="4">
       <div class="connhead">
