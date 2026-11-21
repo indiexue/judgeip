@@ -77,6 +77,62 @@ test('Turnstile distinguishes upstream/configuration failures from rejected toke
   }
 });
 
+test('Turnstile parses HTTP 400 secret errors as site configuration failures', async () => {
+  for (const mode of ['mg', 'ni']) {
+    for (const code of ['invalid-input-secret', 'missing-input-secret']) {
+      await withFetch(async () => json({ success: false, 'error-codes': [code] }, 400), async () => {
+        const response = await verifyTurnstile(turnstileRequest(mode), secrets);
+        const body = await response.json();
+        assert.equal(response.status, 503);
+        assert.equal(body.ok, false);
+        assert.equal(body.error, 'configuration_error');
+        assert.deepEqual(body.error_codes, [code]);
+        assert.equal(body.upstream_status, 400);
+        assert.equal('pass' in body, false);
+      });
+    }
+  }
+});
+
+test('Turnstile parses HTTP 400 rejected or expired tokens without claiming upstream failure', async () => {
+  for (const code of ['invalid-input-response', 'timeout-or-duplicate']) {
+    await withFetch(async () => json({ success: false, 'error-codes': [code] }, 400), async () => {
+      const response = await verifyTurnstile(turnstileRequest(), secrets);
+      const body = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(body.ok, true);
+      assert.equal(body.pass, false);
+      assert.equal(body.success, false);
+      assert.deepEqual(body.error_codes, [code]);
+    });
+  }
+});
+
+test('Turnstile never trusts success or unrecognized errors on non-2xx responses', async () => {
+  for (const [status, data] of [
+    [400, { success: true, hostname: 'judgeip.com', action: 'cf-test-mg' }],
+    [400, { success: false }],
+    [400, { success: false, 'error-codes': ['unrecognized-error'] }],
+    [400, { success: false, 'error-codes': ['invalid-input-response', 'unrecognized-error'] }],
+    [400, { success: false, 'error-codes': ['invalid-input-response', null] }],
+    [400, { success: false, 'error-codes': ['bad-request'] }],
+    [400, { success: false, 'error-codes': ['internal-error'] }],
+    [500, { success: false, 'error-codes': ['invalid-input-response'] }],
+    [429, { success: false, 'error-codes': ['invalid-input-response'] }],
+  ]) {
+    await withFetch(async () => json(data, status), async () => {
+      const response = await verifyTurnstile(turnstileRequest(), secrets);
+      const body = await response.json();
+      assert.equal(response.status, 502);
+      assert.equal(body.ok, false);
+      assert.equal('pass' in body, false);
+    });
+  }
+  await withFetch(async () => new Response('<html>Bad request</html>', { status: 400 }), async () => {
+    assert.equal((await verifyTurnstile(turnstileRequest(), secrets)).status, 502);
+  });
+});
+
 function completeUpstream(url) {
   const str = String(url);
   if (str.includes('ipwho.is')) return json({ success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' } });

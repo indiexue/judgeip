@@ -11,7 +11,7 @@ export async function verifyTurnstile(request: Request, env: EdgeEnv): Promise<R
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
-  const fail = (error: string, zh: string, english: string, status: number) => reply({ ok: false, error, message: en ? english : zh }, status);
+  const fail = (error: string, zh: string, english: string, status: number, details: Record<string, unknown> = {}) => reply({ ok: false, error, message: en ? english : zh, ...details }, status);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const body = (request.headers.get('content-type') || '').includes('application/json')
@@ -36,14 +36,21 @@ export async function verifyTurnstile(request: Request, env: EdgeEnv): Promise<R
     const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST', body: form, signal: ctl.signal,
     });
-    if (!response.ok) return fail('upstream_error', 'Cloudflare 复核接口暂不可用', 'Cloudflare verification is temporarily unavailable', 502);
+    if (!response.ok && response.status !== 400) return fail('upstream_error', 'Cloudflare 复核接口暂不可用', 'Cloudflare verification is temporarily unavailable', 502, { upstream_status: response.status });
+    // Siteverify also returns structured validation errors with HTTP 400.
     const data = await response.json();
     if (!data || typeof data.success !== 'boolean') return fail('invalid_response', 'Cloudflare 返回了无效的复核数据', 'Cloudflare returned an invalid verification response', 502);
-    const errors: string[] = Array.isArray(data['error-codes']) ? data['error-codes'].filter((v: unknown) => typeof v === 'string') : [];
-    if (errors.some((v) => ['missing-input-secret', 'invalid-input-secret'].includes(v))) {
-      return fail('configuration_error', '本站验证密钥配置有误，请联系站点管理员', 'This site has a verification key configuration error', 503);
+    const knownErrors = ['missing-input-secret', 'invalid-input-secret', 'missing-input-response', 'invalid-input-response', 'bad-request', 'timeout-or-duplicate', 'internal-error'];
+    const rawErrors: unknown[] = Array.isArray(data['error-codes']) ? data['error-codes'] : [];
+    const errors = rawErrors.filter((v): v is string => typeof v === 'string' && knownErrors.includes(v));
+    const details = { upstream_status: response.status, error_codes: errors };
+    if (data.success === false && errors.some((v) => ['missing-input-secret', 'invalid-input-secret'].includes(v))) {
+      return fail('configuration_error', '本站验证密钥配置有误，请联系站点管理员', 'This site has a verification key configuration error', 503, details);
     }
-    if (errors.includes('internal-error')) return fail('upstream_error', 'Cloudflare 复核暂时失败，请重试', 'Cloudflare verification failed temporarily; try again', 502);
+    if (errors.some((v) => ['internal-error', 'bad-request', 'missing-input-response'].includes(v))) return fail('upstream_error', 'Cloudflare 复核请求未完成，请重试', 'Cloudflare verification request did not complete; try again', 502, details);
+    const tokenRejected = data.success === false && errors.length > 0 && errors.length === rawErrors.length
+      && errors.every((v) => ['invalid-input-response', 'timeout-or-duplicate'].includes(v));
+    if (!response.ok && !tokenRejected) return fail('upstream_error', 'Cloudflare 未返回可用的复核结果', 'Cloudflare did not return a usable verification result', 502, details);
     const host = new URL(request.url).hostname.toLowerCase();
     const actualHostname = typeof data.hostname === 'string' ? data.hostname.toLowerCase() : '';
     const actualAction = typeof data.action === 'string' ? data.action : '';
