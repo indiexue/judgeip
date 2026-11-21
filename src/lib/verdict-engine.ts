@@ -11,6 +11,7 @@
 
 import { classifyIspAndAsn, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
+import type { KVNamespace } from '@cloudflare/workers-types';
 
 export type VerdictGrade = 'S' | 'A' | 'B' | 'C' | 'D';
 export type RiskLevel = 'pristine' | 'low' | 'elevated' | 'high' | 'critical';

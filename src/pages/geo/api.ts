@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
+import { localizeLookup } from '../../lib/lookup-en';
+import { getLang } from '../../lib/i18n';
 
 async function fetchJsonSafe(url: string, timeoutMs = 3500): Promise<{ status: number; data: any } | null> {
   const ctl = new AbortController();
@@ -34,13 +36,14 @@ function cleanField(val: unknown): string {
   return t === '-' ? '' : t.slice(0, 120);
 }
 
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async ({ request, url, locals }) => {
   // 1. ?me=1 mode used by /cloudflare and /cdn pages for distance calculation
   if (url.searchParams.get('me') === '1') {
     const ip = extractVisitorIp(request);
     const cf = (request as Request & { cf?: Record<string, unknown> }).cf || null;
     try {
-      const info = await lookupIpFull(ip, cf, true);
+      const lang = url.searchParams.get('lang') === 'en' ? 'en' : getLang(locals);
+      const info = localizeLookup(await lookupIpFull(ip, cf, true), lang);
       return new Response(
         JSON.stringify({
           ok: true,

@@ -15,6 +15,9 @@
 
   var PROBE_TIMEOUT = 4000;
   var visibleIp = (root.getAttribute('data-visible-ip') || '').trim();
+  var knownIps = [visibleIp].filter(Boolean);
+  var P = window.IpcxProbe;
+  function comparison(address) { return P ? P.compareExit(address, knownIps) : 'uncompared'; }
 
   var runButton = root.querySelector('[data-webrtc-run]');
   var progress = root.querySelector('[data-webrtc-progress]');
@@ -167,9 +170,8 @@
 
     if (result.srflx.length || result.relay.length) {
       result.srflx.concat(result.relay).forEach(function (address) {
-        /* 与本站看到的地址不一致的那一条才是真正的泄露，单独标红 */
-        var leaked = visibleIp !== '' && address !== visibleIp;
-        nodes.push(el('span', 'tag ' + (leaked ? 'tag--leak' : 'tag--ok') + ' mono', address));
+        var compared = comparison(address);
+        nodes.push(el('span', 'tag tag--' + (compared === 'match' ? 'ok' : compared === 'different' ? 'warn' : 'muted') + ' mono', address));
       });
     } else if (result.error) {
       nodes.push(el('span', 'tag tag--muted', ERRORS[result.error] || T('失败', 'Failed')));
@@ -196,12 +198,13 @@
 
     /* 只有真实内网地址才算暴露；.local 是 mDNS 混淆，那是保护生效 */
     var realLocals = locals.filter(function (a) { return !isMdns(a) && isPrivate(a); });
-    var leaked = publics.filter(function (a) { return visibleIp !== '' && a !== visibleIp; });
+    var different = publics.filter(function (a) { return comparison(a) === 'different'; });
+    var unpaired = publics.filter(function (a) { return comparison(a) === 'uncompared'; });
     var reachable = results.filter(function (r) { return !r.error; }).length;
 
     fill(publicCell, publics.length
       ? publics.map(function (a) {
-          return el('span', 'tag ' + (visibleIp !== '' && a !== visibleIp ? 'tag--leak' : 'tag--ok') + ' mono', a);
+          return el('span', 'tag tag--' + (comparison(a) === 'match' ? 'ok' : comparison(a) === 'different' ? 'warn' : 'muted') + ' mono', a);
         })
       : [el('span', 'dim', T('未探测到', 'Not found'))]);
 
@@ -213,16 +216,18 @@
 
     var tone, title, note;
 
-    if (leaked.length) {
-      tone = 'is-bad';
-      title = T('检测到 WebRTC 泄露', 'WebRTC leak detected');
-      note = T('WebRTC 探到的 ', 'WebRTC found ') + leaked.join(T('、', ', ')) + T(' 与本站看到的 ', ', but this site sees ') + visibleIp +
-             T(' 不是同一个地址。任何网页都能用同样的方法拿到前者，你的代理没有接管 UDP 流量。', '. Any web page can get the former the same way; your proxy does not handle UDP traffic.');
-    } else if (publics.length) {
+    if (different.length) {
       tone = 'is-warn';
-      title = T('有公网地址暴露，但没有额外泄露', 'Public address visible, but no extra leak');
-      note = T('WebRTC 探到的地址与本站看到的一致，没有暴露出第二个地址。', 'The address WebRTC found matches what this site sees, so no second address is exposed.')
-           + T('如果你没用代理，这是正常情况；如果在用代理，说明它已经正确接管了 UDP。', ' If you don\'t use a proxy, this is normal; if you do, it handles UDP correctly.');
+      title = T('发现同协议族出口差异', 'Same-family exit differs');
+      note = T('STUN 地址 ', 'STUN addresses ') + different.join(T('、', ', ')) + T(' 与已知同协议族 HTTP 出口不同。多出口、分流或代理设置都可能造成差异，不能仅据此断定泄露或 UDP 绕过代理。', ' differ from known same-family HTTP exits. Multiple exits, split routing or proxy settings can cause this; it does not by itself prove a leak or UDP bypass.');
+    } else if (unpaired.length) {
+      tone = 'is-warn';
+      title = T('缺少同协议族地址，无法比较', 'No same-family address to compare');
+      note = T('已取得 STUN 地址，但缺少对应 IPv4 或 IPv6 的 HTTP 出口资料。不同协议族不直接比较，也不据此判为泄露。', 'STUN returned an address, but the matching IPv4 or IPv6 HTTP exit is unavailable. Different address families are not compared or labelled a leak.');
+    } else if (publics.length) {
+      tone = 'is-good';
+      title = T('与已知出口一致', 'Matches a known exit');
+      note = T('STUN 地址与已知同协议族 HTTP 出口一致，IPv6 隐私地址按 /64 归并。此结果不保证所有 UDP 流量都经由代理。', 'STUN addresses match known same-family HTTP exits; IPv6 privacy addresses are grouped by /64. This does not guarantee that all UDP traffic uses a proxy.');
     } else if (reachable === 0) {
       tone = 'is-warn';
       title = T('所有 STUN 服务器都没有响应', 'No STUN server responded');
@@ -230,7 +235,7 @@
            + T('换个网络再测一次，才能确认浏览器有没有这条旁路。', ' Test again on another network to confirm whether the browser has this leak path.');
     } else {
       tone = 'is-good';
-      title = T('未发现公网地址泄露', 'No public address leak found');
+      title = T('本次未取得公网候选', 'No public candidate obtained');
       note = reachable + T(' 台服务器有响应，均未拿到你的公网地址。', ' servers responded, and none got your public address.')
            + (realLocals.length ? T('不过内网地址 ', ' Local addresses ') + realLocals.join(T('、', ', ')) + T(' 仍然可见。', ' are still visible, though.') : T('内网地址也没有暴露。', ' No local address exposed either.'));
     }
@@ -252,7 +257,7 @@
       verdict.className = 'verdict is-warn';
       verdict.hidden = false;
       verdictTitle.textContent = T('当前浏览器不支持 WebRTC', 'This browser doesn\'t support WebRTC');
-      verdictNote.textContent = T('没有 RTCPeerConnection 就没有这条旁路，从泄露的角度看这是最安全的情况。', 'Without RTCPeerConnection there is no leak path; from a leak standpoint this is the safest case.');
+      verdictNote.textContent = T('没有执行 STUN 检测，无法比较 HTTP 与 WebRTC 出口。', 'The STUN check was not run, so HTTP and WebRTC exits could not be compared.');
       runButton.disabled = true;
       return;
     }
@@ -289,7 +294,18 @@
       });
     }
 
-    next();
+    knownIps = [visibleIp].filter(Boolean);
+    progress.textContent = T('正在获取 HTTP 出口地址…', 'Getting HTTP exit addresses…');
+    var urls = ['https://ipv4.icanhazip.com/', 'https://api6.ipify.org?format=json'];
+    Promise.all(urls.map(function (url) {
+      if (!P) return Promise.resolve();
+      return P.text(url, {}, 3500).then(function (answer) {
+        if (!answer.response.ok) return;
+        var ip = answer.text.trim();
+        if (ip.charAt(0) === '{') ip = String(JSON.parse(ip).ip || '');
+        if (/^[0-9a-f:.]+$/i.test(ip) && (ip.indexOf(':') !== -1 || /^\d{1,3}(\.\d{1,3}){3}$/.test(ip))) knownIps.push(ip);
+      }).catch(function () {});
+    })).then(next);
   }
 
   runButton.addEventListener('click', run);

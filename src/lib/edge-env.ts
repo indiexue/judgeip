@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import type { KVNamespace } from '@cloudflare/workers-types';
 
 export interface EdgeEnv {
   IP_CACHE?: KVNamespace;

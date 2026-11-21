@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const source = await readFile(new URL('../public/assets/js/check.js', import.meta.url), 'utf8');
+const probeSource = await readFile(new URL('../public/assets/js/probe.js', import.meta.url), 'utf8');
 
 class Element {
   constructor() { this.children = []; this.text = ''; this.hidden = true; this.disabled = false; }
@@ -21,7 +22,7 @@ async function checkup(options = {}) {
       if (!cells.has(selector)) cells.set(selector, new Element());
       return cells.get(selector);
     },
-    getAttribute() { return '8.8.8.8'; },
+    getAttribute() { return options.visibleIp || '8.8.8.8'; },
   };
   const cell = (name) => root.querySelector(`[data-check-${name}]`);
   const dimension = (name) => root.querySelector(`[data-dim="${name}"] [data-dim-val]`).textContent;
@@ -34,7 +35,7 @@ async function checkup(options = {}) {
     setTimeout: (fn, ms) => setTimeout(fn, ms >= 3000 ? 20 : ms),
     fetch: async (url) => {
       requests.push(url);
-      if (url.includes('icanhazip')) return response('8.8.8.8');
+      if (url.includes('icanhazip')) return response(options.v4 === undefined ? '8.8.8.8' : options.v4);
       if (url.includes('/api/ipinfo')) {
         if (options.ipFailure) throw new Error('offline');
         return response({ ok: true, info });
@@ -58,7 +59,7 @@ async function checkup(options = {}) {
         return {};
       }
       async setLocalDescription() {
-        this.onicecandidate({ candidate: { address: '8.8.8.8', type: 'srflx' } });
+        this.onicecandidate({ candidate: { address: options.candidate || '8.8.8.8', type: 'srflx' } });
         this.onicecandidate({ candidate: null });
       }
       close() {}
@@ -66,10 +67,11 @@ async function checkup(options = {}) {
   };
   const context = vm.createContext({
     window, I18N: window.I18N, navigator: { languages: ['en-US'], language: 'en-US', webdriver: false },
-    document: { readyState: 'complete', getElementById: () => root, createElement: () => new Element() },
+    document: { readyState: 'complete', getElementById: () => root, createElement: () => new Element(), addEventListener() {} },
     Intl: { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: 'UTC' }) }), DisplayNames: Intl.DisplayNames },
     AbortController, setTimeout: window.setTimeout, clearTimeout,
   });
+  vm.runInContext(probeSource, context);
   vm.runInContext(source, context);
   async function finish() {
     const deadline = Date.now() + 2000;
@@ -118,6 +120,19 @@ test('missing security booleans, resolver types or valid trace remain incomplete
     const { cell } = await checkup(options);
     assert.equal(cell('score').textContent, 'Incomplete; no score');
   }
+});
+
+test('WebRTC dual-stack and /64 comparisons do not claim a leak or pass without a matching family', async () => {
+  const dual = await checkup({ visibleIp: '2606:4700::1' });
+  assert.ok(dual.dimension('webrtc').startsWith('Passed'));
+  const samePrefix = await checkup({ visibleIp: '2606:4700:1:2::1', candidate: '2606:4700:1:2::abcd' });
+  assert.ok(samePrefix.dimension('webrtc').startsWith('Passed'));
+  const unpaired = await checkup({ candidate: '2606:4700::1' });
+  assert.ok(unpaired.dimension('webrtc').startsWith('Incomplete'));
+  assert.equal(unpaired.cell('score').textContent, 'Incomplete; no score');
+  const different = await checkup({ candidate: '1.1.1.1' });
+  assert.ok(different.dimension('webrtc').includes('Same-family exit differs'));
+  assert.ok(different.dimension('webrtc').includes('does not prove a proxy leak'));
 });
 
 test('response-body deadlines settle incomplete and reruns clear the previous summary', async () => {

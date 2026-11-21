@@ -202,10 +202,26 @@
 
     var endpoint = TLS_ENDPOINTS[index];
 
-    fetch(endpoint.url, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' })
-      .then(function (response) {
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        return response.json();
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer;
+    var pending = new Promise(function (resolve, reject) {
+      timer = window.setTimeout(function () {
+        if (controller) controller.abort();
+        reject(new Error('timeout'));
+      }, 6000);
+      fetch(endpoint.url, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: controller ? controller.signal : undefined })
+        .then(function (response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        }).then(resolve, reject);
+    });
+
+    pending.then(function (data) {
+        window.clearTimeout(timer);
+        return data;
+      }, function (error) {
+        window.clearTimeout(timer);
+        throw error;
       })
       .then(function (data) {
         if (!mine()) return;

@@ -18,7 +18,7 @@ const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
   currentLabel={pick(lang, 'WebRTC 泄露检测', 'WebRTC leak test')}
   activeNav="/webrtc"
   extraCss={[]}
-  extraJs={["/assets/js/webrtc.js"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/webrtc.js"]}
 >
   <Fragment set:html={html} />
 </IpcxLayout>

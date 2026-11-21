@@ -88,18 +88,23 @@ async function checkOneService(cfg: ServiceItemConfig): Promise<LiveServiceStatu
       signal: ctl.signal,
       headers: { Accept: 'application/json', 'User-Agent': 'JudgeIP-Status/1.0' },
     });
-    clearTimeout(timer);
     if (!res.ok) throw new Error('bad_status');
     const json = (await res.json()) as {
       status?: { indicator?: string; description?: string };
       components?: Array<{ name?: string; status?: string; group?: boolean }>;
     };
 
-    const indicator = (json.status?.indicator || 'none').toLowerCase();
+    const indicator = typeof json?.status?.indicator === 'string' ? json.status.indicator.toLowerCase() : '';
+    const validIndicators = ['none', 'minor', 'major', 'critical', 'maintenance'];
+    if (!validIndicators.includes(indicator) || (json.components !== undefined && !Array.isArray(json.components))) throw new Error('invalid_summary');
+    if (json.components?.some((c) => !c || typeof c !== 'object')) throw new Error('invalid_components');
     const comps = (json.components || []).filter((c) => !c.group);
-    const abnormal = comps.filter((c) => c.status && c.status !== 'operational');
+    const knownStates = ['operational', 'degraded_performance', 'partial_outage', 'major_outage', 'under_maintenance'];
+    if (comps.some((c) => !knownStates.includes(c.status || ''))) throw new Error('invalid_components');
+    const maintenance = comps.filter((c) => c.status === 'under_maintenance');
+    const abnormal = comps.filter((c) => c.status !== 'operational' && c.status !== 'under_maintenance');
 
-    if (indicator === 'none' && abnormal.length === 0) {
+    if (indicator === 'none' && abnormal.length === 0 && maintenance.length === 0) {
       return {
         ...cfg,
         tone: 'ok',
@@ -108,7 +113,7 @@ async function checkOneService(cfg: ServiceItemConfig): Promise<LiveServiceStatu
       };
     }
 
-    if (indicator === 'maintenance') {
+    if (abnormal.length === 0 && (indicator === 'maintenance' || (indicator === 'none' && maintenance.length > 0))) {
       return {
         ...cfg,
         tone: 'maint',
@@ -117,7 +122,7 @@ async function checkOneService(cfg: ServiceItemConfig): Promise<LiveServiceStatu
       };
     }
 
-    const isMajor = indicator === 'major' || indicator === 'critical';
+    const isMajor = indicator === 'major' || indicator === 'critical' || abnormal.some((c) => c.status === 'major_outage');
     const names = abnormal.slice(0, 3).map((c) => c.name).filter(Boolean).join('、');
     return {
       ...cfg,
@@ -128,13 +133,14 @@ async function checkOneService(cfg: ServiceItemConfig): Promise<LiveServiceStatu
         : json.status?.description || '部分服务异常',
     };
   } catch {
-    clearTimeout(timer);
     return {
       ...cfg,
       tone: 'muted',
       tagText: '暂无数据',
       note: '这次没能读取官方状态页',
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

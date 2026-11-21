@@ -110,10 +110,14 @@
           resolve(incomplete(T('未取得 STUN 公网地址，无法判断出口是否一致', 'No STUN public address obtained; exits could not be compared')));
           return;
         }
-        var different = addresses.filter(function (ip) { return knownIps.indexOf(ip) === -1; });
+        var compare = window.IpcxProbe && window.IpcxProbe.compareExit;
+        if (!compare) { resolve(incomplete(T('地址比较工具不可用', 'Address comparison unavailable'))); return; }
+        var different = addresses.filter(function (ip) { return compare(ip, knownIps) === 'different'; });
+        var unpaired = addresses.some(function (ip) { return compare(ip, knownIps) === 'uncompared'; });
         resolve(different.length
-          ? result('warn', T('发现不同出口', 'Different exit found'), different.join(', '), 25)
-          : result('pass', T('与已知出口一致', 'Matches a known exit'), addresses.join(', ')));
+          ? result('warn', T('发现同协议族出口差异', 'Same-family exit differs'), different.join(', ') + T('；不能仅据此断定代理泄露', '; this alone does not prove a proxy leak'), 25)
+          : unpaired ? incomplete(T('缺少同协议族 HTTP 地址，不能比较；IPv6 按 /64 归并', 'No same-family HTTP address to compare; IPv6 uses /64 grouping'))
+            : result('pass', T('与已知出口一致', 'Matches a known exit'), addresses.join(', ') + T('（IPv6 按 /64 比较）', ' (IPv6 compared by /64)')));
       }
       try {
         pc = new PC({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }] });

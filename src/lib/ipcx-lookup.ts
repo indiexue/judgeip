@@ -72,6 +72,8 @@ export interface HomeIpLookupResult {
   flagEmoji: string;
   region: string;
   city: string;
+  regionEn: string;
+  cityEn: string;
   latitude: number | null;
   longitude: number | null;
   timezone: string;
@@ -431,6 +433,8 @@ export async function lookupIpFull(
       flagEmoji: '',
       region: '—',
       city: '—',
+      regionEn: '—',
+      cityEn: '—',
       latitude: null,
       longitude: null,
       timezone: '—',
@@ -485,7 +489,7 @@ export async function lookupIpFull(
   }
 
   const [ipWhoRaw, ipApiRaw, shodanRaw, routing, dnsblChecks] = await Promise.all([
-    fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=zh-CN`, 2300),
+    fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300),
     fetchJson<IpApiResp>(
       `http://ip-api.com/json/${encodeURIComponent(parsed.normalized)}?lang=zh-CN&fields=status,continentCode,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as,mobile,proxy,hosting`,
       2300
@@ -512,6 +516,9 @@ export async function lookupIpFull(
   const flagEmoji = isoToFlag(countryCode);
   const region = ipApi?.regionName || ipWho?.region || (cf?.region as string) || '—';
   const city = ipApi?.city || ipWho?.city || (cf?.city as string) || '—';
+  const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
+  const regionEn = englishPlace(ipWho?.region, cf?.region, ipApi?.regionName);
+  const cityEn = englishPlace(ipWho?.city, cf?.city, ipApi?.city);
   const latitude = ipWho?.latitude ?? ipApi?.lat ?? (cf?.latitude ? Number(cf.latitude) : null);
   const longitude = ipWho?.longitude ?? ipApi?.lon ?? (cf?.longitude ? Number(cf.longitude) : null);
   const timezone = ipWho?.timezone?.id || ipApi?.timezone || (cf?.timezone as string) || '—';
@@ -702,6 +709,8 @@ export async function lookupIpFull(
     flagEmoji,
     region,
     city,
+    regionEn,
+    cityEn,
     latitude: latitude !== null && !Number.isNaN(latitude) ? Number(latitude.toFixed(3)) : null,
     longitude: longitude !== null && !Number.isNaN(longitude) ? Number(longitude.toFixed(3)) : null,
     timezone,

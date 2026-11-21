@@ -1,6 +1,6 @@
 ---
 import IpcxLayout from '../layouts/IpcxLayout.astro';
-import { ipv4ToInt, parseIp } from '../lib/ip-utils';
+import { ipv4ToInt, ipv6Groups, parseCidr } from '../lib/ip-utils';
 import { getLang, localePath } from '../lib/i18n';
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
@@ -51,13 +51,13 @@ interface V6Calc {
 
 let calc: V4Calc | V6Calc | null = null;
 
-const [addrPart, prefixPart] = rawQ.split('/');
-const parsed = parseIp(addrPart);
+const input = parseCidr(rawQ);
+const parsed = input?.ip;
 
 if (!parsed) {
   errorMsg = (lang === 'en' ? `"${rawQ}" is not valid. Enter something like 192.168.1.0/24, 73.160.0.0/14 or 2606:4700::/32.` : `「${rawQ}」格式无效，请输入如 192.168.1.0/24、73.160.0.0/14 或 2606:4700::/32。`);
 } else if (parsed.version === 4) {
-  const prefix = prefixPart !== undefined && prefixPart !== '' ? Number(prefixPart) : 24;
+  const prefix = input?.prefix ?? 24;
   if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
     errorMsg = t('IPv4 掩码前缀长度必须在 0 到 32 之间。', 'An IPv4 prefix length must be between 0 and 32.');
   } else {
@@ -90,16 +90,11 @@ if (!parsed) {
     };
   }
 } else {
-  const prefix = prefixPart !== undefined && prefixPart !== '' ? Number(prefixPart) : 64;
+  const prefix = input?.prefix ?? 64;
   if (!Number.isInteger(prefix) || prefix < 0 || prefix > 128) {
     errorMsg = t('IPv6 前缀长度必须在 0 到 128 之间。', 'An IPv6 prefix length must be between 0 and 128.');
   } else {
-    const halves = parsed.normalized.split('::');
-    const head = halves[0] ? halves[0].split(':') : [];
-    const tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
-    const fill = halves.length > 1 ? Array(8 - head.length - tail.length).fill('0000') : [];
-    const groups = [...head, ...fill, ...tail].map((g) => g.padStart(4, '0'));
-    const expanded = groups.join(':');
+    const expanded = ipv6Groups(parsed.normalized)!.map((g) => g.toString(16).padStart(4, '0')).join(':');
     const subnets64 = prefix <= 64 ? Math.pow(2, 64 - prefix).toLocaleString('en-US') : t('小于单个 /64', 'Smaller than one /64');
 
     calc = {

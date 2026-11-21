@@ -36,6 +36,7 @@
   var iataUrl = root.getAttribute('data-iata') || '';
   var mainHost = root.getAttribute('data-main') || '';
   var meUrl = root.getAttribute('data-me') || '';
+  if (meUrl && window.I18N && I18N.lang === 'en') meUrl += '&lang=en';
   var ipv4Host = root.getAttribute('data-ipv4') || '';
 
   var runButton = root.querySelector('[data-cf-run]');

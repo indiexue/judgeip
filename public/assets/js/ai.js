@@ -571,22 +571,16 @@
   };
 
   /* 历史里一条只记出口摘要：地址、国家与结论档位，不记延迟这类每次都会抖的数 */
-  function remember(tone, traced, byExit) {
+  function remember(tone, traced, byExit, conclusion) {
     if (!history) return;
     var t = TONE_LABEL[tone] || TONE_LABEL['is-warn'];
-    if (!traced.length) {
-      history.add({ main: T('没有读到出口', 'No exit read'), tone: t.tone, label: t.label, note: verdictTitle.textContent });
-      return;
-    }
-    var main = byExit.slice(0, 2).map(function (g) { return P.compactIp(g.items[0].exit.ip); }).join(' / ')
-      + (byExit.length > 2 ? T(' 等 ' + byExit.length + ' 个', ' and ' + (byExit.length - 2) + ' more') : '');
     history.add({
-      main: main,
+      kind: 'ai',
+      conclusion: conclusion,
+      ips: byExit.map(function (g) { return g.items[0].exit.ip; }),
+      countries: unique(traced.map(locOf)),
       key: byExit.map(function (g) { return g.key; }).sort().join(','),
-      tone: t.tone,
-      label: t.label,
-      note: byExit.map(function (g) { return countryLabel(locOf(g.items[0])); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(SEP)
-        + ' · ' + verdictTitle.textContent
+      tone: t.tone
     });
   }
 
@@ -749,7 +743,7 @@
 
     renderV6(traced);
     showVerdict(tone, title, notes);
-    remember(tone, traced, byExit);
+    remember(tone, traced, byExit, !reachable.length ? 'unreachable' : bad.length ? 'unsupported' : !traced.length ? 'no_trace' : byCountry.length > 1 ? 'multiple_countries' : risky.length ? 'restricted' : tz.level === 'mismatch' ? 'timezone' : 'consistent');
 
     var nUp = results.filter(function (r) { return r.reachable; }).length;
     var nExit = results.filter(function (r) { return !!r.exit; }).length;

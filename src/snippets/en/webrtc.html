@@ -175,7 +175,7 @@
     <li>For each STUN server on the list, create a separate <span class="mono">RTCPeerConnection</span> with only that server as the ICE server.</li>
     <li>Create a data channel and generate an offer, which makes the browser start gathering ICE candidates.</li>
     <li>Read each gathered candidate and sort by type: srflx / relay are public addresses, host is a local address.</li>
-    <li>Compare each public address found with <strong>the address this site sees over HTTP</strong> and draw a conclusion.</li>
+    <li>Fetch IPv4 and IPv6 HTTP exits and compare only addresses in the same family, grouping IPv6 privacy addresses by /64. Without a same-family HTTP address, the result remains uncomparable.</li>
   </ol>
   <p>
     Why test servers one at a time instead of putting them all in <span class="mono">iceServers</span>:
@@ -186,10 +186,10 @@
 
   <h2>Reading the results</h2>
   <ul>
-    <li><strong>No public address found</strong>: the browser could not get your public address through WebRTC. This is the safest result.</li>
-    <li><strong>Public address matches the HTTP address</strong>: no extra leak. Either you use no proxy, or the proxy handles UDP traffic correctly.</li>
-    <li><strong>Public address differs from the HTTP address</strong>: a typical WebRTC leak.
-        Websites think you are at the proxy exit, but any web page can get your real address with this JavaScript.</li>
+    <li><strong>No public address found</strong>: no public candidate was obtained this time. Network restrictions, browser policy or an unavailable STUN service may explain it; this does not guarantee safety.</li>
+    <li><strong>Matches a known same-family HTTP exit</strong>: no additional exit was observed. IPv6 uses /64 grouping; this does not prove that all UDP traffic uses a proxy.</li>
+    <li><strong>Differs from a same-family HTTP exit</strong>: multiple exits, split routing or proxy settings may explain the difference. Check the actual route before calling it a leak.</li>
+    <li><strong>No same-family address to compare</strong>: for example, HTTP IPv6 and STUN IPv4 alone cannot be labelled a match or a leak.</li>
     <li><strong>Local address starting with 192.168 / 10.x found</strong>: your browser doesn't use mDNS masking, so your LAN subnet is exposed.</li>
   </ul>
 
@@ -223,7 +223,7 @@
     <dt>I use a VPN. How can my real IP still show up?</dt>
     <dd>Most browser-extension proxies and SOCKS / HTTP proxies only take over HTTP(S) traffic over TCP. WebRTC's ICE gathering uses UDP, sent straight from the physical adapter, bypassing the proxy settings. This isn't a VPN bug but a result of how the layers work, unless the VPN runs in TUN mode and takes over the whole network stack.</dd>
     <dt>Every server timed out. Does that mean I'm safe?</dt>
-    <dd>Not necessarily. A timeout only means those STUN servers can't be reached right now (network restrictions, server failure, UDP blocked). On another network or with another server, the result may be completely different. Only when at least one server connects and no extra address is found can you consider it safe.</dd>
+    <dd>Not necessarily. A timeout only means those STUN servers can't be reached right now (network restrictions, server failure, UDP blocked). On another network or with another server, the result may be completely different. Even when candidates match a same-family HTTP exit, that only means no additional exit was observed in this test; it does not guarantee that all traffic is safe.</dd>
     <dt>What does a local address shown as a .local string mean?</dt>
     <dd>This is mDNS masking: the browser replaced the real local address with a random host name. It is expected and means your browser version has this protection.</dd>
     <dt>Does this site store WebRTC test results?</dt>

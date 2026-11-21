@@ -4,6 +4,7 @@ import { extractVisitorIp, parseIp } from '../lib/ip-utils';
 import { lookupIpFull } from '../lib/ipcx-lookup';
 import { localizeLookup } from '../lib/lookup-en';
 import { getLang, localePath, pick } from '../lib/i18n';
+import { cardText, ipFontSize } from '../lib/card-text';
 
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => pick(lang, zh, en);
@@ -12,6 +13,12 @@ const href = (path: string) => localePath(path, lang);
 const visitorIp = extractVisitorIp(Astro.request);
 const rawIp = (Astro.url.searchParams.get('ip') || '').trim();
 const parsed = rawIp ? parseIp(rawIp) : null;
+if (rawIp && !parsed) {
+  return new Response(t('IP 地址无效，请返回并输入有效的 IPv4 或 IPv6 地址。', 'Invalid IP address. Go back and enter a valid IPv4 or IPv6 address.'), {
+    status: 400,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
 const targetIp = parsed ? parsed.normalized : visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
 const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
@@ -82,6 +89,7 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
         style="width:100%; max-width:720px; height:auto; border-radius:16px; box-shadow: var(--shadow-2); border: 1px solid var(--border);"
       >
         <defs>
+          <clipPath id="card-meta-clip"><rect x="36" y="108" width="476" height="28" /></clipPath>
           <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="#111827" />
             <stop offset="100%" stop-color="#0b1120" />
@@ -95,9 +103,10 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
         <text x="155" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('IP 评分与网络信息 · judgeip.com', 'IP score & network data · judgeip.com')}</text>
 
         <!-- Target IP -->
-        <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700" fill="#f9fafb" id="svg-ip-text">{info.ip}</text>
-        <text x="36" y="124" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d1d5db">
-          {locationText || t('未知位置', 'Unknown location')} · {info.asnCode} · {info.isp.slice(0, 38)}
+        <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size={ipFontSize(info.ip, 476, 30)} font-weight="700" fill="#f9fafb" id="svg-ip-text">{info.ip}</text>
+        <text x="36" y="124" clip-path="url(#card-meta-clip)" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d1d5db">
+          <title>{locationText} · {info.asnCode} · {info.isp}</title>
+          {cardText(`${locationText || t('未知位置', 'Unknown location')} · ${info.asnCode} · ${info.isp}`, 60)}
         </text>
 
         <!-- Score Box Right -->
@@ -120,7 +129,7 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
           <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName}{info.rirCountry ? ` (${info.rirCountry})` : ''}</text>
 
           <text x="36" y="286" fill="#9ca3af">{t('路由前缀', 'Route prefix')}</text>
-          <text x="135" y="286" font-family="ui-monospace, monospace" fill="#e5e7eb">{info.bgpPrefix}</text>
+          <text x="135" y="286" font-family="ui-monospace, monospace" font-size={ipFontSize(info.bgpPrefix, 225, 13)} fill="#e5e7eb">{info.bgpPrefix}</text>
 
           <text x="376" y="184" fill="#9ca3af">{t('代理状态', 'Proxy')}</text>
           <text x="476" y="184" fill={info.isProxy === null ? '#9ca3af' : info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.isProxy === null ? t('未知', 'Unknown') : info.isProxy ? info.proxyLabel : t('未见标记', 'No flags')}</text>

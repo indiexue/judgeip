@@ -111,6 +111,7 @@
 
   var iataUrl = root.getAttribute('data-iata') || '';
   var meUrl = root.getAttribute('data-me') || '';
+  if (meUrl && window.I18N && I18N.lang === 'en') meUrl += '&lang=en';
 
   var rows = Array.prototype.slice.call(root.querySelectorAll('[data-cdn]')).map(function (node) {
     var regions = null;

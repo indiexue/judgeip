@@ -1,14 +1,11 @@
 import type { APIRoute } from 'astro';
 import { parseIp } from '../lib/ip-utils';
+import { getLang, localePath } from '../lib/i18n';
 
-export const GET: APIRoute = async ({ url, redirect }) => {
+export const GET: APIRoute = async ({ url, locals, redirect }) => {
   const raw = url.searchParams.get('ip')?.trim() || '';
-  const lang = url.searchParams.get('lang') === 'zh' ? 'zh' : 'en';
+  const requested = url.searchParams.get('lang');
+  const lang = requested === 'en' || requested === 'zh' ? requested : getLang(locals);
   const parsed = parseIp(raw);
-
-  if (!parsed) {
-    return redirect(lang === 'zh' ? '/zh' : '/', 302);
-  }
-  const suffix = lang === 'zh' ? '?lang=zh' : '';
-  return redirect(`/ip/${encodeURIComponent(parsed.normalized)}${suffix}`, 302);
+  return redirect(localePath(parsed ? `/ip/${encodeURIComponent(parsed.normalized)}` : '/', lang), 302);
 };

@@ -41,40 +41,64 @@ const IPV4_BOGON_RANGES: Array<[string, number, string]> = [
   ['240.0.0.0', 4, 'RFC 1112 Reserved for Future Use'],
 ];
 
-export function isValidIpv6(input: string): boolean {
-  if (!input.includes(':')) return false;
-  // Reject zone index or port brackets
-  if (input.includes('%') || input.includes('[') || input.includes(']')) return false;
+export function ipv6Groups(input: string): number[] | null {
+  if (!input.includes(':')) return null;
+  if (input.includes('%') || input.includes('[') || input.includes(']')) return null;
   const doubleColonCount = input.split('::').length - 1;
-  if (doubleColonCount > 1) return false;
+  if (doubleColonCount > 1) return null;
 
-  // Handle IPv4-mapped suffix like ::ffff:192.0.2.1
   let working = input;
   if (working.includes('.')) {
     const lastColon = working.lastIndexOf(':');
     const v4Part = working.slice(lastColon + 1);
-    if (!IPV4_REGEX.test(v4Part)) return false;
-    working = working.slice(0, lastColon + 1) + '0:0';
+    if (!IPV4_REGEX.test(v4Part)) return null;
+    const bytes = v4Part.split('.').map(Number);
+    working = working.slice(0, lastColon + 1) + ((bytes[0] << 8) | bytes[1]).toString(16) + ':' + ((bytes[2] << 8) | bytes[3]).toString(16);
   }
 
   const [left, right] = working.split('::');
-  const leftGroups = left ? left.split(':') : [];
-  const rightGroups = right ? right.split(':') : [];
+  const head = left ? left.split(':') : [];
+  const tail = right ? right.split(':') : [];
   const hexGroup = /^[0-9a-fA-F]{1,4}$/;
+  if (!head.every((g) => hexGroup.test(g)) || !tail.every((g) => hexGroup.test(g))) return null;
+  const count = head.length + tail.length;
+  if (doubleColonCount ? count >= 8 : count !== 8) return null;
+  return [...head.map((g) => parseInt(g, 16)), ...Array(doubleColonCount ? 8 - count : 0).fill(0), ...tail.map((g) => parseInt(g, 16))];
+}
 
-  if (!leftGroups.every((g) => hexGroup.test(g)) || !rightGroups.every((g) => hexGroup.test(g))) {
-    return false;
-  }
+export function isValidIpv6(input: string): boolean {
+  return ipv6Groups(input) !== null;
+}
 
-  if (doubleColonCount === 1) {
-    return leftGroups.length + rightGroups.length < 8;
+export function normalizeIpv6(groups: number[]): string {
+  let start = -1;
+  let length = 1;
+  for (let i = 0; i < groups.length;) {
+    if (groups[i] !== 0) { i++; continue; }
+    let end = i;
+    while (end < groups.length && groups[end] === 0) end++;
+    if (end - i > length) { start = i; length = end - i; }
+    i = end;
   }
-  return leftGroups.length === 8;
+  const hex = groups.map((g) => g.toString(16));
+  return start < 0 ? hex.join(':') : hex.slice(0, start).join(':') + '::' + hex.slice(start + length).join(':');
+}
+
+export function parseCidr(input: string): { ip: ParsedIp; prefix: number | null } | null {
+  const parts = input.trim().split('/');
+  if (parts.length > 2) return null;
+  const ip = parseIp(parts[0]);
+  if (!ip) return null;
+  if (parts.length === 1) return { ip, prefix: null };
+  if (!/^(0|[1-9]\d{0,2})$/.test(parts[1])) return null;
+  const prefix = Number(parts[1]);
+  return prefix <= (ip.version === 4 ? 32 : 128) ? { ip, prefix } : null;
 }
 
 export function parseIp(rawInput: string | null | undefined): ParsedIp | null {
   if (!rawInput) return null;
-  const cleaned = rawInput.trim().replace(/^\[|\]$/g, '');
+  const input = rawInput.trim();
+  const cleaned = input.startsWith('[') && input.endsWith(']') ? input.slice(1, -1) : input;
   if (!cleaned || cleaned.length > 45) return null;
 
   if (IPV4_REGEX.test(cleaned)) {
@@ -98,26 +122,34 @@ export function parseIp(rawInput: string | null | undefined): ParsedIp | null {
     };
   }
 
-  const lower = cleaned.toLowerCase();
-  if (isValidIpv6(lower)) {
-    let isBogon = false;
+  const groups = ipv6Groups(cleaned);
+  if (groups) {
     let bogonReason: string | undefined;
-    if (lower === '::1' || lower === '::') {
-      isBogon = true;
-      bogonReason = 'IPv6 Loopback / Unspecified';
-    } else if (lower.startsWith('fe80:')) {
-      isBogon = true;
+    const mapped = groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff;
+    if (mapped) {
+      const v4 = [groups[6] >> 8, groups[6] & 255, groups[7] >> 8, groups[7] & 255].join('.');
+      bogonReason = parseIp(v4)?.bogonReason;
+    } else if (groups.slice(0, 6).every((g) => g === 0)) {
+      bogonReason = groups[6] === 0 && groups[7] <= 1 ? 'IPv6 Loopback / Unspecified' : 'Deprecated IPv4-compatible IPv6';
+    } else if ((groups[0] & 0xffc0) === 0xfe80) {
       bogonReason = 'RFC 4291 IPv6 Link-Local';
-    } else if (lower.startsWith('fc') || lower.startsWith('fd')) {
-      isBogon = true;
+    } else if ((groups[0] & 0xfe00) === 0xfc00) {
       bogonReason = 'RFC 4193 IPv6 Unique Local Address (ULA)';
-    } else if (lower.startsWith('2001:db8:')) {
-      isBogon = true;
+    } else if ((groups[0] & 0xff00) === 0xff00) {
+      bogonReason = 'RFC 4291 IPv6 Multicast';
+    } else if (groups[0] === 0x2001 && groups[1] === 0xdb8) {
       bogonReason = 'RFC 3849 IPv6 Documentation Prefix';
+    } else if (groups[0] === 0x3fff && (groups[1] & 0xf000) === 0) {
+      bogonReason = 'RFC 9637 IPv6 Documentation Prefix';
+    } else if (groups[0] === 0x100 && groups.slice(1, 4).every((g) => g === 0)) {
+      bogonReason = 'RFC 6666 IPv6 Discard-Only';
+    } else if ((groups[0] & 0xffc0) === 0xfec0) {
+      bogonReason = 'Deprecated IPv6 Site-Local';
     }
+    const isBogon = Boolean(bogonReason);
     return {
       raw: rawInput,
-      normalized: lower,
+      normalized: normalizeIpv6(groups),
       version: 6,
       isBogon,
       bogonReason,

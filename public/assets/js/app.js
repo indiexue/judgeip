@@ -95,6 +95,14 @@
       ip.removeAttribute('data-copy-value');
     }
 
+    var query = document.querySelector('[data-mask-query]');
+    if (query) {
+      query.type = masked ? 'password' : 'text';
+      query.setAttribute('aria-label', masked
+        ? T('要查询的 IP 地址（已隐藏）', 'IP address to look up (hidden)')
+        : T('要查询的 IP 地址', 'IP address to look up'));
+    }
+
     card.classList.toggle('is-masked', masked);
     button.setAttribute('aria-pressed', masked ? 'true' : 'false');
     button.setAttribute('aria-label', masked ? MASK_LABEL.off : MASK_LABEL.on);

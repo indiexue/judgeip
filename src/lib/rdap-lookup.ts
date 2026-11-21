@@ -1,4 +1,4 @@
-import { parseIp } from './ip-utils';
+import { parseCidr } from './ip-utils';
 
 export type RdapQueryKind = 'domain' | 'ip' | 'autnum';
 
@@ -135,7 +135,10 @@ function extractVcardField(vcardArray: any, fieldName: string): string {
 }
 
 export async function queryRdap(rawInput: string): Promise<RdapLookupView> {
-  const cleaned = rawInput.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  let cleaned = rawInput.trim();
+  if (/^https?:\/\//i.test(cleaned)) {
+    try { cleaned = new URL(cleaned).hostname; } catch { return emptyError('输入格式无法识别，请输入有效的域名（如 judgeip.com）、IP 地址或 AS 号。'); }
+  }
   if (!cleaned) {
     return emptyError('请输入要查询的域名、IP 地址或 ASN。');
   }
@@ -145,17 +148,18 @@ export async function queryRdap(rawInput: string): Promise<RdapLookupView> {
   let rdapUrl = '';
 
   const asnMatch = cleaned.match(/^(?:AS)?(\d{1,10})$/i);
-  const cidrMatch = cleaned.split('/')[0];
-  const parsedIp = parseIp(cidrMatch);
+  const cidr = parseCidr(cleaned);
+  const parsedIp = cidr?.ip;
 
   if (asnMatch) {
     kind = 'autnum';
     target = asnMatch[1];
     rdapUrl = `https://rdap.org/autnum/${encodeURIComponent(target)}`;
-  } else if (parsedIp) {
+  } else if (cidr && parsedIp) {
     kind = 'ip';
-    target = cleaned.includes('/') ? cleaned : parsedIp.normalized;
-    rdapUrl = `https://rdap.org/ip/${encodeURIComponent(target)}`;
+    const suffix = cidr.prefix === null ? '' : `/${cidr.prefix}`;
+    target = parsedIp.normalized + suffix;
+    rdapUrl = `https://rdap.org/ip/${encodeURIComponent(parsedIp.normalized)}${suffix}`;
   } else {
     kind = 'domain';
     target = cleaned.toLowerCase();

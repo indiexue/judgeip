@@ -30,6 +30,7 @@ const encodedIp = encodeURIComponent(info.ip);
       type="text"
       name="ip"
       value={queryValue}
+      data-mask-query
       placeholder={t('输入任意 IPv4 或 IPv6，查询归属、IP 类型与路由风险（如 8.8.8.8、73.162.88.1）', 'Enter any IPv4 or IPv6 address to see its owner, type and routing risk (e.g. 8.8.8.8, 73.162.88.1)')}
       inputmode="text"
       enterkeyhint="search"

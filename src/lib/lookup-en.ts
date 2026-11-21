@@ -144,6 +144,8 @@ export function localizeLookup(info: HomeIpLookupResult, lang: Lang): HomeIpLook
     rpkiLabel: labelEn(info.rpkiLabel),
     countryZh: info.isBogon ? labelEn(info.countryZh) : countryNameEn(info.countryCode, labelEn(info.countryZh)),
     continentZh: labelEn(info.continentZh),
+    region: info.regionEn || '—',
+    city: info.cityEn || '—',
     scenes: info.scenes.map((s) => ({ ...s, label: labelEn(s.label), status: labelEn(s.status), note: labelEn(s.note) })),
     riskChecks: info.riskChecks.map((r) => ({ ...r, label: labelEn(r.label), status: labelEn(r.status) })),
   };

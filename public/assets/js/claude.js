@@ -527,10 +527,11 @@
 
     if (history) {
       history.add({
-        main: total + ' / 100',
+        kind: 'claude',
+        score: total,
+        band: band === BANDS.low ? 'low' : band === BANDS.medium ? 'medium' : 'high',
         tone: HISTORY_TONE[band.badge] || 'muted',
-        label: band.name,
-        note: hits.length ? T('命中：', 'Matched: ') + hits.map(function (hit) { return hit.name; }).join(T('、', ', ')) : T('没有命中任何信号', 'No signals matched')
+        signals: hits.map(function (hit) { return hit.id; })
       });
     }
 
@@ -588,7 +589,7 @@
           window.setTimeout(function () {
             var points = Math.round(result.score * weight);
             total = Math.min(100, total + points);
-            if (result.score >= HIT) hits.push({ name: name, points: points, score: result.score });
+            if (result.score >= HIT) hits.push({ id: id, name: name, points: points, score: result.score });
 
             row.classList.remove('is-active');
             row.classList.add('is-done');

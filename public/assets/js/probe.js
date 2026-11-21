@@ -349,10 +349,18 @@
   /* IPv6 的写法不唯一（前导零、:: 的位置），比较前展开成 8 组 4 位 */
   P.ipKey = function (value) {
     var ip = String(value || '').trim().toLowerCase();
-    if (ip.indexOf(':') === -1) return ip;
+    if (ip.indexOf(':') === -1) return /^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(ip) ? ip : '';
+    if (ip.indexOf('.') !== -1) {
+      var last = ip.lastIndexOf(':');
+      var bytes = ip.slice(last + 1).split('.').map(Number);
+      if (bytes.length !== 4 || bytes.some(function (b) { return !Number.isInteger(b) || b < 0 || b > 255; })) return '';
+      ip = ip.slice(0, last + 1) + ((bytes[0] << 8) | bytes[1]).toString(16) + ':' + ((bytes[2] << 8) | bytes[3]).toString(16);
+    }
     var halves = ip.split('::');
     var head = halves[0] ? halves[0].split(':') : [];
     var tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
+    var count = head.length + tail.length;
+    if (halves.length > 2 || !head.concat(tail).every(function (g) { return /^[0-9a-f]{1,4}$/.test(g); }) || (halves.length === 2 ? count >= 8 : count !== 8)) return '';
     var fill = [];
     if (halves.length > 1) {
       for (var n = head.length + tail.length; n < 8; n++) fill.push('0');
@@ -361,18 +369,39 @@
   };
 
   P.sameIp = function (a, b) {
-    return !!a && !!b && P.ipKey(a) === P.ipKey(b);
+    var key = P.ipKey(a);
+    return !!key && key === P.ipKey(b);
   };
 
   /* 「出口」的统一口径：IPv4 按地址，IPv6 按 /64。隐私地址会定期更换后 64 位，
      不少代理也按连接从一个 /64 里随机挑源地址——逐个地址比较，一条线路能被算成好几个出口 */
   P.exitKey = function (ip) {
-    if (!P.isIPv6(ip)) return '4|' + P.ipKey(ip);
-    return '6|' + P.ipKey(ip).split(':').slice(0, 4).join(':');
+    var key = P.ipKey(ip);
+    if (!key) return '';
+    if (!P.isIPv6(ip)) return '4|' + key;
+    return '6|' + key.split(':').slice(0, 4).join(':');
   };
 
   P.samePrefix64 = function (a, b) {
-    return !!a && !!b && P.isIPv6(a) && P.isIPv6(b) && P.exitKey(a) === P.exitKey(b);
+    return !!P.ipKey(a) && !!P.ipKey(b) && P.isIPv6(a) && P.isIPv6(b) && P.exitKey(a) === P.exitKey(b);
+  };
+
+  function comparisonIp(ip) {
+    var key = P.ipKey(ip);
+    if (key.indexOf('0000:0000:0000:0000:0000:ffff:') === 0) {
+      var groups = key.split(':');
+      var a = parseInt(groups[6], 16), b = parseInt(groups[7], 16);
+      return [a >> 8, a & 255, b >> 8, b & 255].join('.');
+    }
+    return key ? ip : '';
+  }
+
+  P.compareExit = function (ip, knownIps) {
+    ip = comparisonIp(ip);
+    if (!ip) return 'uncompared';
+    var sameFamily = knownIps.map(comparisonIp).filter(function (known) { return known && P.isIPv6(known) === P.isIPv6(ip); });
+    if (sameFamily.some(function (known) { return P.sameIp(ip, known) || P.samePrefix64(ip, known); })) return 'match';
+    return sameFamily.length ? 'different' : 'uncompared';
   };
 
   /* 长 IPv6 在窄列里收成「2001:db8…7334」，完整值放进 title */
