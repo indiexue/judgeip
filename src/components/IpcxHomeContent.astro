@@ -1,6 +1,7 @@
 ---
 import type { HomeIpLookupResult } from '../lib/ipcx-lookup';
 import { getLang, localePath } from '../lib/i18n';
+import { formatDelta } from '../lib/score-rules';
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
 const lp = (path: string) => localePath(path, lang);
@@ -309,6 +310,48 @@ const encodedIp = encodeURIComponent(info.ip);
           </div>
         ))}
       </div>
+    </section>
+  )}
+
+  <!-- Full-Width Span: 评分明细，每一项可展开看原始数据 -->
+  {!info.isBogon && (
+    <section class="group group--span2" id="score-factors">
+      <h2 class="group__title">{t('评分明细', 'Score breakdown')}</h2>
+      <div class="factors" data-field="factors">
+        <div class="factor factor--fixed">
+          <span class="factor__name">{t('基础分', 'Base score')}</span>
+          <span class="factor__delta mono">{info.scoreBase}</span>
+        </div>
+        {info.factors.map((f) => (
+          <details class="factor">
+            <summary>
+              <span class="factor__name">{f.label}</span>
+              <span class={`tag tag--${f.tone}`}>{f.status}</span>
+              <span class={`factor__delta mono${f.delta < 0 ? ' is-minus' : f.delta > 0 ? ' is-plus' : ''}`}>{formatDelta(f.delta)}</span>
+            </summary>
+            <div class="factor__body">
+              {f.evidence.length === 0 && <p class="geo__note">{t('这一项没有拿到原始数据', 'No raw data was returned for this item')}</p>}
+              {f.evidence.map((e) => (
+                <div class="factor__ev">
+                  <span>{e.source}</span>
+                  <span class="mono">{e.field}</span>
+                  <span class="mono">{e.value}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        ))}
+        <div class="factor factor--fixed factor--total">
+          <span class="factor__name">{t('最终得分', 'Final score')}</span>
+          {info.score === null
+            ? <span class="factor__note">{t('有数据源未返回，暂不出分', 'A data source did not respond, so no score is given')}</span>
+            : <span class="factor__delta mono">{info.score} · {info.grade}</span>}
+        </div>
+      </div>
+      <p class="geo__note factors__more">
+        {t('点开任意一项可以看到判断所依据的原始数据。', 'Open any item to see the raw data behind it.')}
+        <a href={lp('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={lp('/data')}>{t('数据来源', 'Data sources')}</a>
+      </p>
     </section>
   )}
 

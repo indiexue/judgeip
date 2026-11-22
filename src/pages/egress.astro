@@ -1,0 +1,129 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { extractVisitorIp } from '../lib/ip-utils';
+import { getLang, localePath } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+const visitorIp = extractVisitorIp(Astro.request);
+
+/* 通道的顺序和 key 与 egress.js 里的 PROBES 对应；site 不发请求，用本页收到的地址 */
+const channels = [
+  { key: 'site', label: t('本站', 'This site'), desc: t('打开本页用的地址', 'The address that loaded this page') },
+  { key: 'cn', label: t('国内出口', 'China-side egress'), desc: t('国内网站看到的', 'Seen by sites in mainland China') },
+  { key: 'intl', label: t('国外出口', 'International egress'), desc: t('x.com 与 cloudflare.com 看到的', 'Seen by x.com and cloudflare.com') },
+  { key: 'v4', label: 'IPv4', desc: t('只走 IPv4 的请求', 'IPv4-only requests') },
+  { key: 'v6', label: 'IPv6', desc: t('只走 IPv6 的请求', 'IPv6-only requests') },
+  { key: 'webrtc', label: 'WebRTC', desc: t('STUN 返回的公网地址', 'Public addresses returned by STUN') },
+  { key: 'dns', label: 'DNS', desc: t('替你查域名的解析器', 'Resolvers that look up names for you') },
+  { key: 'claude', label: 'Claude', desc: t('claude.ai 看到的', 'Seen by claude.ai') },
+  { key: 'chatgpt', label: 'ChatGPT', desc: t('chatgpt.com 看到的', 'Seen by chatgpt.com') },
+];
+---
+
+<IpcxLayout
+  title={t('我的出口 - 国内、国外、IPv4、IPv6、WebRTC、DNS、Claude、ChatGPT 出口 IP 一览 - JudgeIP', 'My Egress - China-side, International, IPv4, IPv6, WebRTC, DNS, Claude and ChatGPT Egress IPs - JudgeIP')}
+  description={t(
+    '一张表列出国内网站、国外网站、IPv4、IPv6、WebRTC、DNS、Claude 和 ChatGPT 各自看到的出口 IP、归属和评分，并标出哪些通道没走同一个出口。',
+    'One table with the egress IP, network and score seen by China-side sites, international sites, IPv4, IPv6, WebRTC, DNS, Claude and ChatGPT, marking the channels that leave through a different egress.',
+  )}
+  canonicalPath="/egress"
+  bodyClass="page-egress"
+  currentLabel={t('我的出口', 'My egress')}
+  activeNav="/egress"
+  extraJs={['/assets/js/probe.js', '/assets/js/egress.js']}
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('我的出口', 'My egress')}</h1>
+    <p class="hero__lede">
+      {t(
+        '国内、国外、IPv4、IPv6、WebRTC、DNS、Claude、ChatGPT 各自看到你从哪个 IP 来，列在一张表里。',
+        'The IP that China-side sites, international sites, IPv4, IPv6, WebRTC, DNS, Claude and ChatGPT each see you coming from, in one table.',
+      )}
+    </p>
+  </section>
+
+  <div class="probe" id="egress" data-visible-ip={visitorIp}>
+    <div class="probe__bar">
+      <button class="probe__run" type="button" data-eg-run>{t('重新检测', 'Run again')}</button>
+      <span class="probe__hint" data-eg-progress>{t('页面加载后自动开始检测…', 'Checks start automatically after the page loads…')}</span>
+    </div>
+
+    <div class="verdict" data-eg-verdict hidden>
+      <span class="verdict__dot" aria-hidden="true"></span>
+      <div class="verdict__body">
+        <p class="verdict__title" data-eg-verdict-title></p>
+        <p class="verdict__note" data-eg-verdict-note></p>
+      </div>
+    </div>
+
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">{t('各通道的出口', 'Egress by channel')}</h2>
+        <div class="tablewrap">
+          <table class="dtable dtable--egress">
+            <thead>
+              <tr>
+                <th scope="col">{t('通道', 'Channel')}</th>
+                <th scope="col">{t('出口 IP', 'Egress IP')}</th>
+                <th scope="col">{t('位置与网络', 'Location and network')}</th>
+                <th scope="col">{t('类型与评分', 'Type and score')}</th>
+                <th scope="col">{t('结论', 'Verdict')}</th>
+              </tr>
+            </thead>
+            <tbody data-eg-body>
+              {channels.map((channel) => (
+                <tr data-eg-channel={channel.key} data-eg-name={channel.label}>
+                  <th scope="row">
+                    {channel.label}
+                    <span class="dtable__sub">{channel.desc}</span>
+                  </th>
+                  <td>
+                    {channel.key === 'site' ? <span class="mono">{visitorIp}</span> : <span class="dim">{t('待检测', 'Pending')}</span>}
+                  </td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <article class="prose">
+    <h2>{t('怎么读这张表', 'How to read the table')}</h2>
+    <ul>
+      <li>{t('基准是国外出口：x.com 看到的地址，读不到时用 cloudflare.com 看到的。其余通道都和它比。', 'The baseline is the international egress: the address x.com sees, or the one cloudflare.com sees when x.com cannot be read. Every other channel is compared with it.')}</li>
+      <li>{t('同一个 IP、同一个 IPv6 /64 或同一个 ASN，算一致。同一条线路的 IPv4 和 IPv6 地址不同，按 ASN 归到一起。', 'The same IP, the same IPv6 /64 or the same ASN counts as a match. The IPv4 and IPv6 addresses of one line differ, so they are grouped by ASN.')}</li>
+      <li>{t('国内出口和国外出口不在同一个网络，说明在分流。这时某个通道落在国内出口所在的网络，标为走了国内出口；IPv6、WebRTC、Claude、ChatGPT 落在国内，标为暴露。', 'When the China-side and international egresses are on different networks, traffic is being split. A channel that lands on the China-side network is marked as using the China-side egress; for IPv6, WebRTC, Claude and ChatGPT it is marked as exposed.')}</li>
+      <li>{t('x.com 和 cloudflare.com 看到的地址不同时各占一行。常见原因是规则只代理被屏蔽的网站，其余国外网站直连。', 'When x.com and cloudflare.com see different addresses, each gets its own row. The usual cause is a rule set that proxies only blocked sites and sends other international sites direct.')}</li>
+      <li>{t('DNS 一行列的是解析器的地址，不是你的出口。解析器和国外出口在同一个网络或同一个地区算正常，落在国内出口所在的网络标为走了国内解析。', 'The DNS row lists resolver addresses, not your egress. A resolver on the same network or in the same region as the international egress is normal; one on the China-side network is marked as resolved on the China side.')}</li>
+    </ul>
+
+    <h2>{t('每一行怎么测的', 'How each row is measured')}</h2>
+    <ul>
+      <li>{t('国内出口：向 ipip.net、又拍云、DNSPod 的 IP 回显接口各发一次请求，取最先返回的。', 'China-side egress: one request each to the IP echo endpoints of ipip.net, Upyun and DNSPod; the first answer is used.')}</li>
+      <li>{t('国外出口、Claude、ChatGPT：读 x.com、www.cloudflare.com、claude.ai、chatgpt.com 的 /cdn-cgi/trace，里面是这些站点看到的 IP 和地区。', 'International egress, Claude, ChatGPT: read /cdn-cgi/trace on x.com, www.cloudflare.com, claude.ai and chatgpt.com, which reports the IP and region those sites see.')}</li>
+      <li>{t('IPv4、IPv6：向只有 A 记录或只有 AAAA 记录的回显域名发请求。IPv6 请求失败按没有 IPv6 处理。', 'IPv4, IPv6: requests to echo hostnames that have only an A record or only an AAAA record. A failed IPv6 request is treated as no IPv6.')}</li>
+      <li>{t('WebRTC：向 Cloudflare 和 Google 的 STUN 服务器收集候选地址，只列公网地址。', 'WebRTC: gather candidates from the Cloudflare and Google STUN servers and list public addresses only.')}</li>
+      <li>{t('DNS：请求 4 个随机子域名，由权威服务器报告来查询的解析器。', 'DNS: request 4 random subdomains and let the authoritative server report which resolvers asked.')}</li>
+      <li>{t('归属、类型和评分来自本站的 IP 查询，规则与首页相同。IPv6 地址没有评分。', 'Network, type and score come from this site\'s IP lookup, using the same rules as the home page. IPv6 addresses get no score.')}</li>
+    </ul>
+
+    <h2>{t('局限', 'Limits')}</h2>
+    <ul>
+      <li>{t('每个通道只测一两个站点，代表不了规则里的每一条。逐个网站的出口见网站分流测试。', 'Each channel is tested against one or two sites and cannot stand for every rule in your configuration. For per-site egress, use the split routing test.')}</li>
+      <li>{t('请求由浏览器直接发给各服务，不带 Cookie。读到的 IP 只发给本站查询归属和评分。', 'Requests go straight from your browser to each service without cookies. The IPs read are sent only to this site to look up network and score.')}</li>
+      <li>{t('广告拦截扩展和代理规则可能拦下回显请求，那一行会显示连接失败或超时，不代表该通道不通。', 'Ad blockers and proxy rules can block the echo requests. That row then shows a connection failure or timeout, which does not mean the channel itself is down.')}</li>
+      <li>{t('企业网络和多线路由器可能按目的地选不同线路，出口不同不一定是泄露。', 'Corporate networks and multi-WAN routers may pick a line per destination, so a different egress is not always a leak.')}</li>
+    </ul>
+    <p>
+      <a href={href('/split')}>{t('网站分流测试', 'Split routing test')}</a> · <a href={href('/dnsleak')}>{t('DNS 泄露检测', 'DNS leak test')}</a> · <a href={href('/webrtc')}>{t('WebRTC 泄露检测', 'WebRTC leak test')}</a> · <a href={href('/platforms')}>{t('平台检测', 'Platform check')}</a>
+    </p>
+  </article>
+</IpcxLayout>

@@ -1,0 +1,65 @@
+---
+import ScenarioPage from '../components/ScenarioPage.astro';
+import { getLang, localePath } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+---
+
+<ScenarioPage
+  id="tiktok-ip"
+  device
+  title={t('TikTok IP 检测 - 查 IP 适不适合用 TikTok - JudgeIP', 'TikTok IP Check - Is an IP Suitable for TikTok - JudgeIP')}
+  description={t(
+    '检测当前 IP 或任意 IP 适不适合用 TikTok：看是否住宅或移动网络、是否原生、代理标记和黑名单，再对一下浏览器时区和语言。每一项的权重和得分都列在页面上。',
+    'Check whether your IP or any IP is suitable for TikTok: residential or mobile network, native or not, proxy flags and blocklists, plus a comparison with the browser time zone and language. Every weight and point is listed on the page.',
+  )}
+  heading={t('TikTok IP 检测', 'TikTok IP check')}
+  lede={t(
+    '按 TikTok 运营常看的四项给 IP 打分，权重和每一项的依据都列出来。时区和语言单独列，不计分。',
+    'Scores an IP on the four items TikTok operators usually check, with the weight and basis of each listed. Time zone and language are shown separately and not scored.',
+  )}
+>
+  <h2>{t('这页能查什么', 'What this page can check')}</h2>
+  <p>
+    {t(
+      'TikTok 不公布风控规则，它的域名也不提供能读出口 IP 的接口，所以这里看不到 TikTok 实际看到的地址，也不知道它怎么判断。能查的是 IP 本身的四项属性，以及浏览器时区、语言和 IP 所在地对不对得上。权重是本站定的经验值，不是 TikTok 的规则。',
+      'TikTok does not publish its risk rules, and its domains expose no endpoint that reports the egress IP, so this page cannot see the address TikTok actually sees or how it decides. What can be checked is four properties of the IP itself, and whether the browser time zone and language fit the IP location. The weights are this site\'s own estimates, not TikTok rules.',
+    )}
+  </p>
+
+  <h2>{t('四项权重的理由', 'Why these four weights')}</h2>
+  <ul>
+    <li>{t('住宅或移动网络，45 分。TikTok 的用户绝大多数在手机网络和家庭宽带上，机房地址和他们差得最远。企业和教育网络拿一半。', 'Residential or mobile network, 45 points. Nearly all TikTok users are on mobile networks and home broadband, and data center addresses are the furthest from that. Business and education networks get half.')}</li>
+    <li>{t('原生 IP，25 分。注册国家和定位国家不一致时，按哪个国家分发内容说不准。', 'Native IP, 25 points. When the registry country and the location disagree, it is unclear which country content will be served for.')}</li>
+    <li>{t('无代理标记，20 分。地址已经进了公开的代理、VPN 名单。', 'No proxy flag, 20 points. A flag means the address is already on public proxy or VPN lists.')}</li>
+    <li>{t('无黑名单或威胁记录，10 分。', 'No blocklist or threat records, 10 points.')}</li>
+  </ul>
+  <p>
+    {t(
+      '全部通过记为符合，总分低于 60 记为不符合，其余记为部分符合。有一项缺数据就不出总分；缺的项全算通过也到不了 60 时，仍记为不符合。机房 IP 最多 55 分，一定是不符合。',
+      'All items passing counts as meeting it, a total under 60 as not meeting it, anything else as partly meeting it. No total is given when any item lacks data; when even a pass on every missing item would leave it under 60, the result is still "does not meet it". A data center IP reaches 55 at most and is always "does not meet it".',
+    )}
+  </p>
+
+  <h2>{t('时区和语言', 'Time zone and language')}</h2>
+  <p>
+    {t(
+      '时区和语言是设备的设置，换 IP 不会跟着变。上面那一组把当前浏览器的时区和这个 IP 所在地的时区按 UTC 偏移对比，偏移相同算一致。查询别的 IP 时，比的仍是这台设备，可以用来看一个准备用的代理 IP 和设备配不配。手机 App 读的是系统时区、系统语言和 SIM 卡信息，这些网页读不到。',
+      'Time zone and language are device settings and do not change with the IP. The group above compares the browser time zone with the time zone of the IP location by UTC offset; equal offsets count as a match. When you query another IP, the comparison is still against this device, which shows whether a proxy IP you plan to use fits it. The mobile app reads the system time zone, system language and SIM details, none of which a web page can read.',
+    )}
+  </p>
+
+  <h2>{t('局限', 'Limits')}</h2>
+  <ul>
+    <li>{t('这里只看 IP 和浏览器设置。账号历史、设备指纹、SIM 卡归属、内容本身都不在范围内。', 'Only the IP and browser settings are checked. Account history, device fingerprint, SIM country and the content itself are out of scope.')}</li>
+    <li>{t('没被标记的住宅代理查不出来。', 'Unflagged residential proxies are not detected.')}</li>
+    <li>{t('黑名单数据只覆盖 IPv4。IPv6 地址这一项缺数据，不出总分。', 'Blocklist data covers IPv4 only. For IPv6 addresses that item has no data and no total is given.')}</li>
+    <li>{t('得分高不保证账号正常，得分低也不等于一定被限流。', 'A high total does not guarantee a healthy account, and a low one does not mean reach will be limited.')}</li>
+  </ul>
+  <p>
+    <a href={href('/native-ip')}>{t('原生 IP 检测', 'Native IP check')}</a> · <a href={href('/residential-ip')}>{t('住宅 IP 检测', 'Residential IP check')}</a> · <a href={href('/platforms')}>{t('平台检测', 'Platform check')}</a> · <a href={href('/fingerprint')}>{t('浏览器指纹', 'Browser fingerprint')}</a>
+  </p>
+</ScenarioPage>

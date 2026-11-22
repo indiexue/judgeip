@@ -1,0 +1,339 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { getLang, localePath } from '../lib/i18n';
+import { localizeLookup } from '../lib/lookup-en';
+import { MCP_COMPARE_MAX, MCP_TOOLS } from '../lib/mcp';
+import { RATE_LIMITS } from '../lib/rate-limit';
+import { SAMPLE_REPORT } from '../lib/sample-report';
+import { SCORE_MAX, SCORE_MIN } from '../lib/score-rules';
+import { renderTextReport } from '../lib/text-report';
+import { CACHE_COMPLETE_MINUTES } from '../lib/data-sources';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+/* 示例输出由同一份示例数据经正式的渲染函数生成，格式改了这里跟着变 */
+const sample = localizeLookup(SAMPLE_REPORT, lang);
+const textSample = renderTextReport(sample, lang).trimEnd();
+const reportCmd = en ? 'curl -sL judgeip.com/en/8.8.8.8' : 'curl -sL judgeip.com/8.8.8.8';
+const jsonCmd = en ? 'curl -s "https://judgeip.com/api/ipinfo?ip=8.8.8.8&lang=en"' : 'curl -s "https://judgeip.com/api/ipinfo?ip=8.8.8.8"';
+
+const jsonSample = JSON.stringify(
+  {
+    ok: true,
+    info: {
+      ip: sample.ip,
+      version: sample.version,
+      score: sample.score,
+      grade: sample.grade,
+      lookupStatus: sample.lookupStatus,
+      scoreBase: sample.scoreBase,
+      factors: '__FACTORS__',
+      usageType: sample.usageType,
+      ipTypeLabel: sample.ipTypeLabel,
+      isp: sample.isp,
+      asn: sample.asn,
+      countryCode: sample.countryCode,
+      region: sample.region,
+      city: sample.city,
+      timezone: sample.timezone,
+      rirCountry: sample.rirCountry,
+      isNative: sample.isNative,
+      isProxy: sample.isProxy,
+      proxyLabel: sample.proxyLabel,
+      hasThreat: sample.hasThreat,
+      threatLabel: sample.threatLabel,
+      openPorts: sample.openPorts,
+      dnsblListed: sample.dnsblListed,
+      dnsblTotal: sample.dnsblTotal,
+      bgpPrefix: sample.bgpPrefix,
+      rpkiStatus: sample.rpkiStatus,
+      ptrRecord: sample.ptrRecord,
+    },
+  },
+  null,
+  2,
+).replace(
+  '"__FACTORS__"',
+  `[\n${sample.factors.map((f) => `      ${JSON.stringify({ key: f.key, label: f.label, status: f.status, delta: f.delta })}`).join(',\n')}\n    ]`,
+);
+
+const edgeSample = `{
+  "ip": "203.0.113.7",
+  "asn": "AS64500",
+  "isp": "Example Broadband",
+  "country": "JP",
+  "region": "Tokyo",
+  "city": "Tokyo",
+  "timezone": "Asia/Tokyo",
+  "colo": "NRT",
+  "tlsVersion": "TLSv1.3",
+  "httpProtocol": "HTTP/2",
+  "reportUrl": "https://judgeip.com/ip/203.0.113.7"
+}`;
+
+const endpoints = [
+  { call: 'GET /', returns: t('纯文本', 'Plain text'), note: t('用 curl、wget 等命令行工具访问时返回你的出口 IP', 'Your egress IP, when requested with curl, wget or a similar command-line client') },
+  { call: 'GET /ip', returns: t('纯文本', 'Plain text'), note: t('你的出口 IP，任何客户端都返回文本，允许跨域', 'Your egress IP as text for any client; CORS enabled') },
+  { call: 'GET /json', returns: 'JSON', note: t('你的出口 IP，加上接入节点看到的 ASN、国家、城市和时区。不查外部数据源，允许跨域', 'Your egress IP plus the ASN, country, city and time zone seen at the edge. No upstream lookups; CORS enabled') },
+  { call: 'GET /<ip>', returns: t('纯文本', 'Plain text'), note: t('指定 IP 的报告和评分明细。浏览器访问会跳到网页报告', 'Report and score breakdown for the given IP. Browsers are redirected to the web report') },
+  { call: 'GET /api/ipinfo', returns: 'JSON', note: t('指定 IP 的完整查询结果，字段与网页报告一致', 'Full lookup result for the given IP, the same fields the web report uses') },
+  { call: 'POST /mcp', returns: 'JSON-RPC', note: t('MCP 服务，供 Claude、Cursor 等客户端调用', 'MCP server for Claude, Cursor and other clients') },
+];
+
+const fields = [
+  { name: 'ip, version', note: t('规范化后的地址，4 或 6', 'Normalized address; 4 or 6') },
+  { name: 'score, grade', note: t(`${SCORE_MIN}–${SCORE_MAX} 的分数和等级。没出分时 score 为 null、grade 为 "—"`, `Score from ${SCORE_MIN} to ${SCORE_MAX} and its grade. Without a score, score is null and grade is "—"`) },
+  { name: 'lookupStatus', note: t('complete：评分所需数据齐全；partial：有数据源没答复；unavailable：保留地址等不适用的情况', 'complete: all inputs present; partial: a source did not answer; unavailable: not applicable, e.g. reserved addresses') },
+  { name: 'scoreBase, factors[]', note: t('起评分和每一项的加减分。factors 每项含 key、label、status、delta 和 evidence[]（来源、字段、原始值）。scoreBase 加上各项 delta 等于 score', 'Base score and each adjustment. Every factor has key, label, status, delta and evidence[] (source, field, raw value). scoreBase plus the deltas equals score') },
+  { name: 'usageType, ipTypeLabel', note: t('网络类型：residential、mobile、hosting、business、education、cdn、reserved、unknown，以及对应的显示文字', 'Network type: residential, mobile, hosting, business, education, cdn, reserved or unknown, and its display label') },
+  { name: 'isp, org, asn, asnCode', note: t('运营商、组织和 ASN', 'Operator, organization and ASN') },
+  { name: 'countryCode, region, city, timezone', note: t('定位结果', 'Geolocation') },
+  { name: 'rirName, rirCountry, isNative', note: t('注册机构、注册国家，以及注册国家与定位国家是否一致。无法判断时 isNative 为 null', 'Registry, registered country, and whether it matches the geolocated country. isNative is null when undetermined') },
+  { name: 'isProxy, proxyLabel', note: t('代理、VPN、Tor 标记', 'Proxy, VPN and Tor flags') },
+  { name: 'hasThreat, threatLabel', note: t('黑名单和威胁标记的汇总。数据不全时 hasThreat 为 null', 'Summary of blocklist and threat flags. hasThreat is null when data is incomplete') },
+  { name: 'dnsblChecks[], dnsblListed[], dnsblTotal', note: t('每个 DNSBL 的结果：listed、not_listed 或 unknown', 'Result per DNSBL: listed, not_listed or unknown') },
+  { name: 'openPorts[], portsKnown', note: t('Shodan 记录的开放端口。portsKnown 为 false 表示没取到，不代表没有端口', 'Open ports recorded by Shodan. portsKnown false means the data is missing, not that no ports are open') },
+  { name: 'bgpPrefix, rpkiStatus, ptrRecord', note: t('路由前缀、RPKI 校验结果和反向解析', 'Routed prefix, RPKI validation result and reverse DNS') },
+];
+
+const limits = [
+  { scope: 'GET /<ip>', limit: RATE_LIMITS.report, unit: t('次请求', 'requests') },
+  { scope: 'GET /api/ipinfo', limit: RATE_LIMITS.api, unit: t('次请求', 'requests') },
+  { scope: 'POST /mcp', limit: RATE_LIMITS.mcp, unit: t('个 IP 查询', 'IP lookups') },
+];
+
+const toolNotes: Record<string, string> = {
+  check_ip: t('查一个 IP，返回与 curl 相同的文本报告。不传 ip 时查发起请求的机器', 'Look up one IP and return the same text report as curl. Without ip, checks the machine making the request'),
+  compare_ips: t(`一次查 2 到 ${MCP_COMPARE_MAX} 个 IP，逐个列出评分、类型、原生 IP、代理、黑名单和端口`, `Look up 2 to ${MCP_COMPARE_MAX} IPs and list score, type, native IP, proxy, blocklists and ports for each`),
+  scoring_rules: t('返回评分规则全文，不查外部数据源，不计入限流', 'Return the full scoring rules. No upstream lookups; not rate limited'),
+};
+const toolArgs = (tool: (typeof MCP_TOOLS)[number]) => Object.keys(tool.inputSchema.properties).join(', ');
+---
+
+<IpcxLayout
+  title={t('API 与命令行 - curl 查 IP、JSON 接口和 MCP 服务 - JudgeIP', 'API and Command Line - curl Reports, JSON API and MCP Server - JudgeIP')}
+  description={t(
+    'JudgeIP 的免密钥接口：curl judgeip.com/8.8.8.8 返回文本报告，/api/ipinfo 返回 JSON，/mcp 提供 MCP 服务。列出参数、返回字段、示例输出和限流规则。',
+    'JudgeIP endpoints that need no key: curl judgeip.com/8.8.8.8 for a text report, /api/ipinfo for JSON and /mcp for an MCP server. Parameters, fields, sample output and rate limits.',
+  )}
+  canonicalPath="/api-docs"
+  bodyClass="page-api-docs"
+  currentLabel={t('API 文档', 'API docs')}
+  activeNav="/api-docs"
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('API 与命令行', 'API and command line')}</h1>
+    <p class="hero__lede">
+      {t(
+        '下面的接口免费、不需要密钥，按来源 IP 限流。数据来自免费的公开数据源，适合脚本和日常排查，不适合批量扫描。',
+        'These endpoints are free and need no key, and are rate limited per source IP. The data comes from free public sources: fine for scripts and troubleshooting, not for bulk scanning.',
+      )}
+    </p>
+  </section>
+
+  <div class="groups">
+    <section class="group" id="endpoints">
+      <h2 class="group__title">{t('接口一览', 'Endpoints')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('请求', 'Request')}</th>
+              <th scope="col">{t('返回', 'Returns')}</th>
+              <th scope="col">{t('说明', 'Description')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {endpoints.map((e) => (
+              <tr>
+                <th scope="row" class="mono">{e.call}</th>
+                <td>{e.returns}</td>
+                <td>{e.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="group" id="cli">
+      <h2 class="group__title">{t('命令行', 'Command line')}</h2>
+      <p class="group__lede">{t('查自己的出口 IP：', 'Your own egress IP:')}</p>
+      <pre class="codeblock">{`$ curl -sL judgeip.com\n203.0.113.7`}</pre>
+      <p class="group__lede">
+        {t(
+          '查任意 IP 的报告。输出里的分数、等级和评分明细与网页报告是同一次查询的结果：',
+          'A report for any IP. The score, grade and breakdown come from the same lookup the web report uses:',
+        )}
+      </p>
+      <pre class="codeblock">{`$ ${reportCmd}\n${textSample}`}</pre>
+      <p class="group__lede">
+        {t(
+          '以上是示例输出，实际数值随数据源变化。英文报告用 judgeip.com/en/8.8.8.8，或加 ?lang=en。IPv6 地址直接写在路径里，例如 judgeip.com/2001:4860:4860::8888。',
+          'This is sample output; actual values change with the data sources. For the Chinese report use judgeip.com/8.8.8.8. IPv6 addresses go straight into the path, e.g. judgeip.com/en/2001:4860:4860::8888.',
+        )}
+      </p>
+      <p class="group__lede">
+        {t(
+          '文本报告只发给命令行客户端（User-Agent 以 curl、Wget、HTTPie、xh 开头）。浏览器打开同一个地址会跳到网页报告。别的客户端要纯文本的 IP 用 /ip，要结构化数据用下面的 JSON 接口。',
+          'The text report is sent only to command-line clients (User-Agent starting with curl, Wget, HTTPie or xh). A browser opening the same URL is redirected to the web report. Other clients can use /ip for the plain-text IP and the JSON endpoint below for structured data.',
+        )}
+      </p>
+      <p class="codeblock__label">{t('接入节点信息', 'Edge information')}</p>
+      <pre class="codeblock">{`$ curl -sL judgeip.com/json\n${edgeSample}`}</pre>
+      <p class="group__lede">
+        {t(
+          '这些字段来自请求到达的 Cloudflare 节点，不查外部数据源，所以没有评分。colo 是节点的机场代码。',
+          'These fields come from the Cloudflare node that received the request. No upstream sources are queried, so there is no score. colo is the airport code of the node.',
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="json">
+      <h2 class="group__title">{t('JSON 接口', 'JSON endpoint')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('参数', 'Parameter')}</th>
+              <th scope="col">{t('说明', 'Description')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row" class="mono">ip</th>
+              <td>{t('IPv4 或 IPv6 地址。不传或传 me 时查请求方自己的 IP', 'IPv4 or IPv6 address. Omit it or pass me to look up the caller')}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="mono">lang</th>
+              <td>{t('传 en 时显示文字（label、status 等）用英文，默认中文。数值和枚举字段不受影响', 'Pass en for English display text (labels, statuses). Default is Chinese. Numbers and enum fields are unaffected')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <pre class="codeblock">{`$ ${jsonCmd}\n${jsonSample}`}</pre>
+      <p class="group__lede">
+        {t(
+          '示例只列了常用字段，factors 里每一项还带 evidence 数组。实际返回是单行 JSON。',
+          'The sample shows the commonly used fields only, and each item in factors also carries an evidence array. The actual response is single-line JSON.',
+        )}
+      </p>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('字段', 'Field')}</th>
+              <th scope="col">{t('含义', 'Meaning')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((f) => (
+              <tr>
+                <th scope="row" class="mono">{f.name}</th>
+                <td>{f.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t(
+          `出错时返回 {"ok": false}：地址无效是 400 和 error: "invalid_ip"，超过限流是 429 和 error: "rate_limited"，查询失败是 500。同一个 IP 的完整结果在节点上缓存 ${CACHE_COMPLETE_MINUTES} 分钟。这个接口不带跨域头，请从服务端或命令行调用。`,
+          `Errors return {"ok": false}: 400 with error: "invalid_ip" for a bad address, 429 with error: "rate_limited" over the limit, 500 when the lookup fails. A complete result for the same IP is cached on the node for ${CACHE_COMPLETE_MINUTES} minutes. This endpoint sends no CORS header; call it from a server or the command line.`,
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="limits">
+      <h2 class="group__title">{t('限流', 'Rate limits')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('接口', 'Endpoint')}</th>
+              <th scope="col">{t('每个来源 IP 每分钟', 'Per source IP per minute')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {limits.map((l) => (
+              <tr>
+                <th scope="row" class="mono">{l.scope}</th>
+                <td>{l.limit} {l.unit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t(
+          '超过后返回 429，响应头 Retry-After 给出还要等多少秒；正常响应带 RateLimit-Limit、RateLimit-Remaining 和 RateLimit-Reset。MCP 超限时不返回 429，而是在工具结果里说明。IPv6 来源按 /64 计数。',
+          'Over the limit the response is 429 with a Retry-After header giving the seconds to wait; normal responses carry RateLimit-Limit, RateLimit-Remaining and RateLimit-Reset. MCP reports the limit in the tool result instead of a 429. IPv6 sources are counted per /64.',
+        )}
+      </p>
+      <p class="group__lede">
+        {t(
+          '计数存在各个接入节点的内存里，节点之间不共享，所以这是防止刷接口的软限制，不是精确配额。/、/ip 和 /json 不查外部数据源，不限流。',
+          'Counters live in memory on each edge node and are not shared between nodes, so this is a soft limit against hammering, not an exact quota. /, /ip and /json make no upstream lookups and are not limited.',
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="mcp">
+      <h2 class="group__title">{t('MCP 服务', 'MCP server')}</h2>
+      <p class="group__lede">
+        {t(
+          '地址是 https://judgeip.com/mcp，使用 Streamable HTTP 传输，不需要密钥，也不保存会话。接入后可以直接让 AI 助手查 IP、对比几个 IP 或解释评分。',
+          'The endpoint is https://judgeip.com/mcp over Streamable HTTP, with no key and no session state. Once connected, an AI assistant can look up an IP, compare several, or explain a score.',
+        )}
+      </p>
+      <p class="codeblock__label">Claude Code</p>
+      <pre class="codeblock">claude mcp add --transport http judgeip https://judgeip.com/mcp</pre>
+      <p class="codeblock__label">{t('Cursor 等使用 mcp.json 的客户端', 'Cursor and other clients configured with mcp.json')}</p>
+      <pre class="codeblock">{`{\n  "mcpServers": {\n    "judgeip": { "url": "https://judgeip.com/mcp" }\n  }\n}`}</pre>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('工具', 'Tool')}</th>
+              <th scope="col">{t('参数', 'Arguments')}</th>
+              <th scope="col">{t('说明', 'Description')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MCP_TOOLS.map((tool) => (
+              <tr>
+                <th scope="row" class="mono">{tool.name}</th>
+                <td class="mono">{toolArgs(tool)}</td>
+                <td>{toolNotes[tool.name]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t(
+          'lang 可选 en 或 zh，默认 en。check_ip 不传 ip 时查到的是运行 MCP 客户端的那台机器：本地客户端是你的电脑，网页版助手则是服务商的服务器，不是你的出口 IP。',
+          'lang is en or zh and defaults to en. Without ip, check_ip reports the machine running the MCP client: your computer for a local client, but the provider\'s server for a hosted assistant, which is not your egress IP.',
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="notes">
+      <h2 class="group__title">{t('使用说明', 'Notes')}</h2>
+      <div class="prose prose--page">
+        <ul>
+          <li>{t('IPv6 地址能查，但没有分数：端口和黑名单数据只覆盖 IPv4。', 'IPv6 addresses can be looked up but get no score: port and blocklist data cover IPv4 only.')}</li>
+          <li>{t('数据源没答复时对应字段为空或 null，分数也不出，不会用默认值代替。', 'When a source does not answer, its fields are empty or null and no score is given. Defaults are never substituted.')}</li>
+          <li>{t('分数是 JudgeIP 按公开规则算出来的，不是任何平台的官方风控分。', 'The score is computed by JudgeIP from published rules. It is not any platform\'s official risk score.')}</li>
+          <li>{t('接口不承诺可用性，字段可能随版本增加。需要稳定批量查询请直接使用上游数据源的付费服务。', 'There is no availability guarantee, and fields may be added between releases. For stable bulk lookups, use a paid plan from the upstream sources directly.')}</li>
+        </ul>
+        <p>
+          <a href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={href('/data')}>{t('数据来源', 'Data sources')}</a> · <a href={href('/status')}>{t('服务状态', 'Service status')}</a>
+        </p>
+      </div>
+    </section>
+  </div>
+</IpcxLayout>

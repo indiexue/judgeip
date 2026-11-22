@@ -15,6 +15,26 @@
         <span class="toollist__name">环境体检</span>
         <span class="toollist__desc">同时检查 IP、WebRTC、DNS、时区与语言是否一致、自动化指纹和 AI 服务可用性，共 6 项。</span>
       </a>
+      <a class="toollist__item" href="/platforms">
+        <span class="toollist__name">平台检测</span>
+        <span class="toollist__desc">ChatGPT、Claude、Netflix、TikTok 等平台各自怎么看这个 IP：能读到出口的直接比对，读不到的按 IP 属性推断并标明。</span>
+      </a>
+      <a class="toollist__item" href="/compare">
+        <span class="toollist__name">多 IP 对比</span>
+        <span class="toollist__desc">一次最多 6 个 IP，并排列出评分、网络类型、原生 IP、代理标记、黑名单和每一项的加减分。</span>
+      </a>
+      <a class="toollist__item" href="/native-ip">
+        <span class="toollist__name">原生 IP 检测</span>
+        <span class="toollist__desc">注册国家和定位国家是否一致，加上网络类型、代理标记和黑名单，权重列在页面上。</span>
+      </a>
+      <a class="toollist__item" href="/residential-ip">
+        <span class="toollist__name">住宅 IP 检测</span>
+        <span class="toollist__desc">是住宅、移动网络还是机房 IP，有没有代理标记、黑名单记录和多余的开放端口。</span>
+      </a>
+      <a class="toollist__item" href="/tiktok-ip">
+        <span class="toollist__name">TikTok IP 检测</span>
+        <span class="toollist__desc">按住宅或移动网络、原生 IP、代理标记、黑名单四项打分，另外对比浏览器时区和语言。</span>
+      </a>
       <a class="toollist__item" href="/whois">
         <span class="toollist__name">Whois / RDAP 查询</span>
         <span class="toollist__desc">域名、IP 段、ASN 的注册信息与生命周期，直接来自各注册局的 RDAP 服务。</span>
@@ -44,6 +64,10 @@
       <a class="toollist__item" href="/connectivity">
         <span class="toollist__name">网络连通性</span>
         <span class="toollist__desc">国内外 44 个知名网站、AI 服务、社交与开发站点能不能连上、延迟多少。</span>
+      </a>
+      <a class="toollist__item" href="/egress">
+        <span class="toollist__name">我的出口</span>
+        <span class="toollist__desc">国内、国外、IPv6、WebRTC 等通道各自看到的出口 IP 汇总成一张表，判断有没有分流或泄露。</span>
       </a>
       <a class="toollist__item" href="/cloudflare">
         <span class="toollist__name">Cloudflare 节点检测</span>
@@ -96,6 +120,24 @@
       <a class="toollist__item" href="/claude">
         <span class="toollist__name">Claude 检测</span>
         <span class="toollist__desc">时区、语言、字体等 10 项浏览器信号，估算会不会被判成中国用户。</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group" id="docs">
+    <h2 class="group__title">说明与接口</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/scoring">
+        <span class="toollist__name">评分规则</span>
+        <span class="toollist__desc">综合评分从多少分起、每一项加减多少、等级怎么划分。</span>
+      </a>
+      <a class="toollist__item" href="/data">
+        <span class="toollist__name">数据说明</span>
+        <span class="toollist__desc">每一项数据来自哪个来源、多久更新、覆盖不到什么。</span>
+      </a>
+      <a class="toollist__item" href="/api-docs">
+        <span class="toollist__name">API 与 MCP</span>
+        <span class="toollist__desc">curl 文本报告、JSON 接口和 MCP 服务的地址、参数、返回字段与请求上限。</span>
       </a>
     </div>
   </section>

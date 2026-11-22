@@ -1,0 +1,179 @@
+---
+/* 原生 IP、住宅 IP、TikTok IP 三个检测页共用的骨架：查询框、结论、打分表。
+   各页自己的说明文字放在默认插槽里。 */
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import IpQueryForm from './IpQueryForm.astro';
+import { getLang, localePath } from '../lib/i18n';
+import { lookupIpFull } from '../lib/ipcx-lookup';
+import { localizeLookup } from '../lib/lookup-en';
+import { resolveQueryTarget } from '../lib/query-target';
+import { SCENARIO_FAIL_BELOW, scenarioById, scoreScenario, type ScenarioId, type ScenarioLevel, type ScenarioStatus } from '../lib/scenario-profiles';
+import { locationText, operatorText, scoreText } from '../lib/text-report';
+
+interface Props {
+  id: ScenarioId;
+  title: string;
+  description: string;
+  heading: string;
+  lede: string;
+  /* 加一组「浏览器与这个 IP」的时区、语言对照，由 scenario.js 在浏览器里填 */
+  device?: boolean;
+}
+
+const { id, title, description, heading, lede, device = false } = Astro.props;
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const scenario = scenarioById(id);
+const target = resolveQueryTarget(Astro.request, Astro.url, lang);
+const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf), lang);
+const result = scoreScenario(id, info, lang);
+
+const TONE: Record<ScenarioLevel, string> = { pass: 'is-good', warn: 'is-warn', fail: 'is-bad', unknown: 'is-warn' };
+const TAG: Record<ScenarioStatus, string> = { pass: 'tag--ok', partial: 'tag--warn', fail: 'tag--leak', unknown: 'tag--muted' };
+
+let note = t(
+  `全部通过记为符合，总分低于 ${SCENARIO_FAIL_BELOW} 记为不符合，其余记为部分符合。权重是本站定的经验值。`,
+  `All items passing counts as meeting it, a total under ${SCENARIO_FAIL_BELOW} as not meeting it, anything else as partly meeting it. The weights are this site's own estimates.`,
+);
+if (info.isBogon) {
+  note = t('这是保留地址，不是公网出口，没有可判定的内容。', 'This is a reserved address, not a public egress, so there is nothing to judge.');
+} else if (result.total === null) {
+  const missing = result.items.filter((item) => item.status === 'unknown').map((item) => item.label).join(en ? ', ' : '、');
+  note =
+    result.level === 'fail'
+      ? t(`缺数据的项：${missing}。这些项全算通过，总分也到不了 ${SCENARIO_FAIL_BELOW}，记为不符合。`, `Items without data: ${missing}. Even if all of them passed, the total would stay under ${SCENARIO_FAIL_BELOW}, so the result is "does not meet it".`)
+      : info.version === 6 && result.items.some((item) => item.status === 'unknown' && (item.check === 'clean' || item.check === 'fewPorts'))
+        ? t(`缺数据的项：${missing}。端口与黑名单数据只覆盖 IPv4，换 IPv4 出口再测。`, `Items without data: ${missing}. Port and blocklist data cover IPv4 only; test again from an IPv4 egress.`)
+        : t(`缺数据的项：${missing}。有一项缺数据就不出总分，稍后重新检测。`, `Items without data: ${missing}. No total is given when any item lacks data; try again later.`);
+}
+---
+
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath={scenario.path}
+  bodyClass="page-scenario"
+  currentLabel={heading}
+  activeNav={scenario.path}
+  extraJs={device ? ['/assets/js/scenario.js'] : []}
+>
+  <section class="hero">
+    <h1 class="hero__title">{heading}</h1>
+    <p class="hero__lede">{lede}</p>
+  </section>
+
+  <IpQueryForm action={href(scenario.path)} value={target.queryValue} error={target.errorMsg} />
+
+  <div class="probe">
+    <div class={`verdict ${TONE[result.level]}`}>
+      <span class="verdict__dot" aria-hidden="true"></span>
+      <div class="verdict__body">
+        <p class="verdict__title">
+          {scenario.name[lang]}{en ? ': ' : '：'}{result.label}{result.total !== null && ` · ${result.total} / 100`}
+        </p>
+        <p class="verdict__note">{note}</p>
+      </div>
+    </div>
+
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">{target.isSelf ? t('当前 IP', 'Current IP') : t('查询的 IP', 'Queried IP')}</h2>
+        <div class="rows">
+          <div class="row">
+            <span class="row__label">IP</span>
+            <span class="row__value"><a class="mono" href={href(`/ip/${info.ip}`)}>{info.ip}</a></span>
+          </div>
+          {!info.isBogon && (
+            <>
+              <div class="row">
+                <span class="row__label">{t('网络类型', 'Network type')}</span>
+                <span class="row__value">{info.ipTypeLabel}</span>
+              </div>
+              <div class="row">
+                <span class="row__label">{t('运营商', 'Operator')}</span>
+                <span class="row__value">{operatorText(info, t)}</span>
+              </div>
+              <div class="row">
+                <span class="row__label">{t('位置', 'Location')}</span>
+                <span class="row__value">{locationText(info, t)}</span>
+              </div>
+            </>
+          )}
+          <div class="row">
+            <span class="row__label">{t('综合评分', 'Overall score')}</span>
+            <span class="row__value">{scoreText(info, t)}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" id="weights">
+        <h2 class="group__title">{t('打分表', 'Score sheet')}</h2>
+        <div class="tablewrap">
+          <table class="dtable dtable--scenario">
+            <thead>
+              <tr>
+                <th scope="col">{t('项目', 'Item')}</th>
+                <th scope="col" class="num">{t('权重', 'Weight')}</th>
+                <th scope="col" class="num">{t('得分', 'Points')}</th>
+                <th scope="col">{t('结果', 'Result')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.items.map((item) => (
+                <tr>
+                  <th scope="row">
+                    {item.label}
+                    <span class="dtable__sub">{item.basis}</span>
+                  </th>
+                  <td class="num">{item.weight}</td>
+                  <td class="num">{item.status === 'unknown' ? '—' : item.earned}</td>
+                  <td>
+                    <span class={`tag ${TAG[item.status]}`}>{item.statusLabel}</span>
+                    <span class="dtable__sub">{item.detail}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">{t('合计', 'Total')}</th>
+                <td class="num">100</td>
+                <td class="num">{result.total === null ? '—' : result.total}</td>
+                <td>{result.label}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      {device && !info.isBogon && (
+        <section class="group" id="device" data-sc-device data-ip-timezone={info.timezone} data-ip-country={info.countryCode}>
+          <h2 class="group__title">{t('浏览器与这个 IP', 'This browser and the IP')}</h2>
+          <p class="group__lede">
+            {t(
+              '时区和语言是设备上的设置，不是 IP 的属性，不计入上面的总分。这里把当前浏览器的设置和这个 IP 的所在地对一下。',
+              'Time zone and language are device settings, not properties of the IP, so they are not part of the total above. This compares the current browser with where the IP is located.',
+            )}
+          </p>
+          <div class="rows">
+            <div class="row">
+              <span class="row__label">{t('时区', 'Time zone')}</span>
+              <span class="row__value" data-sc-timezone><span class="dim">{t('需要浏览器脚本', 'Needs browser scripting')}</span></span>
+            </div>
+            <div class="row">
+              <span class="row__label">{t('语言', 'Language')}</span>
+              <span class="row__value" data-sc-language><span class="dim">{t('需要浏览器脚本', 'Needs browser scripting')}</span></span>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  </div>
+
+  <article class="prose">
+    <slot />
+  </article>
+</IpcxLayout>

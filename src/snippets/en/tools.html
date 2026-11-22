@@ -15,6 +15,26 @@
         <span class="toollist__name">Checkup</span>
         <span class="toollist__desc">Checks six things at once: IP, WebRTC, DNS, time zone and language consistency, automation fingerprints and AI service access.</span>
       </a>
+      <a class="toollist__item" href="/en/platforms">
+        <span class="toollist__name">Platform check</span>
+        <span class="toollist__desc">How ChatGPT, Claude, Netflix, TikTok and others see this IP: compared directly where the egress can be read, inferred from IP properties and labelled as such where it cannot.</span>
+      </a>
+      <a class="toollist__item" href="/en/compare">
+        <span class="toollist__name">Compare IPs</span>
+        <span class="toollist__desc">Up to 6 IPs side by side: score, network type, native IP, proxy flags, blocklists and the points added or deducted for each item.</span>
+      </a>
+      <a class="toollist__item" href="/en/native-ip">
+        <span class="toollist__name">Native IP check</span>
+        <span class="toollist__desc">Whether the registry country matches the location, plus network type, proxy flags and blocklists, with the weights listed on the page.</span>
+      </a>
+      <a class="toollist__item" href="/en/residential-ip">
+        <span class="toollist__name">Residential IP check</span>
+        <span class="toollist__desc">Residential, mobile or data center, and whether there are proxy flags, blocklist records or extra open ports.</span>
+      </a>
+      <a class="toollist__item" href="/en/tiktok-ip">
+        <span class="toollist__name">TikTok IP check</span>
+        <span class="toollist__desc">Scores residential or mobile network, native IP, proxy flags and blocklists, and compares the browser time zone and language.</span>
+      </a>
       <a class="toollist__item" href="/en/whois">
         <span class="toollist__name">Whois / RDAP lookup</span>
         <span class="toollist__desc">Registration data and lifecycle for domains, IP ranges and ASNs, straight from each registry's RDAP service.</span>
@@ -44,6 +64,10 @@
       <a class="toollist__item" href="/en/connectivity">
         <span class="toollist__name">Connectivity</span>
         <span class="toollist__desc">Whether 44 well-known sites in and outside China (AI, social, developer) are reachable, and how fast.</span>
+      </a>
+      <a class="toollist__item" href="/en/egress">
+        <span class="toollist__name">My egress IPs</span>
+        <span class="toollist__desc">One table of the egress IP seen through each channel (China-based sites, international sites, IPv6, WebRTC), to tell whether traffic is split or leaking.</span>
       </a>
       <a class="toollist__item" href="/en/cloudflare">
         <span class="toollist__name">Cloudflare edge check</span>
@@ -96,6 +120,24 @@
       <a class="toollist__item" href="/en/claude">
         <span class="toollist__name">Claude check</span>
         <span class="toollist__desc">Estimates from 10 browser signals (time zone, language, fonts and more) whether you are likely to be classified as a user in China.</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group" id="docs">
+    <h2 class="group__title">Reference</h2>
+    <div class="rows toollist">
+      <a class="toollist__item" href="/en/scoring">
+        <span class="toollist__name">Scoring rules</span>
+        <span class="toollist__desc">Where the overall score starts, how many points each item adds or deducts, and how grades are assigned.</span>
+      </a>
+      <a class="toollist__item" href="/en/data">
+        <span class="toollist__name">Data sources</span>
+        <span class="toollist__desc">Where each piece of data comes from, how often it updates and what it does not cover.</span>
+      </a>
+      <a class="toollist__item" href="/en/api-docs">
+        <span class="toollist__name">API and MCP</span>
+        <span class="toollist__desc">Endpoints, parameters, response fields and request limits for the curl text report, the JSON API and the MCP server.</span>
       </a>
     </div>
   </section>

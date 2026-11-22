@@ -88,6 +88,19 @@ const LABELS: Record<string, string> = {
   加密货币: 'Crypto',
   '易触发 KYC': 'Likely KYC',
   '主流交易所地区合规限制与异常 IP 二次验证': 'Exchange region compliance and extra verification for unusual IPs',
+  // 评分明细
+  网络类型: 'Network type',
+  '原生 IP': 'Native IP',
+  '代理 / VPN / Tor': 'Proxy / VPN / Tor',
+  黑名单与威胁记录: 'Blocklists and threat records',
+  开放端口数量: 'Open ports',
+  分数上下限: 'Score limits',
+  'CDN 不计此项': 'Not applied to CDNs',
+  注册地与定位一致: 'Registry matches location',
+  注册地与定位不一致: 'Registry differs from location',
+  '限制在 5–99 之间': 'Kept within 5–99',
+  'JudgeIP ASN 表': 'JudgeIP ASN table',
+  无响应: 'No response',
   // 大洲
   亚洲: 'Asia',
   北美洲: 'North America',
@@ -106,7 +119,8 @@ const PATTERNS: Array<[RegExp, (...m: string[]) => string]> = [
   [/^暴露 \((.*)\)$/, (_, p) => `Open (${p})`],
   [/^命中 (\d+)\/(\d+) \((.*)\)$/, (_, a, b, l) => `Listed ${a}/${b} (${l})`],
   [/^0\/(\d+) 全部通过$/, (_, b) => `0/${b} clean`],
-  [/^(\d+) 个历史 CVE$/, (_, n) => `${n} past CVEs`],
+  [/^(\d+) 个历史 CVE$/, (_, n) => `${n} past CVE${n === '1' ? '' : 's'}`],
+  [/^(\d+) 个开放端口$/, (_, n) => `${n} open port${n === '1' ? '' : 's'}`],
 ];
 
 const SHORT_COUNTRY_EN: Record<string, string> = { CN: 'Mainland China', HK: 'Hong Kong', MO: 'Macau', TW: 'Taiwan' };
@@ -148,5 +162,11 @@ export function localizeLookup(info: HomeIpLookupResult, lang: Lang): HomeIpLook
     city: info.cityEn || '—',
     scenes: info.scenes.map((s) => ({ ...s, label: labelEn(s.label), status: labelEn(s.status), note: labelEn(s.note) })),
     riskChecks: info.riskChecks.map((r) => ({ ...r, label: labelEn(r.label), status: labelEn(r.status) })),
+    factors: (info.factors || []).map((f) => ({
+      ...f,
+      label: labelEn(f.label),
+      status: labelEn(f.status),
+      evidence: f.evidence.map((e) => ({ source: labelEn(e.source), field: labelEn(e.field), value: labelEn(e.value) })),
+    })),
   };
 }

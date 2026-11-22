@@ -350,6 +350,27 @@
           setFieldHtml('scenes', scenesHtml || '<p class="geo__note">' + T('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates') + '</p>');
         }
 
+        if (Array.isArray(info.factors)) {
+          var sign = function (d) { return d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '0'; };
+          var factorsHtml = '<div class="factor factor--fixed"><span class="factor__name">' + T('基础分', 'Base score') +
+            '</span><span class="factor__delta mono">' + esc(info.scoreBase) + '</span></div>' +
+            info.factors.map(function (f) {
+              var rows = (f.evidence || []).map(function (e) {
+                return '<div class="factor__ev"><span>' + esc(e.source) + '</span><span class="mono">' + esc(e.field) +
+                  '</span><span class="mono">' + esc(e.value) + '</span></div>';
+              }).join('');
+              return '<details class="factor"><summary><span class="factor__name">' + esc(f.label) + '</span>' +
+                '<span class="tag tag--' + esc(f.tone) + '">' + esc(f.status) + '</span>' +
+                '<span class="factor__delta mono' + (f.delta < 0 ? ' is-minus' : f.delta > 0 ? ' is-plus' : '') + '">' + sign(f.delta) + '</span></summary>' +
+                '<div class="factor__body">' + (rows || '<p class="geo__note">' + T('这一项没有拿到原始数据', 'No raw data was returned for this item') + '</p>') + '</div></details>';
+            }).join('') +
+            '<div class="factor factor--fixed factor--total"><span class="factor__name">' + T('最终得分', 'Final score') + '</span>' +
+            (info.score === null || info.score === undefined
+              ? '<span class="factor__note">' + T('有数据源未返回，暂不出分', 'A data source did not respond, so no score is given') + '</span>'
+              : '<span class="factor__delta mono">' + esc(info.score) + ' · ' + esc(info.grade) + '</span>') + '</div>';
+          setFieldHtml('factors', factorsHtml);
+        }
+
         if (Array.isArray(info.riskChecks)) {
           var rtHtml = info.riskChecks.map(function (rc) {
             return '<div class="row"><span class="row__label">' + esc(rc.label) + '</span>' +

@@ -40,8 +40,8 @@ const search = Astro.url.search || '';
 const switchHref = (en ? basePath : localePath(basePath, 'en')) + search;
 
 const isLeakActive = ['/webrtc', '/dnsleak', '/fingerprint', '/headers'].includes(activeNav);
-const isNetActive = ['/connectivity', '/cloudflare', '/cdn', '/split', '/ping'].includes(activeNav);
-const isToolsActive = ['/tools', '/whois', '/dns-tools', '/ip-calc', '/card', '/status'].includes(activeNav);
+const isNetActive = ['/connectivity', '/egress', '/cloudflare', '/cdn', '/split', '/ping'].includes(activeNav);
+const isToolsActive = ['/tools', '/platforms', '/compare', '/native-ip', '/residential-ip', '/tiktok-ip', '/whois', '/dns-tools', '/ip-calc', '/card', '/status'].includes(activeNav);
 
 const topNav = [
   { path: '/', label: t('IP 检视', 'My IP') },
@@ -69,6 +69,7 @@ const navGroups = [
     active: isNetActive,
     items: [
       { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
+      { path: '/egress', label: t('我的出口', 'My Egress IPs') },
       { path: '/split', label: t('网站分流测试', 'Split Routing Test') },
       { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
       { path: '/cdn', label: t('CDN 命中节点', 'CDN Edge Nodes') },
@@ -80,6 +81,8 @@ const navGroups = [
     path: '/tools',
     active: isToolsActive,
     items: [
+      { path: '/platforms', label: t('平台检测', 'Platform Check') },
+      { path: '/compare', label: t('多 IP 对比', 'Compare IPs') },
       { path: '/whois', label: t('Whois / RDAP 查询', 'Whois / RDAP') },
       { path: '/dns-tools', label: t('DNS 解析与黑名单', 'DNS & Blocklists') },
       { path: '/ip-calc', label: t('CIDR 子网计算器', 'CIDR Calculator') },
@@ -96,6 +99,12 @@ const footLinks = [
   { path: '/claude', label: t('Claude 检测', 'Claude Check') },
   { path: '/ai', label: t('AI 解锁检测', 'AI Access Check') },
   { path: '/gpt', label: t('GPT · Codex 检测', 'GPT · Codex Check') },
+  { path: '/platforms', label: t('平台检测', 'Platform Check') },
+  { path: '/compare', label: t('多 IP 对比', 'Compare IPs') },
+  { path: '/native-ip', label: t('原生 IP 检测', 'Native IP Check') },
+  { path: '/residential-ip', label: t('住宅 IP 检测', 'Residential IP Check') },
+  { path: '/tiktok-ip', label: t('TikTok IP 检测', 'TikTok IP Check') },
+  { path: '/egress', label: t('我的出口', 'My Egress IPs') },
   { path: '/webrtc', label: t('WebRTC 泄露', 'WebRTC Leak') },
   { path: '/dnsleak', label: t('DNS 泄露检测', 'DNS Leak') },
   { path: '/split', label: t('网站分流测试', 'Split Routing') },
@@ -275,6 +284,9 @@ const footLinks = [
             <h2 class="foot__title" id="foot-legal">{t('说明与协议', 'About')}</h2>
             <ul class="foot__list">
               <li><a class="foot__link" href={href('/tools')}>{t('全部工具', 'All tools')}</a></li>
+              <li><a class="foot__link" href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a></li>
+              <li><a class="foot__link" href={href('/data')}>{t('数据说明', 'Data sources')}</a></li>
+              <li><a class="foot__link" href={href('/api-docs')}>{t('API 与 MCP', 'API & MCP')}</a></li>
               <li><a class="foot__link" href={href('/status')}>{t('服务状态', 'Service status')}</a></li>
               <li><a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a></li>
               <li><a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a></li>

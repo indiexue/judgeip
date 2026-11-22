@@ -4,7 +4,7 @@ import IpcxHomeContent from '../components/IpcxHomeContent.astro';
 import { extractVisitorIp, parseIp } from '../lib/ip-utils';
 import { lookupIpFull } from '../lib/ipcx-lookup';
 import { localizeLookup } from '../lib/lookup-en';
-import { getLang, localePath, pick } from '../lib/i18n';
+import { getLang, pick } from '../lib/i18n';
 
 const lang = getLang(Astro.locals);
 

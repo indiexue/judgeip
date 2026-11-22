@@ -1,0 +1,164 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { getLang, localePath } from '../lib/i18n';
+import { REPORT_SOURCES, GEO_SOURCES, CACHE_COMPLETE_MINUTES, CACHE_PARTIAL_SECONDS, CACHE_MAX_ENTRIES } from '../lib/data-sources';
+import { KNOWN_ASN_PROFILES } from '../lib/asn-intelligence';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const asnCount = Object.keys(KNOWN_ASN_PROFILES).length;
+const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—');
+---
+
+<IpcxLayout
+  title={t('数据来源与更新 - 每个字段从哪里来 - JudgeIP', 'Data Sources and Freshness - Where Each Field Comes From - JudgeIP')}
+  description={t(
+    'JudgeIP 报告里每个字段的数据来源、覆盖范围、更新频率和超时设置，以及查询结果缓存多久、有哪些已知的不准确之处。',
+    'Where each field in a JudgeIP report comes from, what it covers, how fresh it is and how long it is cached, plus the known gaps.',
+  )}
+  canonicalPath="/data"
+  bodyClass="page-data"
+  currentLabel={t('数据来源', 'Data sources')}
+  activeNav="/data"
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('数据来源与更新', 'Data sources and freshness')}</h1>
+    <p class="hero__lede">
+      {t(
+        'JudgeIP 自己不维护 IP 数据库。每次查询都向下面这些公开数据源实时取数，再按公开的规则汇总成报告。',
+        'JudgeIP does not maintain its own IP database. Each lookup queries the public sources below and combines the answers using published rules.',
+      )}
+    </p>
+  </section>
+
+  <div class="groups">
+    <section class="group" id="sources">
+      <h2 class="group__title">{t('IP 报告的数据源', 'Sources behind the IP report')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('来源', 'Source')}</th>
+              <th scope="col">{t('提供的数据', 'Provides')}</th>
+              <th scope="col">{t('范围', 'Coverage')}</th>
+              <th scope="col">{t('更新', 'Freshness')}</th>
+              <th scope="col" class="num">{t('超时', 'Timeout')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {REPORT_SOURCES.map((s) => (
+              <tr>
+                <th scope="row"><a href={s.url} rel="noopener nofollow" target="_blank">{s.name}</a></th>
+                <td>{s.provides[lang]}</td>
+                <td>{s.scope[lang]}</td>
+                <td>{s.freshness[lang]}</td>
+                <td class="num">{timeout(s.timeoutMs)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t(
+          '超时是单个请求的上限。某个来源没在时限内答复，对应字段显示为未取得，不用默认值填充。',
+          'The timeout is the limit for a single request. If a source does not answer in time, its fields are shown as unavailable rather than filled with defaults.',
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="asn">
+      <h2 class="group__title">{t('网络类型怎么分', 'How the network type is classified')}</h2>
+      <div class="prose prose--page">
+        <p>
+          {t(
+            `家庭宽带、数据中心、CDN、移动网络这些类型由本站判定，不直接照搬某个数据库。判定顺序：先查随代码发布的 ASN 表（目前 ${asnCount} 个常见 ASN，覆盖主要云厂商、CDN、运营商和商业 VPN），再匹配运营商名称里的关键词，最后参考 ipwho.is 和 ip-api.com 的 hosting / mobile 标记。`,
+            `Residential, data center, CDN and mobile are decided by this site rather than copied from one database. In order: an ASN table shipped with the code (currently ${asnCount} common ASNs covering major clouds, CDNs, carriers and commercial VPNs), then keywords in the operator name, then the hosting / mobile flags from ipwho.is and ip-api.com.`,
+          )}
+        </p>
+        <p>
+          {t(
+            'ASN 表随网站版本更新，没有固定周期。表里没有的 ASN 靠后两步判断，三步都没有结果时类型记为未知。',
+            'The ASN table is updated with site releases, on no fixed schedule. ASNs missing from it fall through to the other two steps; if none of the three gives an answer the type is unknown.',
+          )}
+        </p>
+      </div>
+    </section>
+
+    <section class="group" id="geo">
+      <h2 class="group__title">{t('多库定位对比', 'Geolocation comparison')}</h2>
+      <div class="prose prose--page">
+        <p>
+          {t('报告里的“多库定位”把同一个 IP 交给四个地理库分别查询，结果并排列出：', 'The geolocation comparison in each report sends the same IP to four databases and lists the answers side by side:')}
+          {GEO_SOURCES.map((g, i) => (
+            <>
+              {i > 0 && (en ? ', ' : '、')}
+              <a href={g.url} rel="noopener nofollow" target="_blank">{g.name}</a>
+            </>
+          ))}
+          {t('。每个库超时 3.5 秒，结果在浏览器里缓存 30 分钟。', '. Each has a 3.5 s timeout and the result is cached in the browser for 30 minutes.')}
+        </p>
+        <p>
+          {t(
+            '城市级定位是各库根据注册信息和测量数据推断出来的，几个库给出不同城市很常见。国家一级通常一致，不一致时多半是广播 IP。',
+            'City-level location is inferred by each database from registry and measurement data, so different cities across databases are common. Countries usually agree; when they do not, the IP is most likely geo-announced.',
+          )}
+        </p>
+      </div>
+    </section>
+
+    <section class="group" id="cache">
+      <h2 class="group__title">{t('缓存与更新', 'Caching')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <tbody>
+            <tr>
+              <th scope="row">{t('完整结果', 'Complete result')}</th>
+              <td>{t(`缓存 ${CACHE_COMPLETE_MINUTES} 分钟`, `Cached for ${CACHE_COMPLETE_MINUTES} minutes`)}</td>
+            </tr>
+            <tr>
+              <th scope="row">{t('不完整结果', 'Incomplete result')}</th>
+              <td>{t(`缓存 ${CACHE_PARTIAL_SECONDS} 秒，之后重新查询`, `Cached for ${CACHE_PARTIAL_SECONDS} seconds, then queried again`)}</td>
+            </tr>
+            <tr>
+              <th scope="row">{t('本机 IP', 'Your own IP')}</th>
+              <td>{t('不读缓存，每次打开都重新查询', 'Never read from cache; queried again on every visit')}</td>
+            </tr>
+            <tr>
+              <th scope="row">{t('存放位置', 'Where')}</th>
+              <td>{t(`边缘节点的内存里，每个节点最多 ${CACHE_MAX_ENTRIES} 条，节点重启即清空`, `In memory on the edge node, at most ${CACHE_MAX_ENTRIES} entries per node, cleared when the node restarts`)}</td>
+            </tr>
+            <tr>
+              <th scope="row">{t('持久化', 'Persistence')}</th>
+              <td>{t('没有。查询结果不写入数据库', 'None. Lookup results are not written to a database')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t(
+          '缓存按节点各自保存，同一个 IP 在不同地区访问可能一边命中缓存、一边重新查询，短时间内结果略有出入属于正常。',
+          'Each node keeps its own cache, so the same IP may be served from cache in one region and queried fresh in another. Small differences over a short period are expected.',
+        )}
+      </p>
+    </section>
+
+    <section class="group" id="limits">
+      <h2 class="group__title">{t('已知的不准确之处', 'Known gaps')}</h2>
+      <div class="prose prose--page">
+        <ul>
+          <li>{t('IPv6 没有分数。端口和黑名单数据只覆盖 IPv4。', 'IPv6 gets no score. Port and blocklist data cover IPv4 only.')}</li>
+          <li>{t('代理、VPN 标记来自免费数据库，对住宅代理和新节点的覆盖有限。', 'Proxy and VPN flags come from free databases with limited coverage of residential proxies and new nodes.')}</li>
+          <li>{t('开放端口是 Shodan 的历史扫描结果，端口关掉后记录可能还在。', 'Open ports are from past Shodan scans; a record can outlive the port being closed.')}</li>
+          <li>{t('部分 DNSBL 会拒绝来自公共解析器的查询。遇到拒绝时该黑名单记为未知，不记为未列入。', 'Some DNSBLs refuse queries from public resolvers. A refusal is recorded as unknown, not as not listed.')}</li>
+          <li>{t('注册国家取自 WHOIS 的 country 字段，跨国运营商的地址段可能登记在总部所在国。', 'The registered country is the WHOIS country field; ranges of multinational operators may be registered in the headquarters country.')}</li>
+        </ul>
+        <p>
+          <a href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={href('/status')}>{t('服务状态', 'Service status')}</a> · <a href={href('/privacy')}>{t('隐私政策', 'Privacy policy')}</a>
+        </p>
+      </div>
+    </section>
+  </div>
+</IpcxLayout>

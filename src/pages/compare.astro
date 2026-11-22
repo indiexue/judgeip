@@ -1,0 +1,200 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { COMPARE_FIELDS, COMPARE_MAX, parseCompareList } from '../lib/compare';
+import { getLang, localePath } from '../lib/i18n';
+import { extractVisitorIp } from '../lib/ip-utils';
+import { SCORE_BASE, SCORE_MAX, SCORE_MIN, SCORE_RULES } from '../lib/score-rules';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const { ips, invalid, dropped } = parseCompareList(Astro.url.searchParams.get('ips'));
+const visitorIp = extractVisitorIp(Astro.request);
+const listHref = (list: string[]) => href('/compare') + (list.length ? `?ips=${list.join(',')}` : '');
+const example = [...new Set([visitorIp, '8.8.8.8', '1.1.1.1'])];
+const canAddSelf = ips.length > 0 && ips.length < COMPARE_MAX && !ips.includes(visitorIp);
+const pending = t('待查询', 'Pending');
+---
+
+<IpcxLayout
+  title={t('多 IP 对比 - 并排比较几个 IP 的评分和属性 - JudgeIP', 'Compare IPs - Scores and Properties of Several IPs Side by Side - JudgeIP')}
+  description={t(
+    `一次输入最多 ${COMPARE_MAX} 个 IP，并排对比综合评分、网络类型、原生 IP、代理标记、黑名单、开放端口，以及每一项的加减分。`,
+    `Enter up to ${COMPARE_MAX} IPs and compare overall score, network type, native IP, proxy flags, blocklists and open ports side by side, with the points added or deducted for each item.`,
+  )}
+  canonicalPath="/compare"
+  bodyClass="page-compare"
+  currentLabel={t('多 IP 对比', 'Compare IPs')}
+  activeNav="/compare"
+  extraJs={ips.length ? ['/assets/js/probe.js', '/assets/js/compare.js'] : []}
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('多 IP 对比', 'Compare IPs')}</h1>
+    <p class="hero__lede">
+      {t(
+        `一次最多 ${COMPARE_MAX} 个 IP，并排列出评分、各项属性和每一项的加减分。`,
+        `Up to ${COMPARE_MAX} IPs at a time, side by side: score, properties and the points added or deducted for each item.`,
+      )}
+    </p>
+  </section>
+
+  <form class="query" method="get" action={href('/compare')} role="search">
+    <div class="query__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m20 20-4.9-4.9"></path></svg>
+      </span>
+      <input
+        class="query__input mono"
+        type="text"
+        name="ips"
+        value={ips.join(', ')}
+        placeholder={t('用逗号或空格分开：8.8.8.8, 1.1.1.1', 'Separate with commas or spaces: 8.8.8.8, 1.1.1.1')}
+        maxlength="300"
+        enterkeyhint="search"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label={t(`要对比的 IP，最多 ${COMPARE_MAX} 个`, `IPs to compare, up to ${COMPARE_MAX}`)}
+      />
+      <button class="query__submit" type="submit">{t('对比', 'Compare')}</button>
+    </div>
+    {(invalid.length > 0 || dropped > 0) && (
+      <p class="notice" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.2M12 16.3v.2"></path></svg>
+        <span>
+          {invalid.length > 0 && t(`${invalid.map((item) => `「${item}」`).join('')}不是有效的 IPv4 或 IPv6 地址，已忽略。`, `${invalid.map((item) => `"${item}"`).join(', ')} ${invalid.length > 1 ? 'are not valid IPv4 or IPv6 addresses and were' : 'is not a valid IPv4 or IPv6 address and was'} ignored.`)}
+          {invalid.length > 0 && dropped > 0 && ' '}
+          {dropped > 0 && t(`一次最多对比 ${COMPARE_MAX} 个，后面的 ${dropped} 个已忽略。`, `At most ${COMPARE_MAX} IPs are compared at a time; the last ${dropped} ${dropped > 1 ? 'were' : 'was'} ignored.`)}
+        </span>
+      </p>
+    )}
+  </form>
+
+  {ips.length === 0 ? (
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">{t('怎么用', 'How to use')}</h2>
+        <p class="group__lede">
+          {t(
+            '在上面输入两个以上的 IPv4 或 IPv6 地址，用逗号、空格或换行分开。结果页的地址可以直接分享。',
+            'Enter two or more IPv4 or IPv6 addresses above, separated by commas, spaces or line breaks. The address of the result page can be shared as is.',
+          )}
+        </p>
+        <p class="group__lede">
+          {t('示例：', 'Example: ')}<a class="mono" href={listHref(example)}>{example.join(', ')}</a>
+        </p>
+      </section>
+    </div>
+  ) : (
+    <div class="probe" id="compare" data-ips={JSON.stringify(ips)}>
+      <div class="probe__bar">
+        <button class="probe__run" type="button" data-cmp-run>{t('重新查询', 'Query again')}</button>
+        <span class="probe__hint" data-cmp-progress>{t('页面加载后逐个查询，需要浏览器脚本。', 'Each IP is looked up after the page loads; this needs browser scripting.')}</span>
+      </div>
+
+      <div class="verdict" data-cmp-verdict hidden>
+        <span class="verdict__dot" aria-hidden="true"></span>
+        <div class="verdict__body">
+          <p class="verdict__title" data-cmp-verdict-title></p>
+          <p class="verdict__note" data-cmp-verdict-note></p>
+        </div>
+      </div>
+
+      <div class="groups">
+        <section class="group" id="properties">
+          <h2 class="group__title">{t('对比', 'Comparison')}</h2>
+          <div class="tablewrap">
+            <table class="dtable dtable--compare">
+              <thead>
+                <tr>
+                  <th scope="col">{t('项目', 'Item')}</th>
+                  {ips.map((ip) => (
+                    <th scope="col">
+                      <a class="mono" href={href(`/ip/${ip}`)}>{ip}</a>
+                      <span class="dtable__sub">
+                        {ip === visitorIp && <>{t('当前 IP', 'Current IP')} · </>}
+                        <a href={listHref(ips.filter((item) => item !== ip))}>{t('移除', 'Remove')}</a>
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE_FIELDS.map((row) => (
+                  <tr data-field={row.field}>
+                    <th scope="row">{row.label[lang]}</th>
+                    {ips.map(() => <td><span class="dim">{pending}</span></td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {canAddSelf && (
+            <p class="group__lede group__lede--after">
+              <a href={listHref([...ips, visitorIp])}>{t('加上当前 IP', 'Add your current IP')}</a>
+              <span class="mono dim"> {visitorIp}</span>
+            </p>
+          )}
+        </section>
+
+        <section class="group" id="factors">
+          <h2 class="group__title">{t('加减分', 'Points')}</h2>
+          <div class="tablewrap">
+            <table class="dtable dtable--compare">
+              <thead>
+                <tr>
+                  <th scope="col">{t('项目', 'Item')}</th>
+                  {ips.map((ip) => <th scope="col"><span class="mono">{ip}</span></th>)}
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-base>
+                  <th scope="row">{t('基础分', 'Base')}</th>
+                  {ips.map(() => <td><span class="dim">{pending}</span></td>)}
+                </tr>
+                {SCORE_RULES.map((rule) => (
+                  <tr data-factor={rule.key}>
+                    <th scope="row">{rule.label[lang]}</th>
+                    {ips.map(() => <td><span class="dim">{pending}</span></td>)}
+                  </tr>
+                ))}
+                <tr data-factor="clamp" hidden>
+                  <th scope="row">{t('分数上下限', 'Score limits')}</th>
+                  {ips.map(() => <td><span class="dim">{pending}</span></td>)}
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr data-total>
+                  <th scope="row">{t('评分', 'Score')}</th>
+                  {ips.map(() => <td><span class="dim">{pending}</span></td>)}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  )}
+
+  <article class="prose">
+    <h2>{t('怎么看这张表', 'Reading the table')}</h2>
+    <p>
+      {t(
+        `每个 IP 一列，查询方式和单个 IP 的报告页相同，点表头的地址可以打开它的完整报告。第二张表是评分的算法：从 ${SCORE_BASE} 分起，按网络类型、原生 IP、代理标记、黑名单与威胁记录、开放端口加减，结果限制在 ${SCORE_MIN}–${SCORE_MAX} 之间。几个 IP 分数不同时，看这张表能找到差在哪一项。`,
+        `Each IP gets a column, looked up the same way as its single-IP report; the address in the header opens the full report. The second table is how the score is computed: it starts from ${SCORE_BASE} and adds or deducts points for network type, native IP, proxy flags, blocklists and threat records, and open ports, then is kept within ${SCORE_MIN}–${SCORE_MAX}. When scores differ, this table shows which item accounts for it.`,
+      )}
+    </p>
+    <h2>{t('局限', 'Limits')}</h2>
+    <ul>
+      <li>{t('IPv6 地址没有评分，因为端口与黑名单数据只覆盖 IPv4。各项属性照常列出，但不参与排序。', 'IPv6 addresses get no score because port and blocklist data cover IPv4 only. Their properties are still listed, but they are left out of the ranking.')}</li>
+      <li>{t('保留地址（内网、回环等）不是公网出口，只显示地址类型。', 'Reserved addresses (private, loopback and so on) are not public egresses, so only the address type is shown.')}</li>
+      <li>{t('评分比较的是 IP 本身的公开属性，不是某个平台的判断。分数高的 IP 在具体平台上不一定更好用。', 'The score compares public properties of the IP itself, not the judgement of any platform. A higher score does not guarantee the IP works better on a given site.')}</li>
+      <li>{t(`一次最多 ${COMPARE_MAX} 个。每个 IP 单独发一次查询，和接口共用每分钟的请求上限。`, `Up to ${COMPARE_MAX} at a time. Each IP is a separate lookup and counts toward the same per-minute request limit as the API.`)}</li>
+    </ul>
+    <p>
+      <a href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={href('/data')}>{t('数据说明', 'Data sources')}</a> · <a href={href('/platforms')}>{t('平台检测', 'Platform check')}</a> · <a href={href('/api-docs')}>{t('API 与 MCP（compare_ips 工具）', 'API and MCP (compare_ips tool)')}</a>
+    </p>
+  </article>
+</IpcxLayout>

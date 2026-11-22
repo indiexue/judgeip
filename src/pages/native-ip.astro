@@ -1,0 +1,61 @@
+---
+import ScenarioPage from '../components/ScenarioPage.astro';
+import { getLang, localePath } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+---
+
+<ScenarioPage
+  id="native-ip"
+  title={t('原生 IP 检测 - 查 IP 是原生 IP 还是广播 IP - JudgeIP', 'Native IP Check - Is an IP Native or Geo-Announced - JudgeIP')}
+  description={t(
+    '检测当前 IP 或任意 IP 是原生 IP 还是广播 IP：对比 RIR 注册国家和定位国家，排除 CDN / 任播地址，再看代理标记。每一项的权重和得分都列在页面上。',
+    'Check whether your IP or any IP is native or geo-announced: compare the RIR registry country with the geolocation country, rule out CDN / anycast addresses, then look at proxy flags. Every weight and point is listed on the page.',
+  )}
+  heading={t('原生 IP 检测', 'Native IP check')}
+  lede={t(
+    '原生 IP 指注册国家和实际使用国家一致的地址。下面按三项打分，权重和每一项的依据都列出来。',
+    'A native IP is an address registered in the same country it is used in. It is scored on three items below, with the weight and basis of each listed.',
+  )}
+>
+  <h2>{t('原生 IP 和广播 IP', 'Native and geo-announced IPs')}</h2>
+  <p>
+    {t(
+      '每段 IP 地址都由地区注册机构（RIR）分配，whois 里登记了一个国家。运营商在登记的国家使用这段地址，就是原生 IP。把在甲国登记的地址拿到乙国的机房去广播，定位库显示乙国，whois 仍是甲国，这种叫广播 IP。',
+      'Every block of addresses is allocated by a regional registry (RIR), and its whois record names a country. When the operator uses the block in that country, the addresses are native. When a block registered in one country is announced from a data center in another, geolocation shows the second country while whois still shows the first. That is a geo-announced IP.',
+    )}
+  </p>
+  <p>
+    {t(
+      '流媒体和部分平台会同时看这两个国家，不一致时按注册国家给内容，或者直接当作代理处理。',
+      'Streaming services and some platforms look at both countries. When they disagree, the service may serve the catalogue of the registry country or treat the address as a proxy.',
+    )}
+  </p>
+
+  <h2>{t('三项权重的理由', 'Why these three weights')}</h2>
+  <ul>
+    <li>{t('注册国家与定位国家一致，60 分。这就是原生 IP 的定义，不一致时总分不会超过 40，记为不符合。', 'Registry country matches location, 60 points. This is the definition of a native IP; when it fails the total cannot exceed 40 and the result is "does not meet it".')}</li>
+    <li>{t('不是 CDN / 任播地址，25 分。任播地址同时在很多地方广播，没有固定位置，国家对得上也说明不了什么。', 'Not a CDN / anycast address, 25 points. An anycast address is announced from many places at once and has no fixed location, so a matching country says little.')}</li>
+    <li>{t('无代理标记，15 分。被标成代理或 VPN 的地址，位置往往是服务商自己申报的，可信度低一些。', 'No proxy flag, 15 points. For addresses flagged as proxy or VPN, the location is often declared by the provider itself and is less reliable.')}</li>
+  </ul>
+  <p>
+    {t(
+      '全部通过记为符合，总分低于 60 记为不符合，其余记为部分符合。有一项缺数据就不出总分；缺的项全算通过也到不了 60 时，仍记为不符合。',
+      'All items passing counts as meeting it, a total under 60 as not meeting it, anything else as partly meeting it. No total is given when any item lacks data; when even a pass on every missing item would leave it under 60, the result is still "does not meet it".',
+    )}
+  </p>
+
+  <h2>{t('局限', 'Limits')}</h2>
+  <ul>
+    <li>{t('whois 只登记到国家。一段地址在同一个国家里换了城市，这里看不出来。', 'Whois records stop at the country. A block moved between cities in the same country does not show up here.')}</li>
+    <li>{t('定位库可能滞后。地址刚转手或刚换机房时，定位国家可能还是旧的。', 'Geolocation data can lag. Right after a block changes hands or moves, the location may still be the old one.')}</li>
+    <li>{t('各平台用的定位库不一样，这里的结果和某个平台的判断可能不同。', 'Each platform uses its own geolocation data, so the result here can differ from what a given platform decides.')}</li>
+    <li>{t('原生不等于住宅。机房的地址也可以是原生的，是不是住宅见住宅 IP 检测。', 'Native does not mean residential. A data center address can be native; for residential status use the residential IP check.')}</li>
+  </ul>
+  <p>
+    <a href={href('/residential-ip')}>{t('住宅 IP 检测', 'Residential IP check')}</a> · <a href={href('/tiktok-ip')}>{t('TikTok IP 检测', 'TikTok IP check')}</a> · <a href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={href('/data')}>{t('数据说明', 'Data sources')}</a>
+  </p>
+</ScenarioPage>

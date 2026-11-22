@@ -1,0 +1,49 @@
+---
+/* 「换一个 IP 查」的输入框，各检测页共用。提交为 GET <action>?ip=… */
+import { getLang } from '../lib/i18n';
+
+interface Props {
+  action: string;
+  value?: string;
+  error?: string;
+}
+
+const { action, value = '', error = '' } = Astro.props;
+const en = getLang(Astro.locals) === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+---
+
+<form class="query" method="get" action={action} role="search">
+  <div class="query__line">
+    <span class="query__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+        <path d="m20 20-4.9-4.9"></path>
+      </svg>
+    </span>
+    <input
+      class="query__input mono"
+      type="text"
+      name="ip"
+      value={value}
+      placeholder={t('换一个 IP：8.8.8.8 或 2400:3200::1', 'Another IP: 8.8.8.8 or 2400:3200::1')}
+      maxlength="60"
+      enterkeyhint="search"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      aria-label={t('要检测的 IPv4 或 IPv6 地址', 'IPv4 or IPv6 address to check')}
+    />
+    <button class="query__submit" type="submit">{t('检测', 'Check')}</button>
+  </div>
+
+  {error && (
+    <p class="notice" role="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7.5v5.2M12 16.3v.2"></path>
+      </svg>
+      <span>{error}</span>
+    </p>
+  )}
+</form>

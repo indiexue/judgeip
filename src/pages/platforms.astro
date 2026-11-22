@@ -1,0 +1,185 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import IpQueryForm from '../components/IpQueryForm.astro';
+import { getLang, localePath } from '../lib/i18n';
+import { lookupIpFull } from '../lib/ipcx-lookup';
+import { localizeLookup } from '../lib/lookup-en';
+import { LEVEL_LABELS, PLATFORMS, PLATFORM_CATEGORIES, REQUIREMENT_LABELS, judgePlatforms, type PlatformLevel } from '../lib/platforms';
+import { resolveQueryTarget } from '../lib/query-target';
+import { nativeText, scoreText } from '../lib/text-report';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+const sep = en ? ', ' : '、';
+
+const target = resolveQueryTarget(Astro.request, Astro.url, lang);
+const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf), lang);
+const verdicts = new Map(judgePlatforms(info, lang).map((v) => [v.id, v]));
+
+const TAG: Record<PlatformLevel, string> = { pass: 'tag--ok', warn: 'tag--warn', fail: 'tag--leak', unknown: 'tag--muted' };
+const LEVELS: PlatformLevel[] = ['pass', 'warn', 'fail', 'unknown'];
+const count = (level: PlatformLevel) => [...verdicts.values()].filter((v) => v.level === level).length;
+const counts = LEVELS.map((level) => ({ level, n: count(level) })).filter((c) => c.n > 0);
+const tone = count('pass') === PLATFORMS.length ? 'is-good' : count('pass') === 0 && count('fail') > 0 ? 'is-bad' : 'is-warn';
+
+let note = t(
+  '评分低于门槛或有一项要求不满足，记为不达标。门槛和要求是本站定的经验值，不是平台的官方规则。',
+  'An IP is below the bar when its score is under the threshold or any requirement is not met. Thresholds and requirements are this site\'s own estimates, not official platform rules.',
+);
+if (info.isBogon) {
+  note = t('这是保留地址，不是公网出口，没有可判定的内容。', 'This is a reserved address, not a public egress, so there is nothing to judge.');
+} else if (info.score === null) {
+  note =
+    info.version === 6
+      ? t('IPv6 地址没有评分（端口与黑名单数据只覆盖 IPv4），无法与门槛比较。换 IPv4 出口再测。', 'IPv6 addresses get no score (port and blocklist data cover IPv4 only), so there is nothing to compare with the thresholds. Test again from an IPv4 egress.')
+      : t('这次查询有数据源没有返回，没出评分，无法与门槛比较。稍后重新检测。', 'A data source did not respond, so there is no score to compare with the thresholds. Try again later.');
+}
+---
+
+<IpcxLayout
+  title={t('平台 IP 检测 - 支付、电商、接单、社交平台的出口与评分门槛 - JudgeIP', 'Platform IP Check - Egress and Score Thresholds for Payment, E-commerce, Freelance and Social Sites - JudgeIP')}
+  description={t(
+    '按 PayPal、Stripe、Amazon、TikTok Shop、Upwork、Fiverr、Facebook 等平台，列出平台看到的出口 IP、评分门槛、要求和结论。',
+    'For PayPal, Stripe, Amazon, TikTok Shop, Upwork, Fiverr, Facebook and other platforms: the egress IP each one sees, the score threshold, the requirements and the verdict.',
+  )}
+  canonicalPath="/platforms"
+  bodyClass="page-platforms"
+  currentLabel={t('平台检测', 'Platform check')}
+  activeNav="/platforms"
+  extraJs={target.isSelf ? ['/assets/js/probe.js', '/assets/js/platforms.js'] : []}
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('平台 IP 检测', 'Platform IP check')}</h1>
+    <p class="hero__lede">
+      {t(
+        '支付、电商、接单、社交四类平台，逐个列出平台看到的出口 IP、评分门槛和结论。',
+        'Payment, e-commerce, freelance and social platforms, each with the egress IP it sees, its score threshold and a verdict.',
+      )}
+    </p>
+  </section>
+
+  <IpQueryForm action={href('/platforms')} value={target.queryValue} error={target.errorMsg} />
+
+  <div class="probe" id="platforms" data-visible-ip={info.ip} data-level-labels={JSON.stringify(Object.fromEntries(LEVELS.map((level) => [level, LEVEL_LABELS[level][lang]])))}>
+    {target.isSelf && (
+      <div class="probe__bar">
+        <button class="probe__run" type="button" data-pf-run>{t('重新检测出口', 'Re-check egress')}</button>
+        <span class="probe__hint" data-pf-progress>{t('页面加载后自动读取各平台看到的出口…', 'Reading the egress each platform sees after the page loads…')}</span>
+      </div>
+    )}
+
+    <div class={`verdict ${tone}`} data-pf-verdict>
+      <span class="verdict__dot" aria-hidden="true"></span>
+      <div class="verdict__body">
+        <p class="verdict__title" data-pf-verdict-title>
+          {counts.map((c) => `${LEVEL_LABELS[c.level][lang]} ${c.n}`).join(' · ')}
+        </p>
+        <p class="verdict__note">{note}</p>
+      </div>
+    </div>
+
+    <div class="groups">
+      <section class="group">
+        <h2 class="group__title">{target.isSelf ? t('当前 IP', 'Current IP') : t('查询的 IP', 'Queried IP')}</h2>
+        <div class="rows">
+          <div class="row">
+            <span class="row__label">IP</span>
+            <span class="row__value"><a class="mono" href={href(`/ip/${info.ip}`)}>{info.ip}</a></span>
+          </div>
+          <div class="row">
+            <span class="row__label">{t('评分', 'Score')}</span>
+            <span class="row__value">{scoreText(info, t)}</span>
+          </div>
+          {!info.isBogon && (
+            <>
+              <div class="row">
+                <span class="row__label">{t('网络类型', 'Network type')}</span>
+                <span class="row__value">{info.ipTypeLabel}</span>
+              </div>
+              <div class="row">
+                <span class="row__label">{t('原生 IP', 'Native IP')}</span>
+                <span class="row__value">{nativeText(info, t)}</span>
+              </div>
+              <div class="row">
+                <span class="row__label">{t('代理', 'Proxy')}</span>
+                <span class="row__value">{info.proxyLabel}</span>
+              </div>
+              <div class="row">
+                <span class="row__label">{t('威胁记录', 'Threats')}</span>
+                <span class="row__value">{info.threatLabel}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {PLATFORM_CATEGORIES.map((category) => (
+        <section class="group" id={category.key}>
+          <h2 class="group__title">{category.label[lang]}</h2>
+          <div class="tablewrap">
+            <table class="dtable">
+              <thead>
+                <tr>
+                  <th scope="col">{t('平台', 'Platform')}</th>
+                  {target.isSelf && <th scope="col">{t('平台看到的出口', 'Egress it sees')}</th>}
+                  <th scope="col" class="num">{t('门槛', 'Threshold')}</th>
+                  <th scope="col">{t('要求', 'Requires')}</th>
+                  <th scope="col">{t('结论', 'Verdict')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PLATFORMS.filter((p) => p.category === category.key).map((p) => {
+                  const v = verdicts.get(p.id)!;
+                  return (
+                    <tr data-platform={p.id} data-trace={p.traceHost} data-level={v.level}>
+                      <th scope="row">{p.name}</th>
+                      {target.isSelf && (
+                        <td data-pf-exit>
+                          <span class="dim">{p.traceHost ? t('待检测', 'Pending') : t('读不到，按当前 IP 推断', 'Not readable; inferred from current IP')}</span>
+                        </td>
+                      )}
+                      <td class="num">{p.minScore}</td>
+                      <td>{p.requires.map((r) => REQUIREMENT_LABELS[r][lang]).join(sep)}</td>
+                      <td data-pf-result>
+                        <span class={`tag ${TAG[v.level]}`}>{v.label}</span>
+                        {v.reasons.length > 0 && <span class="dtable__sub">{v.reasons.join(en ? '; ' : '；')}</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+    </div>
+  </div>
+
+  <article class="prose">
+    <h2>{t('结论怎么来的', 'How the verdict is reached')}</h2>
+    <ul>
+      <li>{t('每个平台有一个评分门槛和几项要求，都列在上面的表里。IP 的评分低于门槛，或有一项要求不满足，记为不达标。', 'Each platform has a score threshold and a few requirements, all listed in the tables above. An IP is below the bar when its score is under the threshold or a requirement is not met.')}</li>
+      <li>{t('企业或教育网络、广播 IP 不直接判不达标，记为有风险。', 'Business or education networks and geo-announced IPs are not failed outright; they are marked at risk.')}</li>
+      <li>{t('评分所需的数据缺任何一项时结论是无法判断，缺的数据不当作正常。IPv6 地址没有评分，所有平台都是无法判断。', 'When any input the score needs is missing the verdict is undetermined; missing data is never treated as clean. IPv6 addresses get no score, so every platform is undetermined.')}</li>
+    </ul>
+
+    <h2>{t('平台看到的出口', 'The egress a platform sees')}</h2>
+    <ul>
+      <li>{t('Wise、Upwork、X 等平台接在 Cloudflare 后面，浏览器直接向它们请求 /cdn-cgi/trace，读到的是平台实际看到的 IP。分流规则把不同平台送去不同出口时，这个 IP 会和页面顶部的不一样，结论按平台看到的那个 IP 重新计算。', 'Wise, Upwork, X and others sit behind Cloudflare. Your browser requests /cdn-cgi/trace from them directly and reads the IP the platform actually sees. When routing rules send platforms through different egresses, that IP differs from the one at the top of the page, and the verdict is recomputed for it.')}</li>
+      <li>{t('平台走 IPv6、页面顶部是 IPv4 时，IPv6 没有评分，结论仍按页面顶部的 IPv4。', 'When a platform is reached over IPv6 and the IP at the top of the page is IPv4, the verdict still uses that IPv4, because IPv6 addresses get no score.')}</li>
+      <li>{t('Amazon、PayPal、TikTok 等平台没有这类接口，浏览器读不到它们看到的 IP，结论按页面顶部的 IP 推断。', 'Amazon, PayPal, TikTok and others expose no such endpoint, so the browser cannot read the IP they see. Their verdicts are inferred from the IP at the top of the page.')}</li>
+      <li>{t('请求由浏览器直接发给各平台，只读取返回的 IP、地区和机房，不登录、不带 Cookie。', 'Requests go straight from your browser to each platform and only read the IP, region and data center returned. No login, no cookies.')}</li>
+    </ul>
+
+    <h2>{t('局限', 'Limits')}</h2>
+    <ul>
+      <li>{t('门槛和要求是 JudgeIP 定的经验值，不是平台的官方规则。平台风控还看账号历史、设备指纹、支付信息和行为，IP 达标不保证账号安全，不达标也不一定被限制。', 'Thresholds and requirements are JudgeIP\'s own estimates, not official platform rules. Platforms also weigh account history, device fingerprint, payment details and behaviour. Meeting the bar does not make an account safe, and falling below it does not mean it will be restricted.')}</li>
+      <li>{t('代理标记来自免费数据库，住宅代理和新上线的节点经常不在库里。', 'Proxy flags come from free databases, which often miss residential proxies and new nodes.')}</li>
+    </ul>
+    <p>
+      <a href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={href('/egress')}>{t('我的出口', 'My egress')}</a> · <a href={href('/check')}>{t('环境体检', 'Checkup')}</a>
+    </p>
+  </article>
+</IpcxLayout>

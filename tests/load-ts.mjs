@@ -1,5 +1,17 @@
 import { readFile } from 'node:fs/promises';
-import { stripTypeScriptTypes } from 'node:module';
+import { registerHooks, stripTypeScriptTypes } from 'node:module';
+
+// Source files import each other without an extension; let Node find the .ts file behind those specifiers.
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    try {
+      return nextResolve(specifier, context);
+    } catch (error) {
+      if (!specifier.startsWith('.') || /\.[cm]?[jt]s$/.test(specifier)) throw error;
+      return nextResolve(specifier + '.ts', context);
+    }
+  },
+});
 
 // Load isolated instances so in-memory caches cannot hide upstream failure cases.
 export async function loadTs(path) {

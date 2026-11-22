@@ -1,0 +1,195 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { getLang, localePath } from '../lib/i18n';
+import {
+  SCORE_BASE,
+  SCORE_MIN,
+  SCORE_MAX,
+  SCORE_DELTAS,
+  SCORE_GRADES,
+  SCORE_RULES,
+  clampScore,
+  formatDelta,
+} from '../lib/score-rules';
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const gradeOf = (score: number) => SCORE_GRADES.find((g) => score >= g.min)?.grade || 'F';
+const deltaClass = (delta: number) => (delta < 0 ? 'num is-minus' : delta > 0 ? 'num is-plus' : 'num');
+
+/* 等级表的分数区间：上界是上一档的下限减一 */
+const gradeRows = SCORE_GRADES.map((g, i) => ({
+  grade: g.grade,
+  range: `${Math.max(g.min, SCORE_MIN)}–${i === 0 ? SCORE_MAX : SCORE_GRADES[i - 1].min - 1}`,
+}));
+
+/* 例子直接用规则里的分值算，规则调整后这里跟着变 */
+const examples = [
+  { label: t('家庭宽带，注册地与定位一致，无代理、无黑名单', 'Residential, registry matches location, no proxy, not listed'), deltas: [] as number[] },
+  { label: t('移动网络，其余同上', 'Mobile network, otherwise the same'), deltas: [SCORE_DELTAS.mobile] },
+  { label: t('云主机，其余正常', 'Cloud hosting, otherwise clean'), deltas: [SCORE_DELTAS.hosting] },
+  { label: t('云主机，同时被标记为 VPN', 'Cloud hosting flagged as a VPN'), deltas: [SCORE_DELTAS.hosting, SCORE_DELTAS.proxy] },
+  {
+    label: t('云主机、广播 IP、VPN、命中黑名单', 'Cloud hosting, geo-announced, VPN, blocklisted'),
+    deltas: [SCORE_DELTAS.hosting, SCORE_DELTAS.nonNative, SCORE_DELTAS.proxy, SCORE_DELTAS.reputation],
+  },
+].map((e) => {
+  const score = clampScore(SCORE_BASE + e.deltas.reduce((a, b) => a + b, 0));
+  return { ...e, score, grade: gradeOf(score), sum: [String(SCORE_BASE), ...e.deltas.map((d) => formatDelta(d))].join(' ') };
+});
+---
+
+<IpcxLayout
+  title={t('IP 评分规则 - 每一项加减分和依据 - JudgeIP', 'IP Scoring Rules - Every Deduction and Its Basis - JudgeIP')}
+  description={t(
+    `JudgeIP 的 IP 评分怎么算：从 ${SCORE_BASE} 分起，按网络类型、原生 IP、代理、黑名单和开放端口逐项加减，列出每一项的分值、判断依据和数据来源。`,
+    `How JudgeIP scores an IP: start at ${SCORE_BASE}, then add or subtract for network type, native IP, proxy, blocklists and open ports. Every value, basis and data source is listed.`,
+  )}
+  canonicalPath="/scoring"
+  bodyClass="page-scoring"
+  currentLabel={t('评分规则', 'Scoring rules')}
+  activeNav="/scoring"
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('评分规则', 'Scoring rules')}</h1>
+    <p class="hero__lede">
+      {t(
+        `每个 IP 从 ${SCORE_BASE} 分起算，按下面五项加减，结果限制在 ${SCORE_MIN}–${SCORE_MAX} 之间。报告里的“评分明细”逐项列出实际加减的分数和原始数据。`,
+        `Every IP starts at ${SCORE_BASE}. The five items below add or subtract points, and the result is kept within ${SCORE_MIN}–${SCORE_MAX}. The "Score breakdown" in each report lists the points actually applied and the raw data behind them.`,
+      )}
+    </p>
+  </section>
+
+  <div class="groups">
+    <section class="group" id="rules">
+      <h2 class="group__title">{t('加减分项', 'Score items')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('项目', 'Item')}</th>
+              <th scope="col">{t('条件', 'Condition')}</th>
+              <th scope="col" class="num">{t('分值', 'Points')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SCORE_RULES.map((rule) =>
+              rule.rows.map((row, i) => (
+                <tr>
+                  {i === 0 && <th scope="row" rowspan={rule.rows.length}>{rule.label[lang]}</th>}
+                  <td>{row.when[lang]}</td>
+                  <td class={deltaClass(row.delta)}>{formatDelta(row.delta)}</td>
+                </tr>
+              )),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="group" id="basis">
+      <h2 class="group__title">{t('判断依据', 'How each item is decided')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('项目', 'Item')}</th>
+              <th scope="col">{t('依据', 'Basis')}</th>
+              <th scope="col">{t('数据来源', 'Sources')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SCORE_RULES.map((rule) => (
+              <tr>
+                <th scope="row">{rule.label[lang]}</th>
+                <td>{rule.basis[lang]}</td>
+                <td>{rule.sources.join(en ? ', ' : '、')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="group__lede">
+        {t('各数据来源提供什么、多久更新一次，见', 'What each source provides and how fresh it is:')}
+        <a href={href('/data')}>{t('数据来源与更新', 'Data sources and freshness')}</a>{t('。', '.')}
+      </p>
+    </section>
+
+    <section class="group" id="grades">
+      <h2 class="group__title">{t('等级', 'Grades')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('等级', 'Grade')}</th>
+              <th scope="col" class="num">{t('分数', 'Score')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {gradeRows.map((g) => (
+              <tr>
+                <th scope="row" class="mono">{g.grade}</th>
+                <td class="num">{g.range}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="group" id="examples">
+      <h2 class="group__title">{t('算例', 'Worked examples')}</h2>
+      <div class="tablewrap">
+        <table class="dtable">
+          <thead>
+            <tr>
+              <th scope="col">{t('情况', 'Case')}</th>
+              <th scope="col">{t('计算', 'Calculation')}</th>
+              <th scope="col" class="num">{t('得分', 'Score')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {examples.map((e) => (
+              <tr>
+                <td>{e.label}</td>
+                <td class="mono">{e.sum}</td>
+                <td class="num">{e.score} · {e.grade}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="group" id="no-score">
+      <h2 class="group__title">{t('什么时候不出分', 'When no score is given')}</h2>
+      <div class="prose prose--page">
+        <p>{t('评分所需的数据缺任何一项，报告只显示已经拿到的字段，不给分数。缺的数据不按“正常”处理。', 'If any input the score needs is missing, the report shows the fields it did get and gives no score. Missing data is never treated as clean.')}</p>
+        <ul>
+          <li>{t('IPv6 地址：Shodan InternetDB 和四个 DNSBL 只覆盖 IPv4，端口与黑名单两项查不了。', 'IPv6 addresses: Shodan InternetDB and the four DNSBLs cover IPv4 only, so ports and blocklists cannot be checked.')}</li>
+          <li>{t('网络类型无法判定：ASN 表和运营商名称都对不上，又没有 hosting / mobile 标记。', 'Network type undetermined: neither the ASN table nor the operator name matches, and there is no hosting / mobile flag.')}</li>
+          <li>{t('拿不到注册国家或定位国家，原生 IP 一项无法比较。', 'The registered or geolocated country is missing, so the native IP item cannot be compared.')}</li>
+          <li>{t('任一 DNSBL 超时或拒绝查询。', 'Any DNSBL times out or refuses the query.')}</li>
+          <li>{t('Shodan InternetDB 超时或报错。它明确答复“没有这个 IP 的记录”时，按没有开放端口计算，照常出分。', 'Shodan InternetDB times out or errors. When it answers that it has no record of the IP, that counts as no open ports and the score is still given.')}</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="group" id="limits">
+      <h2 class="group__title">{t('分数不代表什么', 'What the score does not tell you')}</h2>
+      <div class="prose prose--page">
+        <ul>
+          <li>{t('这是 JudgeIP 自己的规则，不是任何平台的官方风控分。各平台还会看账号、设备和行为，同一个 IP 在不同平台的结果可以不同。', 'These are JudgeIP\'s own rules, not any platform\'s official risk score. Platforms also weigh account, device and behaviour, so one IP can fare differently from site to site.')}</li>
+          <li>{t('代理标记来自免费数据库，住宅代理和新上线的节点经常不在库里。没有标记不等于不是代理。', 'Proxy flags come from free databases, which often miss residential proxies and new nodes. No flag does not mean not a proxy.')}</li>
+          <li>{t('端口是历史扫描结果，黑名单是查询当时的状态，两者都会变。', 'Ports come from past scans and blocklist status is as of the lookup. Both change over time.')}</li>
+        </ul>
+        <p>
+          <a href={href('/')}>{t('查看本机 IP 的评分明细', 'See the score breakdown for your IP')}</a>
+        </p>
+      </div>
+    </section>
+  </div>
+</IpcxLayout>
