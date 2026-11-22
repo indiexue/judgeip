@@ -3,7 +3,10 @@
 (function () {
   'use strict';
 
-  var T = window.T || function (zh) { return zh; };
+  /* 统一读最新 window.T，避免 SPA 切换中英文后仍用旧语言闭包 */
+  var T = function (zh, en) {
+    return window.T ? window.T(zh, en) : zh;
+  };
 
   /* 复制当前 IP */
   document.addEventListener('click', function (event) {
@@ -114,77 +117,97 @@
      缩放或非整数的设备像素比会让视口宽度落在 1030 与 1031 之间，两条各写各的就会有一段谁都不认。 */
   var NAV_COLLAPSED = '(max-width: 1080px)';
 
-  /* 窄屏导航的开合。样式那边只在 :root.has-js 且视口落在 NAV_COLLAPSED 时才把导航折叠起来，
-     所以这里不判断屏幕宽度：宽屏上按钮根本不显示，点不到。
-     开着的菜单在四种情况下自动收起——点了菜单外面、按下 Esc、焦点被 Tab 移出导航、窗口被拉宽到不再折叠。 */
-  var navbar = document.querySelector('[data-navbar]');
-  var navToggle = navbar && navbar.querySelector('[data-nav-toggle]');
-  if (navbar && navToggle) {
-    var NAV_LABEL = { open: T('关闭导航菜单', 'Close menu'), closed: T('打开导航菜单', 'Open menu') };
+  /* 窄屏导航的开合（使用事件委托，支持 SPA 切换语言重建顶栏后继续生效） */
+  var initNavbarControls = function () {
+    var navbar = document.querySelector('[data-navbar]');
+    var navToggle = navbar && navbar.querySelector('[data-nav-toggle]');
+    if (!navbar || !navToggle) return;
 
     var setNavOpen = function (open) {
       navbar.classList.toggle('is-open', open);
       navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      navToggle.setAttribute('aria-label', open ? NAV_LABEL.open : NAV_LABEL.closed);
+      navToggle.setAttribute('aria-label', open ? T('关闭导航菜单', 'Close menu') : T('打开导航菜单', 'Open menu'));
     };
 
-    navToggle.addEventListener('click', function () {
-      setNavOpen(!navbar.classList.contains('is-open'));
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!navbar.classList.contains('is-open')) return;
-      if (navbar.contains(event.target)) return;
-      setNavOpen(false);
-    });
-
-    document.addEventListener('keydown', function (event) {
-      if (event.key !== 'Escape' || !navbar.classList.contains('is-open')) return;
-      setNavOpen(false);
-      navToggle.focus();
-    });
-
-    /* 菜单是盖在正文上的一张卡片：Tab 过了最后一项，焦点落到卡片底下的正文里，不收起就正好被它挡住。
-       relatedTarget 为空（切到别的窗口、点了页面上不可聚焦的地方）不算离开——后者由上面的点击处理收起。 */
-    navbar.addEventListener('focusout', function (event) {
-      if (!navbar.classList.contains('is-open')) return;
-      var next = event.relatedTarget;
-      if (!next || navbar.contains(next)) return;
-      setNavOpen(false);
-    });
-
-    if (window.matchMedia) {
-      var narrow = window.matchMedia(NAV_COLLAPSED);
-      var onWide = function (query) { if (!query.matches) setNavOpen(false); };
-      if (narrow.addEventListener) narrow.addEventListener('change', onWide);
-      else if (narrow.addListener) narrow.addListener(onWide);
+    if (!navToggle.hasAttribute('data-nav-bound')) {
+      navToggle.setAttribute('data-nav-bound', '1');
+      navToggle.addEventListener('click', function () {
+        setNavOpen(!navbar.classList.contains('is-open'));
+      });
     }
-  }
 
-  /* 下拉组（宽屏）。展开本身是纯 CSS 的 :hover / :focus-within；这里只补两件 CSS 做不到的事：
-     - 触屏没有悬停：第一次点组标签只展开、不跳转，再点一次才去 /tools；
-     - aria-expanded 跟着真实状态走，读屏器能知道下面还有一层。
-     折叠态下组已经摊平：标签是菜单里普通的一项链接，没有弹出层可言，见下面的 syncCollapsed。 */
-  var groups = document.querySelectorAll('[data-nav-group]');
-  if (groups.length && window.matchMedia) {
+    if (!navbar.hasAttribute('data-nav-global-bound')) {
+      navbar.setAttribute('data-nav-global-bound', '1');
+      document.addEventListener('click', function (event) {
+        var nb = document.querySelector('[data-navbar]');
+        var nt = nb && nb.querySelector('[data-nav-toggle]');
+        if (!nb || !nt || !nb.classList.contains('is-open')) return;
+        if (nb.contains(event.target)) return;
+        nb.classList.remove('is-open');
+        nt.setAttribute('aria-expanded', 'false');
+        nt.setAttribute('aria-label', T('打开导航菜单', 'Open menu'));
+      });
+
+      document.addEventListener('keydown', function (event) {
+        var nb = document.querySelector('[data-navbar]');
+        var nt = nb && nb.querySelector('[data-nav-toggle]');
+        if (event.key !== 'Escape' || !nb || !nt || !nb.classList.contains('is-open')) return;
+        nb.classList.remove('is-open');
+        nt.setAttribute('aria-expanded', 'false');
+        nt.setAttribute('aria-label', T('打开导航菜单', 'Open menu'));
+        nt.focus();
+      });
+
+      navbar.addEventListener('focusout', function (event) {
+        var nt = navbar.querySelector('[data-nav-toggle]');
+        if (!nt || !navbar.classList.contains('is-open')) return;
+        var next = event.relatedTarget;
+        if (!next || navbar.contains(next)) return;
+        navbar.classList.remove('is-open');
+        nt.setAttribute('aria-expanded', 'false');
+        nt.setAttribute('aria-label', T('打开导航菜单', 'Open menu'));
+      });
+
+      if (window.matchMedia) {
+        var narrow = window.matchMedia(NAV_COLLAPSED);
+        var onWide = function (query) {
+          var nb = document.querySelector('[data-navbar]');
+          var nt = nb && nb.querySelector('[data-nav-toggle]');
+          if (!query.matches && nb && nt) {
+            nb.classList.remove('is-open');
+            nt.setAttribute('aria-expanded', 'false');
+            nt.setAttribute('aria-label', T('打开导航菜单', 'Open menu'));
+          }
+        };
+        if (narrow.addEventListener) narrow.addEventListener('change', onWide);
+        else if (narrow.addListener) narrow.addListener(onWide);
+      }
+    }
+  };
+  initNavbarControls();
+
+  /* 下拉组（宽屏） */
+  var initNavGroups = function () {
+    var groups = document.querySelectorAll('[data-nav-group]');
+    if (!groups.length || !window.matchMedia) return;
     var hoverNone = window.matchMedia('(hover: none)');
     var collapsed = window.matchMedia(NAV_COLLAPSED);
 
-    /* 折叠菜单里组标签「全部工具」就是 /tools 这一页的链接，必须照常可点、可 Tab 到；
-       但子项已经直接列在它下面，不存在「弹出」这回事——留着 aria-haspopup / aria-expanded，
-       读屏器会念「链接，有弹出菜单，已收起」，访客按回车等的是一个永远不会出现的菜单。折叠时去掉这两项，宽屏再补回来。 */
+    var setExpanded = function (toggle, open) {
+      if (collapsed.matches) return;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
     var syncCollapsed = function () {
-      Array.prototype.forEach.call(groups, function (group) {
+      var curGroups = document.querySelectorAll('[data-nav-group]');
+      Array.prototype.forEach.call(curGroups, function (group) {
         var t = group.querySelector('[data-nav-group-toggle]');
         if (!t) return;
         if (collapsed.matches) {
           t.removeAttribute('aria-haspopup');
           t.removeAttribute('aria-expanded');
-          /* 触屏上点开的宽屏下拉，到了折叠菜单里没有意义：清掉，平板转回横屏时才不会冒出一张刚才没收的卡片 */
           group.classList.remove('is-open');
         } else {
-          /* 拉宽回来时焦点或鼠标可能正停在组里，CSS 的 :focus-within / :hover 已经把卡片亮出来了，
-             aria-expanded 要照实写，不能一律「已收起」。is-dismissed 压过其余几种（与 app.css 的先后一致）。 */
           var hovered = false;
           try { hovered = group.matches(':hover'); } catch (e) { hovered = false; }
           var shown = !group.classList.contains('is-dismissed') &&
@@ -195,26 +218,20 @@
       });
     };
     syncCollapsed();
-    if (collapsed.addEventListener) collapsed.addEventListener('change', syncCollapsed);
-    else if (collapsed.addListener) collapsed.addListener(syncCollapsed);
-
-    /* 下面几处事件在折叠态也会触发（焦点离开、点页面别处、Esc），
-       一律经这里写 aria-expanded，免得把 syncCollapsed 刚摘掉的属性又写回去 */
-    var setExpanded = function (toggle, open) {
-      if (collapsed.matches) return;
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    };
 
     var closeGroups = function (except) {
-      for (var g = 0; g < groups.length; g++) {
-        if (groups[g] === except) continue;
-        groups[g].classList.remove('is-open');
-        var t = groups[g].querySelector('[data-nav-group-toggle]');
+      var curGroups = document.querySelectorAll('[data-nav-group]');
+      for (var g = 0; g < curGroups.length; g++) {
+        if (curGroups[g] === except) continue;
+        curGroups[g].classList.remove('is-open');
+        var t = curGroups[g].querySelector('[data-nav-group-toggle]');
         if (t) setExpanded(t, false);
       }
     };
 
     Array.prototype.forEach.call(groups, function (group) {
+      if (group.hasAttribute('data-nav-group-bound')) return;
+      group.setAttribute('data-nav-group-bound', '1');
       var toggle = group.querySelector('[data-nav-group-toggle]');
       if (!toggle) return;
 
@@ -235,7 +252,6 @@
       });
 
       toggle.addEventListener('click', function (event) {
-        /* 只管宽屏上的触屏：折叠菜单里标签就是一项普通链接，点了照常去 /tools */
         if (!hoverNone.matches || collapsed.matches || group.classList.contains('is-open')) return;
         event.preventDefault();
         closeGroups(group);
@@ -244,33 +260,37 @@
       });
     });
 
-    document.addEventListener('click', function (event) {
-      if (event.target.closest && event.target.closest('[data-nav-group]')) return;
-      closeGroups(null);
-    });
+    if (!window.__judgeNavGroupGlobalBound) {
+      window.__judgeNavGroupGlobalBound = true;
+      if (collapsed.addEventListener) collapsed.addEventListener('change', syncCollapsed);
+      else if (collapsed.addListener) collapsed.addListener(syncCollapsed);
 
-    /* 键盘用户按 Esc：焦点退回组标签，并给组挂上 is-dismissed——
-       否则焦点还在组里，:focus-within 会让菜单一直开着。焦点离开整组时再摘掉。 */
-    document.addEventListener('keydown', function (event) {
-      if (event.key !== 'Escape') return;
-      var open = document.activeElement && document.activeElement.closest
-        ? document.activeElement.closest('[data-nav-group]') : null;
-      closeGroups(null);
+      document.addEventListener('click', function (event) {
+        if (event.target.closest && event.target.closest('[data-nav-group]')) return;
+        closeGroups(null);
+      });
 
-      /* 鼠标悬停打开的菜单：焦点不在组里，同样要收起（WCAG 1.4.13），直到鼠标移出再恢复 */
-      var hovered = null;
-      try { hovered = document.querySelector('[data-nav-group]:hover'); } catch (e) { hovered = null; }
-      if (hovered && hovered !== open) hovered.classList.add('is-dismissed');
+      document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') return;
+        var open = document.activeElement && document.activeElement.closest
+          ? document.activeElement.closest('[data-nav-group]') : null;
+        closeGroups(null);
 
-      if (!open) return;
-      open.classList.add('is-dismissed');
-      var t = open.querySelector('[data-nav-group-toggle]');
-      if (t) {
-        setExpanded(t, false);
-        t.focus();
-      }
-    });
-  }
+        var hovered = null;
+        try { hovered = document.querySelector('[data-nav-group]:hover'); } catch (e) { hovered = null; }
+        if (hovered && hovered !== open) hovered.classList.add('is-dismissed');
+
+        if (!open) return;
+        open.classList.add('is-dismissed');
+        var t = open.querySelector('[data-nav-group-toggle]');
+        if (t) {
+          setExpanded(t, false);
+          t.focus();
+        }
+      });
+    }
+  };
+  initNavGroups();
 
   /* ---------------------------------------------------------------- 浅色 / 深色
 
@@ -284,10 +304,12 @@
      这一段与 boot.js 里的首帧判定是同一套规则，改一处必须两边一起改。 */
   (function () {
     var THEME_KEY = 'judgeip-theme';
-    var THEME_LABEL = { light: T('切换到深色模式', 'Switch to dark mode'), dark: T('切换到浅色模式', 'Switch to light mode') };
     var root = document.documentElement;
-    var button = document.querySelector('[data-theme-toggle]');
     var prefersDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+    var themeLabel = function (theme) {
+      return theme === 'dark' ? T('切换到浅色模式', 'Switch to light mode') : T('切换到深色模式', 'Switch to dark mode');
+    };
 
     var systemTheme = function () {
       return prefersDark && prefersDark.matches ? 'dark' : 'light';
@@ -306,19 +328,16 @@
       return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     };
 
-    /* 按钮说的是「点下去会怎样」，所以标签跟着当前主题反着写。
-       不再另挂 aria-pressed：标签已经随状态在变，再报一个「已按下」，深色时读屏器念出来的是
-       「切换到浅色模式，已按下」——听上去像浅色正开着。状态与会变的标签二选一，这里留标签 */
     var syncButton = function (theme) {
+      var button = document.querySelector('[data-theme-toggle]');
       if (!button) return;
-      button.setAttribute('aria-label', THEME_LABEL[theme]);
-      button.setAttribute('title', THEME_LABEL[theme]);
+      var label = themeLabel(theme);
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
     };
 
     var applyTheme = function (theme) {
       if (theme !== currentTheme()) {
-        /* 换色的这一帧停掉全站的过渡（样式见 app.css 的 .is-theme-switching），等新颜色画出来再放开。
-           等两帧：第一帧的回调跑在这次样式重算之前，第二帧到来时颜色才确实已经换完 */
         root.classList.add('is-theme-switching');
         var release = function () { root.classList.remove('is-theme-switching'); };
         if (window.requestAnimationFrame) {
@@ -329,7 +348,6 @@
       }
 
       root.setAttribute('data-theme', theme);
-      /* <meta name="color-scheme"> 与 <meta name="theme-color">：两套的值都写在标签自己的 data-light / data-dark 上 */
       var metas = document.querySelectorAll('meta[data-' + theme + ']');
       for (var i = 0; i < metas.length; i++) {
         metas[i].setAttribute('content', metas[i].getAttribute('data-' + theme));
@@ -337,38 +355,37 @@
       syncButton(theme);
     };
 
-    /* 按存储与系统偏好重新判定一遍：系统偏好变了、别的标签页改了记录、从 bfcache 回来，走的都是这一条 */
     var resolveTheme = function () {
       applyTheme(storedTheme() || systemTheme());
     };
 
     syncButton(currentTheme());
 
-    if (button) {
-      button.addEventListener('click', function () {
-        var next = currentTheme() === 'dark' ? 'light' : 'dark';
-        try {
-          if (next === systemTheme()) window.localStorage.removeItem(THEME_KEY);
-          else window.localStorage.setItem(THEME_KEY, next);
-        } catch (e) { /* 存不了就只在这一页生效 */ }
-        applyTheme(next);
-      });
+    document.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('[data-theme-toggle]') : null;
+      if (!btn) return;
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      try {
+        if (next === systemTheme()) window.localStorage.removeItem(THEME_KEY);
+        else window.localStorage.setItem(THEME_KEY, next);
+      } catch (e) { /* 存不了就只在这一页生效 */ }
+      applyTheme(next);
+    });
 
-      /* 焦点在按钮上按住回车不放，浏览器会按键盘的重复速率一下一下地触发 click：
-         整页在两套配色之间每秒闪十几二十次，/cloudflare 上两张 Turnstile 卡片还跟着反复重画、反复复核。
-         所以只认第一下，挡掉回车的自动重复。条件必须写到「回车」为止：空格是松开才触发，本来就只算一次；
-         别的键不能拦——按住 Tab 一路走过这枚按钮时，拦下重复的那一下，焦点就卡在这里出不去了 */
-      button.addEventListener('keydown', function (event) {
-        if (event.repeat && event.key === 'Enter') event.preventDefault();
-      });
-    }
+    document.addEventListener('keydown', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('[data-theme-toggle]') : null;
+      if (btn && event.repeat && event.key === 'Enter') event.preventDefault();
+    });
+
+    document.addEventListener('judgeip:after-swap', function () {
+      syncButton(currentTheme());
+    });
 
     if (prefersDark) {
       if (prefersDark.addEventListener) prefersDark.addEventListener('change', resolveTheme);
       else if (prefersDark.addListener) prefersDark.addListener(resolveTheme);
     }
 
-    /* key 为 null 是整个存储被清空（localStorage.clear()），同样要重新判定 */
     window.addEventListener('storage', function (event) {
       if (event.key === THEME_KEY || event.key === null) resolveTheme();
     });
@@ -398,6 +415,7 @@
 
      地址与字段名都从 data-* 读——它们和 CSP 放行的源出自同一份 PHP 常量（GeoSources）。
      每一条路都有时限，任何一行都不会停在「查询中…」。 */
+  var initGeoSection = function () {
   var geo = document.querySelector('[data-geo]');
   if (geo && window.fetch) {
     var geoIp = geo.getAttribute('data-ip') || '';
@@ -682,6 +700,8 @@
       });
     }
   }
+  };
+  initGeoSection();
 
   /* ---------------------------------------------------------------- 查询与人机验证
 
@@ -997,12 +1017,21 @@
     document.addEventListener('load', onEvent, true);
     document.addEventListener('error', onEvent, true);
 
-    /* 本脚本是 defer 的，缓存里的图标可能早就加载完了，事件已经错过：补扫一遍。
-       complete 却没有尺寸的这里不摘：它可能是失败，也可能是还没轮到加载的 loading="lazy" 图片
-       （各浏览器对后者报的 complete 不尽一致），摘错了那一格就永远没有图标；真失败的留着也是透明的，不碍事。 */
-    var icons = document.querySelectorAll('img[data-favicon]');
-    for (var i = 0; i < icons.length; i++) {
-      if (icons[i].complete && icons[i].naturalWidth > 0) settle(icons[i], true);
-    }
+    /* 本脚本是 defer 的，缓存里的图标可能早就加载完了，事件已经错过：补扫一遍。 */
+    var scanFavicons = function () {
+      var icons = document.querySelectorAll('img[data-favicon]');
+      for (var i = 0; i < icons.length; i++) {
+        if (icons[i].complete && icons[i].naturalWidth > 0) settle(icons[i], true);
+      }
+    };
+    scanFavicons();
+    document.addEventListener('judgeip:after-swap', function (event) {
+      if (event.detail && event.detail.langChanged) {
+        initNavbarControls();
+        initNavGroups();
+      }
+      initGeoSection();
+      scanFavicons();
+    });
   })();
 })();

@@ -1017,7 +1017,16 @@
 
   /* 停在本页时在地址栏改了 #host= 再回车，浏览器只换片段、不重新加载页面，只会触发 hashchange。
      测量进行中不动输入框：那一轮测的是什么，以「目标」一栏为准 */
-  window.addEventListener('hashchange', function () {
+  var onHashChange = function () {
+    if (!input.isConnected) {
+      window.removeEventListener('hashchange', onHashChange);
+      return;
+    }
     if (!running) applyPreset();
+  };
+  window.addEventListener('hashchange', onHashChange);
+  document.addEventListener('judgeip:before-swap', function onLeave() {
+    window.removeEventListener('hashchange', onHashChange);
+    document.removeEventListener('judgeip:before-swap', onLeave);
   });
 })();

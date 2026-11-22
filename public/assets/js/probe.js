@@ -10,7 +10,7 @@
 (function (window, document) {
   'use strict';
 
-  var T = window.T || function (zh) { return zh; };
+  var T = function (zh, en) { return window.T ? window.T(zh, en) : zh; };
 
   var P = {};
 

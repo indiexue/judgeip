@@ -616,12 +616,31 @@
     });
   }
 
-  window.addEventListener('popstate', function (event) {
+  var onPopState = function (event) {
+    if (!heroBox.isConnected) return;
+    /* 只有回到首页路径（/ 或 /en）才由 ip-search.js 就地流式更新；跨路由后退交给 spa.js */
+    var path = window.location.pathname;
+    if (path !== '/' && path !== '/en' && path !== '/en/') return;
     var params = new URLSearchParams(window.location.search);
     var q = (event.state && event.state.ip !== undefined)
       ? event.state.ip
       : (params.get('ip') || params.get('q') || '').trim();
     if (searchInput) searchInput.value = q;
     runStreamQuery(q || 'me', { fresh: false, skipHistory: true });
-  });
+  };
+  window.addEventListener('popstate', onPopState);
+
+  var onBeforeSwap = function () {
+    if (activeController) {
+      try { activeController.abort(); } catch (e) {}
+      activeController = null;
+    }
+    if (elapsedTimer) {
+      window.clearInterval(elapsedTimer);
+      elapsedTimer = null;
+    }
+    window.removeEventListener('popstate', onPopState);
+    document.removeEventListener('judgeip:before-swap', onBeforeSwap);
+  };
+  document.addEventListener('judgeip:before-swap', onBeforeSwap);
 })();

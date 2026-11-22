@@ -699,10 +699,19 @@
      这等于替访客按了一次「重置」，会多花一次服务端复核；换主题不是高频动作，限流桶（每小时 60 次）够用。
      还没渲染出组件的卡片（在等 api.js、脚本没加载上）不用管：轮到它渲染时读的就是当时的主题。 */
   if (window.MutationObserver) {
-    new MutationObserver(function () {
+    var themeObserver = new MutationObserver(function () {
+      if (!cards.length || !cards[0].root || !cards[0].root.isConnected) {
+        themeObserver.disconnect();
+        return;
+      }
       cards.forEach(function (card) {
         if (card.widget !== null && card.theme !== pageTheme()) start(card);
       });
-    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    document.addEventListener('judgeip:before-swap', function onLeave() {
+      themeObserver.disconnect();
+      document.removeEventListener('judgeip:before-swap', onLeave);
+    });
   }
 })();

@@ -100,10 +100,19 @@
     return entry.node;
   }
 
-  document.addEventListener('click', function (event) {
+  var onMaskClick = function (event) {
+    if (!root.isConnected) {
+      document.removeEventListener('click', onMaskClick);
+      return;
+    }
     var target = event.target;
     if (!target || !target.closest || !target.closest('[data-mask-toggle]')) return;
     window.setTimeout(function () { ipNodes.forEach(paintIp); }, 0);
+  };
+  document.addEventListener('click', onMaskClick);
+  document.addEventListener('judgeip:before-swap', function onLeave() {
+    document.removeEventListener('click', onMaskClick);
+    document.removeEventListener('judgeip:before-swap', onLeave);
   });
 
   var samePrefix64 = P.samePrefix64;
