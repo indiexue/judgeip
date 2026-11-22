@@ -235,6 +235,71 @@ async function fetchShodan<T>(ipv4: string): Promise<T | null> {
   }
 }
 
+const ARIN_COUNTRY_NAMES: Record<string, string> = {
+  'UNITED STATES': 'US',
+  'USA': 'US',
+  'CANADA': 'CA',
+  'PUERTO RICO': 'PR',
+  'VIRGIN ISLANDS': 'VI',
+  'BERMUDA': 'BM',
+  'BAHAMAS': 'BS',
+  'JAMAICA': 'JM',
+  'CAYMAN ISLANDS': 'KY',
+  'BARBADOS': 'BB',
+};
+
+function parseRdapFallback(rdap: {
+  country?: string;
+  port43?: string;
+  name?: string;
+  startAddress?: string;
+  endAddress?: string;
+  entities?: Array<{ vcardArray?: [string, Array<[string, Record<string, unknown>, string, unknown]>] }>;
+} | null): { rirName: string; rirCountry: string; lines: FactorEvidence[] } {
+  if (!rdap || typeof rdap !== 'object') return { rirName: '', rirCountry: '', lines: [] };
+  const p43 = String(rdap.port43 || '').toLowerCase();
+  const rirName = p43.includes('arin') ? 'ARIN'
+    : p43.includes('apnic') ? 'APNIC'
+      : p43.includes('ripe') ? 'RIPE NCC'
+        : p43.includes('lacnic') ? 'LACNIC'
+          : p43.includes('afrinic') ? 'AFRINIC' : '';
+
+  let rirCountry = '';
+  const topCountry = String(rdap.country || '').trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(topCountry) && topCountry !== 'EU') {
+    rirCountry = topCountry;
+  } else if (Array.isArray(rdap.entities)) {
+    for (const ent of rdap.entities) {
+      for (const prop of ent?.vcardArray?.[1] || []) {
+        if (prop[0] !== 'adr') continue;
+        const label = String((prop[1] as { label?: string })?.label || '').trim();
+        const lastLine = label.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).pop()?.toUpperCase() || '';
+        if (/^[A-Z]{2}$/.test(lastLine) && lastLine !== 'EU') {
+          rirCountry = lastLine;
+          break;
+        }
+        if (ARIN_COUNTRY_NAMES[lastLine]) {
+          rirCountry = ARIN_COUNTRY_NAMES[lastLine];
+          break;
+        }
+      }
+      if (rirCountry) break;
+    }
+  }
+
+  const lines: FactorEvidence[] = [];
+  if (rdap.startAddress && rdap.endAddress) {
+    lines.push({ source: 'RDAP', field: 'range', value: `${rdap.startAddress} - ${rdap.endAddress}` });
+  }
+  if (rdap.name) {
+    lines.push({ source: 'RDAP', field: 'name', value: String(rdap.name).slice(0, 120) });
+  }
+  if (rirCountry) {
+    lines.push({ source: 'RDAP', field: 'country', value: rirCountry });
+  }
+  return { rirName, rirCountry, lines };
+}
+
 async function fetchRirAndRouting(ip: string): Promise<{
   rirName?: string;
   rirCountry?: string;
@@ -249,6 +314,11 @@ async function fetchRirAndRouting(ip: string): Promise<{
     data?: {
       authorities?: string[];
       records?: Array<Array<{ key?: string; value?: string }>>;
+    };
+  }
+  interface RipeRir {
+    data?: {
+      rirs?: Array<{ rir?: string; country?: string; resource?: string }>;
     };
   }
   interface RipeNetInfo {
@@ -269,9 +339,9 @@ async function fetchRirAndRouting(ip: string): Promise<{
   }
 
   const [whoisResp, netResp, rdnsResp] = await Promise.all([
-    fetchJson<RipeWhois>(`https://stat.ripe.net/data/whois/data.json?resource=${encodeURIComponent(ip)}`, 2100),
-    fetchJson<RipeNetInfo>(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`, 1900),
-    fetchJson<RipeReverseDns>(`https://stat.ripe.net/data/reverse-dns-ip/data.json?resource=${encodeURIComponent(ip)}`, 1800),
+    fetchJson<RipeWhois>(`https://stat.ripe.net/data/whois/data.json?resource=${encodeURIComponent(ip)}`, 3200),
+    fetchJson<RipeNetInfo>(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`, 2600),
+    fetchJson<RipeReverseDns>(`https://stat.ripe.net/data/reverse-dns-ip/data.json?resource=${encodeURIComponent(ip)}`, 2200),
   ]);
 
   let rirName = '';
@@ -299,6 +369,34 @@ async function fetchRirAndRouting(ip: string): Promise<{
       }
       if (!abuseEmail && (k === 'abuse-mailbox' || k === 'orgabuseemail' || k === 'e-mail') && v.includes('@')) {
         abuseEmail = v;
+      }
+    }
+  }
+
+  // RIPEstat whois 偶发超时或未给 country 时，并发用 RDAP 与 RIPEstat RIR 分配表兜底
+  if (!rirCountry) {
+    const [rdapRaw, rirAlloc] = await Promise.all([
+      fetchJson<Parameters<typeof parseRdapFallback>[0]>(`https://rdap.org/ip/${encodeURIComponent(ip)}`, 2600),
+      fetchJson<RipeRir>(`https://stat.ripe.net/data/rir/data.json?resource=${encodeURIComponent(ip)}&lod=2`, 2200),
+    ]);
+    const fromRdap = parseRdapFallback(rdapRaw);
+    if (fromRdap.rirCountry) {
+      rirCountry = fromRdap.rirCountry;
+      if (!rirName && fromRdap.rirName) rirName = fromRdap.rirName;
+      for (const line of fromRdap.lines) {
+        if (whoisLines.length < 10) whoisLines.push(line);
+      }
+    } else {
+      const alloc = rirAlloc?.data?.rirs?.find((r) => r?.country && /^[a-zA-Z]{2}$/.test(r.country) && r.country.toUpperCase() !== 'EU');
+      if (alloc?.country) {
+        rirCountry = alloc.country.toUpperCase();
+        if (!rirName && alloc.rir) rirName = alloc.rir === 'RIPE' ? 'RIPE NCC' : alloc.rir;
+        if (alloc.resource && whoisLines.length < 10) {
+          whoisLines.push({ source: 'RIPEstat rir', field: 'resource', value: alloc.resource });
+        }
+        if (whoisLines.length < 10) {
+          whoisLines.push({ source: 'RIPEstat rir', field: 'country', value: rirCountry });
+        }
       }
     }
   }

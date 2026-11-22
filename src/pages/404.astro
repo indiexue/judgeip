@@ -1,0 +1,72 @@
+---
+import IpcxLayout from '../layouts/IpcxLayout.astro';
+import { getLang, localePath, pick } from '../lib/i18n';
+
+const lang = getLang(Astro.locals);
+const t = (zh: string, en: string) => pick(lang, zh, en);
+const href = (path: string) => localePath(path, lang);
+
+Astro.response.status = 404;
+---
+
+<IpcxLayout
+  title={t('404 页面不存在 · JudgeIP', '404 Not Found · JudgeIP')}
+  description={t('未找到请求的页面，可返回首页查 IP 或前往全部工具目录。', 'The requested page could not be found. Return home to check an IP or browse all tools.')}
+  canonicalPath="/404"
+  bodyClass="page-404"
+  currentLabel="404"
+  activeNav=""
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('页面不存在 (404)', 'Page not found (404)')}</h1>
+    <p class="hero__lede">
+      {t(
+        '这个地址没有对应的页面。你可以在下面直接查询任意 IPv4 / IPv6 地址，或前往常用检测工具。',
+        'There is no page at this address. Look up any IPv4 / IPv6 address below, or open one of the tools.',
+      )}
+    </p>
+  </section>
+
+  <form class="query" method="get" action={href('/')} role="search">
+    <div class="query__line">
+      <span class="query__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <path d="m20 20-4.9-4.9"></path>
+        </svg>
+      </span>
+      <input
+        class="query__input mono"
+        type="text"
+        name="ip"
+        placeholder={t('输入要查询的 IP：8.8.8.8 或 2400:3200::1', 'Enter an IP to look up: 8.8.8.8 or 2400:3200::1')}
+        autocomplete="off"
+        spellcheck="false"
+        aria-label={t('要查询的 IP 地址', 'IP address to look up')}
+      />
+      <button class="query__submit" type="submit">{t('查询', 'Look up')}</button>
+    </div>
+  </form>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">{t('常用入口', 'Popular Checks')}</h2>
+      <a class="panel__link" href={href('/tools')}>{t('全部工具 ›', 'All tools ›')}</a>
+    </div>
+    <div class="quick-grid">
+      {[
+        { path: '/', name: t('我的 IP 与评分证据', 'My IP & Score Evidence'), desc: t('查看当前出口 IP、纯净度分值与原始证据', 'Inspect your current IP, purity score & raw records') },
+        { path: '/egress', name: t('我的出口', 'My Egress'), desc: t('国内 / 国外 / WebRTC / DNS / AI 九通道汇总', '9-channel egress & split routing summary') },
+        { path: '/platforms', name: t('平台检测', 'Platform Check'), desc: t('PayPal / TikTok / Upwork 等 24 站门槛判定', '24 payment, e-commerce & social verdicts') },
+        { path: '/compare', name: t('多 IP 对比', 'Compare IPs'), desc: t('并排对比最多 6 个 IP 的评分与加减分', 'Side-by-side comparison for up to 6 IPs') },
+        { path: '/check', name: t('环境体检', 'Env Checkup'), desc: t('6 项网络与浏览器环境交叉体检', '6-point network & browser environment audit') },
+        { path: '/api-docs', name: 'CLI / API / MCP', desc: t('免密钥 curl 文本报告、JSON 接口与 MCP 服务', 'Keyless curl report, JSON API & MCP server') },
+      ].map((item) => (
+        <a class="quick-card" href={href(item.path)}>
+          <span class="quick-card__name">{item.name}</span>
+          <span class="quick-card__desc">{item.desc}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</IpcxLayout>

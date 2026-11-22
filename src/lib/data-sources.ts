@@ -45,10 +45,10 @@ export const REPORT_SOURCES: DataSource[] = [
   {
     name: 'RIPEstat',
     url: 'https://stat.ripe.net',
-    provides: { zh: 'RIR 注册机构与注册国家（whois）、BGP 前缀与起源 ASN（network-info）、PTR 反向解析、RPKI 校验结果', en: 'RIR and registered country (whois), BGP prefix and origin ASN (network-info), PTR record, RPKI validation result' },
+    provides: { zh: 'RIR 注册机构与注册国家（whois / rir，超时由 RDAP 兜底）、BGP 前缀与起源 ASN（network-info）、PTR 反向解析、RPKI 校验结果', en: 'RIR and registered country (whois / rir, with RDAP fallback on timeout), BGP prefix and origin ASN (network-info), PTR record, RPKI validation result' },
     scope: { zh: 'IPv4、IPv6', en: 'IPv4, IPv6' },
     freshness: { zh: '实时查询各 RIR 与路由采集点', en: 'Queried live against the RIRs and route collectors' },
-    timeoutMs: 2100,
+    timeoutMs: 3200,
   },
   {
     name: 'DNSBL',

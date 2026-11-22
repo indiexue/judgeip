@@ -135,9 +135,22 @@
     });
   }
 
+  function randomSubdomain32() {
+    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    var out = '';
+    if (window.crypto && window.crypto.getRandomValues) {
+      var bytes = new Uint8Array(32);
+      window.crypto.getRandomValues(bytes);
+      for (var i = 0; i < 32; i++) out += chars.charAt(bytes[i] % chars.length);
+      return out;
+    }
+    for (var j = 0; j < 32; j++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+  }
+
   function probeDnsLeak(clientIp) {
     var jobs = [0, 1, 2, 3].map(function () {
-      var sub = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      var sub = randomSubdomain32();
       return request('https://' + sub + '.edns.ip-api.com/json', {}, 'json', 4000)
         .catch(function () { return request('https://edns.ip-api.com/json?t=' + sub, {}, 'json', 4000); })
         .then(function (data) { return data && data.dns && data.dns.ip ? String(data.dns.ip) : ''; })

@@ -37,27 +37,27 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       : info.ip.split('.').slice(0, 2).join('.') + '.*.*'
     : info.ip;
 
-  const scoreColor = info.score === null ? '#94a3b8' : info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
+  const scoreColor = info.score === null ? '#a1a1aa' : info.scoreTone === 'good' ? '#4ade80' : info.scoreTone === 'warn' ? '#facc15' : '#f87171';
   const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative === null ? t('未知', 'Unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
   const loc = [info.countryZh, info.city !== '—' ? info.city : ''].filter(Boolean).join(' · ');
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240">
   <defs><clipPath id="card-meta-clip"><rect x="28" y="94" width="474" height="28"/></clipPath></defs>
-  <rect width="680" height="240" rx="14" fill="#0f172a"/>
-  <rect x="1" y="1" width="678" height="238" rx="13" fill="none" stroke="#1e293b" stroke-width="2"/>
-  <text x="28" y="40" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#f8fafc">Judge<tspan fill="#3b82f6">IP</tspan></text>
-  <text x="118" y="39" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#94a3b8">judgeip.com</text>
-  <text x="28" y="84" font-family="ui-monospace,Menlo,monospace" font-size="${ipFontSize(displayIp, 474, 26)}" font-weight="700" fill="#f8fafc">${escXml(displayIp)}</text>
-  <text x="28" y="110" clip-path="url(#card-meta-clip)" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#cbd5e1"><title>${escXml(loc + ' · ' + info.asnCode + ' · ' + info.isp)}</title>${escXml(cardText(loc + ' · ' + info.asnCode + ' · ' + info.isp, 60))}</text>
-  <rect x="524" y="26" width="128" height="86" rx="12" fill="#1e293b"/>
-  <text x="588" y="48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8">${t('纯净度评分', 'IP score')}</text>
+  <rect width="680" height="240" rx="12" fill="#09090b"/>
+  <rect x="1" y="1" width="678" height="238" rx="11" fill="none" stroke="#27272a" stroke-width="2"/>
+  <text x="28" y="40" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#fafafa">Judge<tspan fill="#3dd68c">IP</tspan></text>
+  <text x="118" y="39" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#a1a1aa">judgeip.com</text>
+  <text x="28" y="84" font-family="ui-monospace,Menlo,monospace" font-size="${ipFontSize(displayIp, 474, 26)}" font-weight="700" fill="#fafafa">${escXml(displayIp)}</text>
+  <text x="28" y="110" clip-path="url(#card-meta-clip)" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#d4d4d8"><title>${escXml(loc + ' · ' + info.asnCode + ' · ' + info.isp)}</title>${escXml(cardText(loc + ' · ' + info.asnCode + ' · ' + info.isp, 60))}</text>
+  <rect x="524" y="26" width="128" height="86" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+  <text x="588" y="48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#a1a1aa">${t('纯净度评分', 'IP score')}</text>
   <text x="588" y="82" text-anchor="middle" font-family="ui-monospace,monospace" font-size="30" font-weight="800" fill="${scoreColor}">${info.score ?? '—'}</text>
   <text x="588" y="102" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="${scoreColor}">${info.score === null ? t('数据不足', 'Insufficient data') : t('等级 ', 'Grade ') + escXml(info.grade)}</text>
-  <line x1="28" y1="132" x2="652" y2="132" stroke="#1e293b"/>
-  <text x="28" y="164" font-family="system-ui,sans-serif" font-size="13" fill="#94a3b8">${t('类型：', 'Type: ')}<tspan fill="#f1f5f9" font-weight="600">${escXml(info.ipTypeLabel)} (${escXml(nativeText)})</tspan></text>
-  <text x="28" y="222" font-family="ui-monospace,monospace" font-size="12" fill="#cbd5e1">${escXml(cardText(t('路由：', 'Route: ') + info.bgpPrefix + ' · ' + info.rpkiLabel, 84))}</text>
-  <text x="360" y="164" font-family="system-ui,sans-serif" font-size="13" fill="#94a3b8">${t('代理：', 'Proxy: ')}<tspan fill="${info.isProxy === null ? '#94a3b8' : info.isProxy ? '#fbbf24' : '#34d399'}" font-weight="600">${escXml(info.proxyLabel)}</tspan></text>
-  <text x="360" y="194" font-family="system-ui,sans-serif" font-size="13" fill="#94a3b8">${t('威胁：', 'Threats: ')}<tspan fill="${info.hasThreat === null ? '#94a3b8' : info.hasThreat ? '#f87171' : '#34d399'}" font-weight="600">${escXml(info.threatLabel)}</tspan></text>
+  <line x1="28" y1="132" x2="652" y2="132" stroke="#27272a"/>
+  <text x="28" y="164" font-family="system-ui,sans-serif" font-size="13" fill="#a1a1aa">${t('类型：', 'Type: ')}<tspan fill="#fafafa" font-weight="600">${escXml(info.ipTypeLabel)} (${escXml(nativeText)})</tspan></text>
+  <text x="28" y="222" font-family="ui-monospace,monospace" font-size="12" fill="#d4d4d8">${escXml(cardText(t('路由：', 'Route: ') + info.bgpPrefix + ' · ' + info.rpkiLabel, 84))}</text>
+  <text x="360" y="164" font-family="system-ui,sans-serif" font-size="13" fill="#a1a1aa">${t('代理：', 'Proxy: ')}<tspan fill="${info.isProxy === null ? '#a1a1aa' : info.isProxy ? '#facc15' : '#4ade80'}" font-weight="600">${escXml(info.proxyLabel)}</tspan></text>
+  <text x="360" y="194" font-family="system-ui,sans-serif" font-size="13" fill="#a1a1aa">${t('威胁：', 'Threats: ')}<tspan fill="${info.hasThreat === null ? '#a1a1aa' : info.hasThreat ? '#f87171' : '#4ade80'}" font-weight="600">${escXml(info.threatLabel)}</tspan></text>
 </svg>`;
 
   return new Response(svg, {

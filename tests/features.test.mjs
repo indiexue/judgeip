@@ -503,3 +503,33 @@ test('a compare column carries the same score, factors and labels as the lookup'
   }
   assert.ok(COMPARE_FIELDS.every((row) => row.label.zh && row.label.en && !/[\p{Script=Han}]/u.test(row.label.en)));
 });
+
+test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat whois times out', async () => {
+  const fromRdap = await lookup('73.162.88.1', {
+    'whois/data': () => json({}, 504),
+    'rdap.org/ip/': {
+      port43: 'whois.arin.net',
+      name: 'BAYAREA-CPE-43',
+      startAddress: '73.162.0.0',
+      endAddress: '73.162.255.255',
+      entities: [{ vcardArray: ['vcard', [['adr', { label: '1800 Bishops Gate Blvd\nMount Laurel\nNJ\n08054\nUnited States' }, 'text', []]]] }],
+    },
+  });
+  assert.equal(fromRdap.lookupStatus, 'complete');
+  assert.equal(fromRdap.score, 95);
+  assert.equal(fromRdap.rirName, 'ARIN');
+  assert.equal(fromRdap.rirCountry, 'US');
+  assert.equal(fromRdap.isNative, true);
+  assert.ok(factor(fromRdap, 'native').evidence.some((e) => e.source === 'RDAP' && e.value === 'US'));
+
+  const fromRirAlloc = await lookup('73.162.88.1', {
+    'whois/data': () => json({}, 504),
+    'rdap.org/ip/': () => json({}, 502),
+    'rir/data': { data: { rirs: [{ rir: 'ARIN', country: 'US', resource: '73.0.0.0/8' }] } },
+  });
+  assert.equal(fromRirAlloc.lookupStatus, 'complete');
+  assert.equal(fromRirAlloc.score, 95);
+  assert.equal(fromRirAlloc.rirCountry, 'US');
+  assert.ok(factor(fromRirAlloc, 'native').evidence.some((e) => e.source === 'RIPEstat rir' && e.value === 'US'));
+});
+

@@ -23,7 +23,7 @@ const targetIp = parsed ? parsed.normalized : visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
 const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
 
-const scoreColor = info.score === null ? '#9ca3af' : info.scoreTone === 'good' ? '#10b981' : info.scoreTone === 'warn' ? '#f59e0b' : '#ef4444';
+const scoreColor = info.score === null ? '#a1a1aa' : info.scoreTone === 'good' ? '#4ade80' : info.scoreTone === 'warn' ? '#facc15' : '#f87171';
 const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative === null ? t('未知', 'Unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
 const locationText = [info.countryZh, info.region !== '—' ? info.region : '', info.city !== '—' ? info.city : '']
   .filter(Boolean)
@@ -91,63 +91,63 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
         <defs>
           <clipPath id="card-meta-clip"><rect x="36" y="108" width="476" height="28" /></clipPath>
           <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#111827" />
-            <stop offset="100%" stop-color="#0b1120" />
+            <stop offset="0%" stop-color="#111113" />
+            <stop offset="100%" stop-color="#09090b" />
           </linearGradient>
         </defs>
-        <rect width="720" height="380" rx="16" fill="url(#cardBg)" />
-        <rect x="1" y="1" width="718" height="378" rx="15" fill="none" stroke="#1f2937" stroke-width="2" />
+        <rect width="720" height="380" rx="14" fill="url(#cardBg)" />
+        <rect x="1" y="1" width="718" height="378" rx="13" fill="none" stroke="#27272a" stroke-width="2" />
 
         <!-- Brand Header -->
-        <text x="36" y="48" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="24" font-weight="800" fill="#f8fafc">Judge<tspan fill="#3b82f6">IP</tspan></text>
-        <text x="155" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('IP 评分与网络信息 · judgeip.com', 'IP score & network data · judgeip.com')}</text>
+        <text x="36" y="48" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="24" font-weight="800" fill="#fafafa">Judge<tspan fill="#3dd68c">IP</tspan></text>
+        <text x="155" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a1a1aa">{t('IP 评分与网络信息 · judgeip.com', 'IP score & network data · judgeip.com')}</text>
 
         <!-- Target IP -->
-        <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size={ipFontSize(info.ip, 476, 30)} font-weight="700" fill="#f9fafb" id="svg-ip-text">{info.ip}</text>
-        <text x="36" y="124" clip-path="url(#card-meta-clip)" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d1d5db">
+        <text x="36" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size={ipFontSize(info.ip, 476, 30)} font-weight="700" fill="#fafafa" id="svg-ip-text">{info.ip}</text>
+        <text x="36" y="124" clip-path="url(#card-meta-clip)" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#d4d4d8">
           <title>{locationText} · {info.asnCode} · {info.isp}</title>
           {cardText(`${locationText || t('未知位置', 'Unknown location')} · ${info.asnCode} · ${info.isp}`, 60)}
         </text>
 
         <!-- Score Box Right -->
-        <rect x="536" y="34" width="148" height="96" rx="14" fill="#172033" stroke={scoreColor} stroke-opacity="0.45" stroke-width="1.5" />
-        <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#9ca3af">{t('纯净度评分', 'IP score')}</text>
+        <rect x="536" y="34" width="148" height="96" rx="12" fill="#18181b" stroke={scoreColor} stroke-opacity="0.45" stroke-width="1.5" />
+        <text x="610" y="58" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a1a1aa">{t('纯净度评分', 'IP score')}</text>
         <text x="610" y="96" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, monospace" font-size="34" font-weight="800" fill={scoreColor}>{info.score ?? '—'}</text>
         <text x="610" y="118" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill={scoreColor}>{info.score === null ? t('数据不足', 'Insufficient data') : `${t('等级', 'Grade')} ${info.grade}`}</text>
 
-        <line x1="36" y1="150" x2="684" y2="150" stroke="#1f2937" stroke-width="1" />
+        <line x1="36" y1="150" x2="684" y2="150" stroke="#27272a" stroke-width="1" />
 
         <!-- Attribute Grid -->
         <g font-family="system-ui, -apple-system, sans-serif" font-size="13">
-          <text x="36" y="184" fill="#9ca3af">{t('网络类型', 'Network type')}</text>
-          <text x="135" y="184" fill="#f3f4f6" font-weight="600">{info.ipTypeLabel}</text>
+          <text x="36" y="184" fill="#a1a1aa">{t('网络类型', 'Network type')}</text>
+          <text x="135" y="184" fill="#fafafa" font-weight="600">{info.ipTypeLabel}</text>
 
-          <text x="36" y="218" fill="#9ca3af">{t('IP 属性', 'IP origin')}</text>
-          <text x="135" y="218" fill={info.isNative === null ? '#9ca3af' : info.isNative ? '#34d399' : '#fbbf24'} font-weight="600">{nativeText}</text>
+          <text x="36" y="218" fill="#a1a1aa">{t('IP 属性', 'IP origin')}</text>
+          <text x="135" y="218" fill={info.isNative === null ? '#a1a1aa' : info.isNative ? '#4ade80' : '#facc15'} font-weight="600">{nativeText}</text>
 
-          <text x="36" y="252" fill="#9ca3af">{t('注册机构', 'Registry')}</text>
-          <text x="135" y="252" fill="#f3f4f6" font-weight="600">{info.rirName}{info.rirCountry ? ` (${info.rirCountry})` : ''}</text>
+          <text x="36" y="252" fill="#a1a1aa">{t('注册机构', 'Registry')}</text>
+          <text x="135" y="252" fill="#fafafa" font-weight="600">{info.rirName}{info.rirCountry ? ` (${info.rirCountry})` : ''}</text>
 
-          <text x="36" y="286" fill="#9ca3af">{t('路由前缀', 'Route prefix')}</text>
-          <text x="135" y="286" font-family="ui-monospace, monospace" font-size={ipFontSize(info.bgpPrefix, 225, 13)} fill="#e5e7eb">{info.bgpPrefix}</text>
+          <text x="36" y="286" fill="#a1a1aa">{t('路由前缀', 'Route prefix')}</text>
+          <text x="135" y="286" font-family="ui-monospace, monospace" font-size={ipFontSize(info.bgpPrefix, 225, 13)} fill="#e4e4e7">{info.bgpPrefix}</text>
 
-          <text x="376" y="184" fill="#9ca3af">{t('代理状态', 'Proxy')}</text>
-          <text x="476" y="184" fill={info.isProxy === null ? '#9ca3af' : info.isProxy ? '#fbbf24' : '#34d399'} font-weight="600">{info.isProxy === null ? t('未知', 'Unknown') : info.isProxy ? info.proxyLabel : t('未见标记', 'No flags')}</text>
+          <text x="376" y="184" fill="#a1a1aa">{t('代理状态', 'Proxy')}</text>
+          <text x="476" y="184" fill={info.isProxy === null ? '#a1a1aa' : info.isProxy ? '#facc15' : '#4ade80'} font-weight="600">{info.isProxy === null ? t('未知', 'Unknown') : info.isProxy ? info.proxyLabel : t('未见标记', 'No flags')}</text>
 
-          <text x="376" y="218" fill="#9ca3af">{t('威胁 / 黑名单', 'Threats / lists')}</text>
-          <text x="476" y="218" fill={info.hasThreat === null ? '#9ca3af' : info.hasThreat ? '#f87171' : '#34d399'} font-weight="600">{info.hasThreat === null ? t('数据不完整', 'Incomplete') : info.hasThreat ? t('存在记录', 'Records found') : t('未见记录', 'No records')}</text>
+          <text x="376" y="218" fill="#a1a1aa">{t('威胁 / 黑名单', 'Threats / lists')}</text>
+          <text x="476" y="218" fill={info.hasThreat === null ? '#a1a1aa' : info.hasThreat ? '#f87171' : '#4ade80'} font-weight="600">{info.hasThreat === null ? t('数据不完整', 'Incomplete') : info.hasThreat ? t('存在记录', 'Records found') : t('未见记录', 'No records')}</text>
 
-          <text x="376" y="252" fill="#9ca3af">{t('RPKI 授权', 'RPKI')}</text>
-          <text x="476" y="252" fill={info.rpkiStatus === 'valid' ? '#34d399' : '#d1d5db'} font-weight="600">{info.rpkiLabel}</text>
+          <text x="376" y="252" fill="#a1a1aa">{t('RPKI 授权', 'RPKI')}</text>
+          <text x="476" y="252" fill={info.rpkiStatus === 'valid' ? '#4ade80' : '#d4d4d8'} font-weight="600">{info.rpkiLabel}</text>
 
 
         </g>
 
-        <line x1="36" y1="316" x2="684" y2="316" stroke="#1f2937" stroke-width="1" />
-        <text x="36" y="348" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#6b7280">
+        <line x1="36" y1="316" x2="684" y2="316" stroke="#27272a" stroke-width="1" />
+        <text x="36" y="348" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#71717a">
           {t('JudgeIP.com · 路由、注册与威胁情报', 'JudgeIP.com · Routing, registry & threat data')}
         </text>
-        <text x="684" y="348" text-anchor="end" font-family="ui-monospace, monospace" font-size="12" fill="#6b7280">
+        <text x="684" y="348" text-anchor="end" font-family="ui-monospace, monospace" font-size="12" fill="#71717a">
           {new Date().toISOString().slice(0, 10)}
         </text>
       </svg>

@@ -677,8 +677,8 @@ function sceneGauge(tone: string, baseScore: number | null) {
           <div
             class="row"
             data-geo-source="ip2location"
-            data-geo-url={`https://api.ip2location.io/?ip=${encodedIp}&format=json`}
-            data-geo-fields="ip country_code region_name city_name"
+            data-geo-url=""
+            data-geo-fields=""
           >
             <span class="row__label">IP2Location</span>
             <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
