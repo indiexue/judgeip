@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   'CDN / 任播': 'CDN / anycast',
   移动网络: 'Mobile',
   教育网: 'Education',
+  商业网络: 'Business',
   企业专线: 'Business',
   保留地址: 'Reserved',
   '本地 / 内网保留网段': 'Local / private reserved range',
@@ -114,6 +115,7 @@ const LABELS: Record<string, string> = {
 /* 带参数的标签：中文模板 → 英文模板 */
 const PATTERNS: Array<[RegExp, (...m: string[]) => string]> = [
   [/^命中黑名单 \((.*)\)$/, (_, l) => `Blocklisted (${l})`],
+  [/^滥用举报 \((.*)\)$/, (_, s) => `Abuse reports (${s})`],
   [/^地区受限 \((.*)\)$/, (_, c) => `Region blocked (${c})`],
   [/^合规受限 \((.*)\)$/, (_, c) => `Compliance limits (${c})`],
   [/^暴露 \((.*)\)$/, (_, p) => `Open (${p})`],

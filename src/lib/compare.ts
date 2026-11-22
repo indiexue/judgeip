@@ -116,9 +116,19 @@ export function compareColumn(info: HomeIpLookupResult, lang: Lang): CompareColu
   const cells: Record<CompareField, CompareCell> = {
     score:
       info.score !== null
-        ? { text: `${info.score} / ${SCORE_MAX}`, tone: SCORE_TONE[info.scoreTone], sub: t(`等级 ${info.grade}`, `Grade ${info.grade}`) }
+        ? {
+            text: `${info.score} / ${SCORE_MAX}`,
+            tone: SCORE_TONE[info.scoreTone],
+            sub: info.scoreConfidence === 'high'
+              ? t(`等级 ${info.grade}`, `Grade ${info.grade}`)
+              : t(`等级 ${info.grade} · 置信度${info.scoreConfidence === 'medium' ? '中' : '低'}`, `Grade ${info.grade} · ${info.scoreConfidence} conf.`),
+          }
         : { text: '—', sub: scoreText(info, t) },
-    type: { text: info.ipTypeLabel, tone: TYPE_TONE[info.ipTypeTone] },
+    type: {
+      text: info.ipTypeLabel,
+      tone: TYPE_TONE[info.ipTypeTone],
+      ...(info.isDualIsp ? { sub: t('双 ISP', 'Dual ISP') } : {}),
+    },
     native:
       info.isNative === null
         ? { text: t('未知', 'Unknown'), tone: 'muted' }

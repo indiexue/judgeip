@@ -194,6 +194,11 @@ function sceneGauge(tone: string, baseScore: number | null) {
 
       <span class="hero-box__pills" data-field="ipType">
         <span class={`badge badge--solid badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
+        {info.isDualIsp && (
+          <span class="badge badge--solid badge--green" title={t('ASN 与地址段登记机构均为电信/宽带运营商', 'Both origin ASN and range registrant are consumer ISPs')}>
+            {t('双 ISP', 'Dual ISP')}
+          </span>
+        )}
         {!info.isBogon && (
           <span class={`badge badge--solid badge--${info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber'}`}>
             {info.isNative === null ? t('原生未知', 'Origin unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced')}
@@ -224,10 +229,16 @@ function sceneGauge(tone: string, baseScore: number | null) {
           </svg>
           {t('纯净度评分', 'Purity Score')}
         </span>
-        <span class={`badge badge--${info.lookupStatus === 'complete' ? 'green' : 'gray'}`} data-field="gradeBadge">
-          {info.lookupStatus === 'complete'
-            ? `${t('等级', 'Grade')} ${info.grade}`
-            : info.isBogon ? t('内网保留', 'Reserved') : t('数据不完整', 'Partial data')}
+        <span class={`badge badge--${info.scoreConfidence === 'high' ? 'green' : info.score !== null ? 'amber' : 'gray'}`} data-field="gradeBadge">
+          {info.score !== null
+            ? `${t('等级', 'Grade')} ${info.grade} · ${
+                info.scoreConfidence === 'high'
+                  ? t('置信度 高', 'High conf.')
+                  : info.scoreConfidence === 'medium'
+                    ? t('置信度 中', 'Med conf.')
+                    : t('置信度 低', 'Low conf.')
+              }`
+            : info.isBogon ? t('内网保留', 'Reserved') : t('数据源不可达', 'Unavailable')}
         </span>
       </div>
 

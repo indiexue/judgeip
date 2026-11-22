@@ -312,6 +312,7 @@
         setFieldHtml(
           'ipType',
           '<span class="badge badge--solid badge--' + esc(info.ipTypeTone) + '">' + esc(info.ipTypeLabel) + '</span>' +
+          (info.isDualIsp ? '<span class="badge badge--solid badge--green">' + T('双 ISP', 'Dual ISP') + '</span>' : '') +
           (!info.isBogon
             ? '<span class="badge badge--solid badge--' + (info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber') + '">' + (info.isNative === null ? T('原生未知', 'Origin unknown') : info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced')) + '</span>'
             : '') +
@@ -350,8 +351,11 @@
         }
         var gradeEl = document.querySelector('[data-field="gradeBadge"]');
         if (gradeEl) {
-          gradeEl.className = 'badge badge--' + (info.lookupStatus === 'complete' ? 'green' : 'gray');
-          gradeEl.textContent = info.lookupStatus === 'complete' ? T('等级 ', 'Grade ') + info.grade : T('数据不完整', 'Partial data');
+          var confText = info.scoreConfidence === 'high' ? T('置信度 高', 'High conf.')
+            : info.scoreConfidence === 'medium' ? T('置信度 中', 'Med conf.')
+              : T('置信度 低', 'Low conf.');
+          gradeEl.className = 'badge badge--' + (info.scoreConfidence === 'high' ? 'green' : typeof info.score === 'number' ? 'amber' : 'gray');
+          gradeEl.textContent = typeof info.score === 'number' ? T('等级 ', 'Grade ') + info.grade + ' · ' + confText : T('数据源不可达', 'Unavailable');
         }
         var specEl = document.querySelector('[data-field="spectrumThumb"]');
         if (specEl) {

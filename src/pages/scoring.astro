@@ -106,7 +106,7 @@ const examples = [
               <tr>
                 <th scope="row">{rule.label[lang]}</th>
                 <td>{rule.basis[lang]}</td>
-                <td>{rule.sources.join(en ? ', ' : '、')}</td>
+                <td>{rule.sources.map((s) => (typeof s === 'string' ? s : s[lang])).join(en ? ', ' : '、')}</td>
               </tr>
             ))}
           </tbody>
@@ -165,15 +165,14 @@ const examples = [
     </section>
 
     <section class="group" id="no-score">
-      <h2 class="group__title">{t('什么时候不出分', 'When no score is given')}</h2>
+      <h2 class="group__title">{t('置信度分级与何时不出分', 'Confidence levels and when no score is given')}</h2>
       <div class="prose prose--page">
-        <p>{t('评分所需的数据缺任何一项，报告只显示已经拿到的字段，不给分数。缺的数据不按“正常”处理。', 'If any input the score needs is missing, the report shows the fields it did get and gives no score. Missing data is never treated as clean.')}</p>
+        <p>{t('只要拿到了基础网络归属与至少一家代理/风险情报源，报告都会计算并展示分数，同时在右上角标明置信度，不因单个次要接口抖动而隐藏整张评分卡：', 'Whenever core network ownership and at least one proxy/risk source respond, a score is computed and paired with a confidence badge rather than hidden because a secondary feed timed out:')}</p>
         <ul>
-          <li>{t('IPv6 地址：Shodan InternetDB 和四个 DNSBL 只覆盖 IPv4，端口与黑名单两项查不了。', 'IPv6 addresses: Shodan InternetDB and the four DNSBLs cover IPv4 only, so ports and blocklists cannot be checked.')}</li>
-          <li>{t('网络类型无法判定：ASN 表和运营商名称都对不上，又没有 hosting / mobile 标记。', 'Network type undetermined: neither the ASN table nor the operator name matches, and there is no hosting / mobile flag.')}</li>
-          <li>{t('拿不到注册国家或定位国家，原生 IP 一项无法比较。', 'The registered or geolocated country is missing, so the native IP item cannot be compared.')}</li>
-          <li>{t('任一 DNSBL 超时或拒绝查询。', 'Any DNSBL times out or refuses the query.')}</li>
-          <li>{t('Shodan InternetDB 超时或报错。它明确答复“没有这个 IP 的记录”时，按没有开放端口计算，照常出分。', 'Shodan InternetDB times out or errors. When it answers that it has no record of the IP, that counts as no open ports and the score is still given.')}</li>
+          <li>{t('置信度 高：IPv4 地址，且网络类型、原生 IP（注册国与定位国）、多源代理标记、4 个 DNSBL 黑名单与 Shodan 端口数据全部确认。', 'High confidence: IPv4 address with network type, native IP (registry vs location country), proxy flags, all four DNSBLs and Shodan port history confirmed.')}</li>
+          <li>{t('置信度 中：IPv6 地址（端口与传统邮件 DNSBL 仅支持 IPv4，由多源双栈代理与风险库替代评估），或 IPv4 地址有个别次要源超时但核心网络与安全源齐备。', 'Medium confidence: IPv6 addresses (evaluated via dual-stack network, native and proxy/risk feeds since Shodan and DNSBLs are IPv4-only), or IPv4 addresses where a secondary feed timed out while core sources responded.')}</li>
+          <li>{t('置信度 低：仅拿到基础归属与部分安全标记，原生性或黑名单尚未核验完成。', 'Low confidence: core network and proxy sources responded, while registry country or blocklists could not be verified.')}</li>
+          <li>{t('不出分（—）：内网/保留地址，或所有上游归属与安全数据源全部不可达。', 'No score (—): private/reserved addresses, or when all upstream network and security sources fail to respond.')}</li>
         </ul>
       </div>
     </section>

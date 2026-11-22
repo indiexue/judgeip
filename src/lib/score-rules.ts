@@ -9,6 +9,7 @@ export const SCORE_MAX = 99;
 export const SCORE_DELTAS = {
   hosting: -33,
   cdn: -25,
+  business: -6,
   mobile: 2,
   nonNative: -12,
   proxy: -24,
@@ -18,6 +19,8 @@ export const SCORE_DELTAS = {
 
 /* 开放端口数超过这个值才扣分 */
 export const MANY_PORTS_THRESHOLD = 6;
+
+export type ScoreConfidence = 'high' | 'medium' | 'low' | 'none';
 
 export const SCORE_GRADES: Array<{ grade: string; min: number }> = [
   { grade: 'A+', min: 90 },
@@ -40,7 +43,7 @@ export interface ScoreRule {
   label: { zh: string; en: string };
   rows: ScoreRuleRow[];
   basis: { zh: string; en: string };
-  sources: string[];
+  sources: Array<string | { zh: string; en: string }>;
 }
 
 export const SCORE_RULES: ScoreRule[] = [
@@ -50,14 +53,15 @@ export const SCORE_RULES: ScoreRule[] = [
     rows: [
       { when: { zh: '数据中心 / 云主机', en: 'Data center / cloud hosting' }, delta: SCORE_DELTAS.hosting },
       { when: { zh: 'CDN / 任播网络', en: 'CDN / anycast network' }, delta: SCORE_DELTAS.cdn },
+      { when: { zh: '商业网络 / 企业专线', en: 'Business / commercial transit' }, delta: SCORE_DELTAS.business },
       { when: { zh: '移动网络', en: 'Mobile network' }, delta: SCORE_DELTAS.mobile },
-      { when: { zh: '家庭宽带、教育网、企业专线', en: 'Residential, education, business' }, delta: 0 },
+      { when: { zh: '家庭宽带、教育网', en: 'Residential broadband, education' }, delta: 0 },
     ],
     basis: {
-      zh: '先查本站维护的 ASN 表，再看运营商名称里的关键词，最后参考 ipwho.is 与 ip-api.com 的 hosting / mobile 标记。只有 ASN 表或运营商名称能佐证时才认定为家庭宽带，否则记为未知、不出分。',
-      en: 'The ASN is looked up in a table maintained by this site, then the operator name is matched against keywords, then the hosting / mobile flags from ipwho.is and ip-api.com are used. An IP only counts as residential when the ASN table or the operator name supports it; otherwise the type is unknown and no score is given.',
+      zh: '综合本站 ASN 库、PeeringDB 自治系统登记类型、运营商名称关键词，以及 ipwho.is、ip-api.com、ipquery.io、proxycheck.io（及可选 ipapi.is）的多源标记交叉判定。既非机房又无家宽证据的商业或专线自治系统归为商业网络。同时满足 ASN 与登记机构均为电信宽带运营商时，标记为「双 ISP」。',
+      en: 'Cross-classified from the curated ASN table, PeeringDB network type, operator keywords, and hosting / mobile flags from ipwho.is, ip-api.com, ipquery.io and proxycheck.io (plus optional ipapi.is). Registered networks that are neither hosting nor consumer broadband are classified as business networks. When both the origin ASN and the range registrant are consumer carriers, Dual ISP is shown.',
     },
-    sources: ['ipwho.is', 'ip-api.com', 'Cloudflare request.cf'],
+    sources: [{ zh: 'JudgeIP ASN 表', en: 'JudgeIP ASN table' }, 'PeeringDB', 'ipwho.is', 'ip-api.com', 'ipquery.io', 'proxycheck.io'],
   },
   {
     key: 'native',
@@ -67,10 +71,10 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: '两者一致，或网络类型为 CDN', en: 'Both match, or the network is a CDN' }, delta: 0 },
     ],
     basis: {
-      zh: '注册国家取自 RIR WHOIS 记录里的 country 字段，定位国家取自地理库。两者相同记为原生 IP。',
-      en: 'The registered country is the country field of the RIR WHOIS record; the geolocated country comes from the geolocation database. Matching values count as a native IP.',
+      zh: '注册国家取自 RIR WHOIS / RDAP 记录里的国家字段，定位国家取自多源地理库。两者相同记为原生 IP。',
+      en: 'The registered country comes from RIR WHOIS / RDAP records; the geolocated country comes from geolocation databases. Matching values count as a native IP.',
     },
-    sources: ['RIPEstat whois', 'ipwho.is', 'ip-api.com'],
+    sources: ['RIPEstat whois', 'RDAP', 'ipwho.is', 'ip-api.com', 'ipquery.io'],
   },
   {
     key: 'proxy',
@@ -79,22 +83,22 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: '任一来源标记为代理、VPN 或 Tor，或开放了代理特征端口', en: 'Any source flags proxy, VPN or Tor, or a typical proxy port is open' }, delta: SCORE_DELTAS.proxy },
     ],
     basis: {
-      zh: '看 ipwho.is 的 proxy / vpn / tor 标记、ip-api.com 的 proxy 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、8080 等代理特征端口，以及 ASN 是否属于已知的商业 VPN 网络。',
-      en: 'Uses the proxy / vpn / tor flags from ipwho.is, the proxy flag from ip-api.com, vpn / tor tags from Shodan, open proxy ports such as 1080, 3128 and 8080, and whether the ASN is a known commercial VPN network.',
+      zh: '综合 ipwho.is、ip-api.com、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、8080 等代理特征端口，以及 ASN 是否属于商业 VPN 骨干网。',
+      en: 'Combines proxy / vpn / tor flags from ipwho.is, ip-api.com, ipquery.io and proxycheck.io (plus optional ipapi.is), Shodan vpn / tor tags, open proxy ports such as 1080, 3128 and 8080, and commercial VPN ASNs.',
     },
-    sources: ['ipwho.is', 'ip-api.com', 'Shodan InternetDB'],
+    sources: ['ipwho.is', 'ip-api.com', 'ipquery.io', 'proxycheck.io', 'Shodan InternetDB'],
   },
   {
     key: 'reputation',
     label: { zh: '黑名单与威胁记录', en: 'Blocklists and threat records' },
     rows: [
-      { when: { zh: '命中任一 DNSBL，或有扫描、失陷标签，或有历史 CVE', en: 'Listed on any DNSBL, tagged as scanner or compromised, or has past CVEs' }, delta: SCORE_DELTAS.reputation },
+      { when: { zh: '命中任一 DNSBL、高风险欺诈/滥用分，或有扫描、失陷标签与历史 CVE', en: 'Listed on any DNSBL, high abuse/risk score, or tagged as scanner/compromised/CVE' }, delta: SCORE_DELTAS.reputation },
     ],
     basis: {
-      zh: '通过 DoH 逐个查询 SpamCop、DroneBL、Barracuda、UCEPROTECT；只有权威服务器明确答复才算「未列入」，超时或被拒绝记为未知。同时读取 Shodan 的标签与漏洞列表。多项同时命中也只扣一次。',
-      en: 'SpamCop, DroneBL, Barracuda and UCEPROTECT are each queried over DoH; only an authoritative answer counts as "not listed", a timeout or refusal is unknown. Shodan tags and CVE lists are read as well. Several hits still deduct only once.',
+      zh: '通过 DoH 查询 SpamCop、DroneBL、Barracuda、UCEPROTECT 四个黑名单，并结合 Shodan 漏洞/失陷标签与多源风险分（proxycheck / ipquery 及可选 AbuseIPDB）。多项同时命中也只扣一次。',
+      en: 'Queries SpamCop, DroneBL, Barracuda and UCEPROTECT over DoH, combined with Shodan compromise/CVE records and multi-source abuse scores (proxycheck / ipquery and optional AbuseIPDB). Multiple hits deduct once.',
     },
-    sources: ['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT', 'Shodan InternetDB'],
+    sources: ['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT', 'Shodan InternetDB', 'proxycheck.io'],
   },
   {
     key: 'ports',
@@ -103,8 +107,8 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: `开放端口超过 ${MANY_PORTS_THRESHOLD} 个`, en: `More than ${MANY_PORTS_THRESHOLD} open ports` }, delta: SCORE_DELTAS.manyPorts },
     ],
     basis: {
-      zh: '端口数据来自 Shodan InternetDB 的历史扫描结果，不是实时探测，仅支持 IPv4。',
-      en: 'Port data comes from past scans in Shodan InternetDB, not a live probe, and covers IPv4 only.',
+      zh: '端口数据来自 Shodan InternetDB 的历史扫描结果，不是实时探测，仅支持 IPv4（IPv6 地址此项记 0 分并标注为中置信度）。',
+      en: 'Port data comes from past scans in Shodan InternetDB, not a live probe, and covers IPv4 only (IPv6 addresses skip this item with medium confidence).',
     },
     sources: ['Shodan InternetDB'],
   },

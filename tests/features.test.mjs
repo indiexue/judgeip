@@ -85,9 +85,11 @@ test('each factor carries the raw upstream data it was judged on', async () => {
   assert.ok(has('reputation', 'Barracuda', '1.88.162.73.b.barracudacentral.org', 'SERVFAIL'));
   assert.ok(has('reputation', 'Shodan InternetDB', 'vulns', 'CVE-2024-0001'));
   assert.ok(has('ports', 'Shodan InternetDB', 'ports', '22, 1080'));
-  // Barracuda 没给出结论，整体不出分，但已有的扣分项照常列出
-  assert.equal(info.score, null);
+  // Barracuda 1 个 DNSBL 未返回时，其余 3 个 DNSBL 与 Shodan 已就绪，仍给出中置信度评分并完整保留扣分项
+  assert.equal(info.score, 53);
+  assert.equal(info.scoreConfidence, 'medium');
   assert.equal(factor(info, 'proxy').delta, -24);
+  assert.equal(factor(info, 'reputation').delta, -18);
 });
 
 test('unknown inputs never deduct and reserved addresses have no factors', async () => {
@@ -151,17 +153,24 @@ test('the text report repeats the score, grade and breakdown from the lookup', a
   assert.ok(cols.every((c) => c > 0));
 });
 
-test('the text report says why there is no score and keeps reserved addresses short', async () => {
+test('the text report shows medium confidence on IPv6 / partial DNSBL and keeps reserved addresses short', async () => {
   const { renderTextReport } = await loadTs('../src/lib/text-report.ts');
   const v6 = renderTextReport(await lookup('2400:3200::1'), 'zh');
-  assert.match(v6, /评分 +未出分（端口与黑名单数据只覆盖 IPv4）\n/);
+  assert.match(v6, /评分 +95 \/ 99 · A\+ · 置信度中\n/);
+  assert.match(v6, /网络类型 +家庭宽带 · 双 ISP\n/);
   assert.match(v6, /开放端口 +仅支持 IPv4\n/);
   assert.match(v6, /黑名单 +仅支持 IPv4\n/);
 
   const partial = renderTextReport(await lookup('8.8.8.8', { 'dns-query': (url) => url.includes('spamcop') ? json({}, 500) : { Status: 3, Authority: [{ type: 6 }] } }), 'zh');
-  assert.match(partial, /评分 +未出分（有数据源未返回）\n/);
+  assert.match(partial, /评分 +95 \/ 99 · A\+ · 置信度中\n/);
   assert.match(partial, /黑名单 +3\/4 个有答复，均未列入\n/);
-  assert.match(partial, /最终得分 +未出分 +—\n/);
+
+  const totalDown = renderTextReport(await withFetch(async () => json({}, 503), async () => {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    return lookupIpFull('8.8.4.4');
+  }), 'zh');
+  assert.match(totalDown, /评分 +未出分（基础归属或风险数据源未返回）\n/);
+  assert.match(totalDown, /最终得分 +未出分 +—\n/);
 
   const bogon = renderTextReport(await lookup('192.168.1.1'), 'zh');
   assert.equal(bogon.includes('评分'), false);
@@ -474,7 +483,7 @@ test('a compare column carries the same score, factors and labels as the lookup'
   assert.deepEqual(Object.keys(column.cells).sort(), fields);
   assert.deepEqual([column.ip, column.score, column.grade, column.base], [home.ip, home.score, home.grade, SCORE_BASE]);
   assert.deepEqual(column.cells.score, { text: `${home.score} / 99`, tone: 'ok', sub: `等级 ${home.grade}` });
-  assert.deepEqual(column.cells.type, { text: home.ipTypeLabel, tone: 'ok' });
+  assert.deepEqual(column.cells.type, { text: home.ipTypeLabel, tone: 'ok', sub: '双 ISP' });
   assert.deepEqual(column.cells.native, { text: '是', tone: 'ok', sub: '注册 US · 定位 US' });
   assert.deepEqual([column.cells.proxy.tone, column.cells.threat.tone, column.cells.blocklists.tone], ['ok', 'ok', undefined]);
   assert.deepEqual(column.factors.map((f) => [f.key, f.delta, f.deltaText]), home.factors.map((f) => [f.key, f.delta, formatDelta(f.delta)]));
@@ -488,8 +497,8 @@ test('a compare column carries the same score, factors and labels as the lookup'
   assert.equal(foreign.cells.registry.sub, '注册国家 DE');
 
   const v6 = compareColumn(await lookup('2001:4860:4860::8888'), 'zh');
-  assert.deepEqual([v6.score, v6.cells.score.text, v6.cells.score.tone], [null, '—', undefined]);
-  assert.match(v6.cells.score.sub, /IPv4/);
+  assert.deepEqual([v6.score, v6.cells.score.text, v6.cells.score.tone], [95, '95 / 99', 'ok']);
+  assert.match(v6.cells.score.sub, /置信度中/);
   assert.ok(v6.factors.length > 0);
 
   const bogon = compareColumn(await lookup('192.168.1.1'), 'zh');
@@ -532,4 +541,56 @@ test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat who
   assert.equal(fromRirAlloc.rirCountry, 'US');
   assert.ok(factor(fromRirAlloc, 'native').evidence.some((e) => e.source === 'RIPEstat rir' && e.value === 'US'));
 });
+
+test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flags, Dual-ISP, and Plan B optional keys score accurately', async () => {
+  // 1. 154.12.35.2 (AS979 NetLab Global) + proxycheck VPN flag -> scores 65 (95 - 6 business - 24 VPN), never null!
+  const netlab = await lookup('154.12.35.2', {
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 979, isp: 'NetLab Global', org: 'NetLab Global' }, timezone: { id: 'America/Los_Angeles' } },
+    'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS979 NetLab Global', isp: 'NetLab Global', org: 'NetLab Global', proxy: false, hosting: false, mobile: false },
+    'proxycheck.io': { status: 'ok', '154.12.35.2': { asn: 'AS979', provider: 'NetLab Global', proxy: 'yes', type: 'VPN', risk: 66 } },
+    internetdb: { ports: [111, 443, 2080], tags: [], vulns: [], hostnames: [] },
+  });
+  assert.equal(netlab.usageType, 'business');
+  assert.equal(netlab.ipTypeLabel, '商业网络');
+  assert.equal(netlab.isDualIsp, false);
+  assert.equal(netlab.isProxy, true);
+  assert.equal(netlab.proxyLabel, 'VPN 节点');
+  assert.equal(netlab.score, 65);
+  assert.equal(netlab.scoreConfidence, 'high');
+  assert.ok(netlab.scenes.length === 8);
+
+  // 2. Unlisted ASN classified via PeeringDB + clean ipquery -> business 89 (95 - 6)
+  const regional = await lookup('154.16.10.25', {
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 64555, isp: 'Acme Regional Net', org: 'Acme Corp' } },
+    'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS64555 Acme', isp: 'Acme Regional Net', org: 'Acme Corp', proxy: false, hosting: false, mobile: false },
+    'peeringdb.com': { data: [{ name: 'ACME-NET', info_type: 'Enterprise' }] },
+    'ipquery.io': { ip: '154.16.10.25', isp: { asn: 'AS64555', org: 'Acme Corp', isp: 'Acme Regional Net' }, location: { country_code: 'US' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
+  });
+  assert.equal(regional.usageType, 'business');
+  assert.equal(regional.score, 89);
+  assert.ok(factor(regional, 'network').evidence.some((e) => e.source === 'PeeringDB'));
+
+  // 3. Plan B optional keys (ipapi.is Dual-ISP + AbuseIPDB high abuse confidence)
+  await withFetch(upstream({
+    'api.ipapi.is': {
+      ip: '73.162.88.9',
+      is_datacenter: false,
+      is_proxy: false,
+      is_vpn: false,
+      company: { name: 'Comcast Cable', type: 'isp', abuser_score: '0.001 (Very Low)' },
+      asn: { asn: 7922, org: 'Comcast Cable', type: 'isp', country: 'US' },
+      location: { country_code: 'US' },
+    },
+    'abuseipdb.com': { data: { abuseConfidenceScore: 80, totalReports: 14, isp: 'Comcast Cable' } },
+  }), async () => {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    const enriched = await lookupIpFull('73.162.88.9', null, false, { ipapiIsKey: 'k1', abuseIpdbKey: 'k2' });
+    assert.equal(enriched.isDualIsp, true);
+    assert.equal(enriched.hasThreat, true);
+    assert.equal(enriched.score, 77); // 95 - 18 reputation from AbuseIPDB
+    assert.ok(factor(enriched, 'reputation').evidence.some((e) => e.source === 'AbuseIPDB'));
+    assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(enriched, 'en'))), false);
+  });
+});
+
 

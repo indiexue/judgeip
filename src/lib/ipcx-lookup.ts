@@ -1,7 +1,15 @@
-import { classifyIspAndAsn, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
+import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { CACHE_COMPLETE_MINUTES, CACHE_PARTIAL_SECONDS, CACHE_MAX_ENTRIES } from './data-sources';
-import { SCORE_BASE, SCORE_DELTAS, SCORE_GRADES, MANY_PORTS_THRESHOLD, clampScore, type ScoreFactorKey } from './score-rules';
+import {
+  SCORE_BASE,
+  SCORE_DELTAS,
+  SCORE_GRADES,
+  MANY_PORTS_THRESHOLD,
+  clampScore,
+  type ScoreConfidence,
+  type ScoreFactorKey,
+} from './score-rules';
 
 export interface SceneFitItem {
   key: string;
@@ -40,6 +48,12 @@ export interface ScoreFactor {
   evidence: FactorEvidence[];
 }
 
+export interface OptionalIntelKeys {
+  ipapiIsKey?: string;
+  abuseIpdbKey?: string;
+  proxycheckKey?: string;
+}
+
 export interface HomeIpLookupResult {
   ip: string;
   version: 4 | 6;
@@ -51,6 +65,8 @@ export interface HomeIpLookupResult {
   ipTypeTone: 'green' | 'amber' | 'danger' | 'gray';
   /* 与语言无关的网络类型，平台检测和场景评分按它判断 */
   usageType: UsageType | 'unknown';
+  /* 双 ISP：ASN 与地址段登记机构均为电信/宽带运营商，且无代理与机房标记 */
+  isDualIsp: boolean;
   isp: string;
   org: string;
   asn: number | null;
@@ -65,14 +81,15 @@ export interface HomeIpLookupResult {
   isProxy: boolean | null;
   proxyLabel: string;
   score: number | null;
-  grade: string; // A+ / A / B / C / D / F (cleanip style)
+  grade: string; // A+ / A / B / C / D / F
   scoreTone: 'good' | 'warn' | 'bad' | 'muted';
+  scoreConfidence: ScoreConfidence;
   lookupStatus: 'complete' | 'partial' | 'unavailable';
   portsKnown: boolean;
   scoreBase: number;
   factors: ScoreFactor[];
 
-  // Technical & Routing Indicators (from cleanip.io)
+  // Technical & Routing Indicators
   bgpPrefix: string;
   rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown';
   rpkiLabel: string;
@@ -85,7 +102,7 @@ export interface HomeIpLookupResult {
   dnsblChecks: DnsblCheck[];
   abuseEmail: string;
 
-  // CleanIP Scene Fit & Risk Breakdown
+  // Scene Fit & Risk Breakdown
   scenes: SceneFitItem[];
   riskChecks: RiskCheckItem[];
 
@@ -195,6 +212,26 @@ function formatLocalTime(tz: string): string {
   }
 }
 
+async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise<OptionalIntelKeys> {
+  if (explicit) return explicit;
+  try {
+    const mod = await import('cloudflare:workers');
+    const e = mod.env || {};
+    return {
+      ipapiIsKey: e.IPAPI_IS_KEY,
+      abuseIpdbKey: e.ABUSEIPDB_KEY,
+      proxycheckKey: e.PROXYCHECK_KEY,
+    };
+  } catch {
+    const p = typeof process !== 'undefined' && process.env ? process.env : {};
+    return {
+      ipapiIsKey: p.IPAPI_IS_KEY,
+      abuseIpdbKey: p.ABUSEIPDB_KEY,
+      proxycheckKey: p.PROXYCHECK_KEY,
+    };
+  }
+}
+
 async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record<string, string>): Promise<T | null> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
@@ -235,17 +272,40 @@ async function fetchShodan<T>(ipv4: string): Promise<T | null> {
   }
 }
 
+/* PeeringDB 按 ASN 缓存（节点内 6 小时有效，避免重复请求） */
+const peeringDbCache = new Map<number, { exp: number; infoType: string; name: string }>();
+
+async function fetchPeeringDbType(asn: number | null): Promise<{ infoType: string; name: string } | null> {
+  if (!asn || KNOWN_ASN_PROFILES[asn]) return null;
+  const hit = peeringDbCache.get(asn);
+  if (hit && hit.exp > Date.now()) return { infoType: hit.infoType, name: hit.name };
+  const resp = await fetchJson<{ data?: Array<{ name?: string; info_type?: string }> }>(
+    `https://www.peeringdb.com/api/net?asn=${asn}`,
+    1600,
+  );
+  const net = Array.isArray(resp?.data) ? resp.data[0] : undefined;
+  const infoType = String(net?.info_type || '').trim();
+  const name = String(net?.name || '').trim();
+  if (!infoType) return null;
+  if (peeringDbCache.size > 600) {
+    const first = peeringDbCache.keys().next().value;
+    if (first !== undefined) peeringDbCache.delete(first);
+  }
+  peeringDbCache.set(asn, { exp: Date.now() + 6 * 3600 * 1000, infoType, name });
+  return { infoType, name };
+}
+
 const ARIN_COUNTRY_NAMES: Record<string, string> = {
   'UNITED STATES': 'US',
-  'USA': 'US',
-  'CANADA': 'CA',
+  USA: 'US',
+  CANADA: 'CA',
   'PUERTO RICO': 'PR',
   'VIRGIN ISLANDS': 'VI',
-  'BERMUDA': 'BM',
-  'BAHAMAS': 'BS',
-  'JAMAICA': 'JM',
+  BERMUDA: 'BM',
+  BAHAMAS: 'BS',
+  JAMAICA: 'JM',
   'CAYMAN ISLANDS': 'KY',
-  'BARBADOS': 'BB',
+  BARBADOS: 'BB',
 };
 
 function parseRdapFallback(rdap: {
@@ -351,7 +411,6 @@ async function fetchRirAndRouting(ip: string): Promise<{
 
   let rirCountry = '';
   let abuseEmail = '';
-  // 留下注册记录里能说明归属的几行原文，评分明细里当证据展示
   const whoisLines: FactorEvidence[] = [];
   for (const group of whoisResp?.data?.records || []) {
     for (const item of group) {
@@ -488,7 +547,7 @@ function buildSceneFitMatrix(opts: {
     {
       key: 'social',
       label: '社媒运营',
-      status: isResOrMob && isNative && !isProxy ? '原生适配' : isResOrMob ? '广播偏区注意' : '限流风险',
+      status: isResOrMob && isNative && !isProxy ? '原生适配' : isResOrMob || (!isProxy && score >= 75) ? '广播偏区注意' : '限流风险',
       tone: isResOrMob && isNative && !isProxy ? 'ok' : isResOrMob || score >= 65 ? 'warn' : 'leak',
       note: 'TikTok / X / Facebook / Instagram 推流权重与注册验证',
     },
@@ -502,8 +561,8 @@ function buildSceneFitMatrix(opts: {
     {
       key: 'streaming',
       label: '流媒体解锁',
-      status: isResOrMob && isNative && !isProxy ? '完整版权库' : !isNative || usage === 'cdn' ? '仅自制剧/偏移' : '机房受限',
-      tone: isResOrMob && isNative && !isProxy ? 'ok' : !isNative || usage === 'cdn' ? 'warn' : 'leak',
+      status: isResOrMob && isNative && !isProxy ? '完整版权库' : !isNative || usage === 'cdn' || usage === 'business' ? '仅自制剧/偏移' : '机房受限',
+      tone: isResOrMob && isNative && !isProxy ? 'ok' : !isNative || usage === 'cdn' || (usage === 'business' && !isProxy) ? 'warn' : 'leak',
       note: 'Netflix / Disney+ / Spotify 本土版权识别',
     },
     {
@@ -530,7 +589,8 @@ const memCache = new Map<string, { exp: number; data: HomeIpLookupResult }>();
 export async function lookupIpFull(
   rawIp: string,
   cfMeta?: Record<string, unknown> | null,
-  isSelf = false
+  isSelf = false,
+  optionalKeys?: OptionalIntelKeys | null,
 ): Promise<HomeIpLookupResult> {
   const parsed = parseIp(rawIp);
   if (!parsed) {
@@ -546,6 +606,7 @@ export async function lookupIpFull(
       ipTypeLabel: '保留地址',
       ipTypeTone: 'gray',
       usageType: 'reserved',
+      isDualIsp: false,
       isp: parsed.bogonReason || 'IANA Reserved',
       org: '本地 / 内网保留网段',
       asn: null,
@@ -562,6 +623,7 @@ export async function lookupIpFull(
       score: null,
       grade: '—',
       scoreTone: 'muted',
+      scoreConfidence: 'none',
       lookupStatus: 'unavailable',
       portsKnown: false,
       scoreBase: SCORE_BASE,
@@ -600,6 +662,8 @@ export async function lookupIpFull(
     return { ...cached.data, localTimeHm: formatLocalTime(cached.data.timezone) };
   }
 
+  const keys = await resolveOptionalKeys(optionalKeys);
+
   interface IpWhoResp {
     success?: boolean;
     continent_code?: string;
@@ -632,6 +696,68 @@ export async function lookupIpFull(
     hosting?: boolean;
   }
 
+  interface IpQueryResp {
+    ip?: string;
+    isp?: { asn?: string; org?: string; isp?: string };
+    location?: {
+      country?: string;
+      country_code?: string;
+      city?: string;
+      state?: string;
+      latitude?: number;
+      longitude?: number;
+      timezone?: string;
+    };
+    risk?: {
+      is_mobile?: boolean;
+      is_vpn?: boolean;
+      is_tor?: boolean;
+      is_proxy?: boolean;
+      is_datacenter?: boolean;
+      risk_score?: number;
+    };
+  }
+
+  interface ProxyCheckEntry {
+    asn?: string;
+    provider?: string;
+    organisation?: string;
+    country?: string;
+    isocode?: string;
+    region?: string;
+    city?: string;
+    timezone?: string;
+    latitude?: number;
+    longitude?: number;
+    proxy?: string; // "yes" | "no"
+    type?: string;  // "VPN" | "TOR" | "Hosting" | "Business" | "ISP" | "Wireless" | "Residential"
+    risk?: number;  // 0 - 100
+  }
+
+  interface IpapiIsResp {
+    ip?: string;
+    is_mobile?: boolean;
+    is_datacenter?: boolean;
+    is_tor?: boolean;
+    is_proxy?: boolean;
+    is_vpn?: boolean;
+    is_abuser?: boolean;
+    company?: { name?: string; domain?: string; type?: string; abuser_score?: string };
+    asn?: { asn?: number; org?: string; domain?: string; type?: string; country?: string; abuser_score?: string };
+    location?: { country_code?: string; state?: string; city?: string; timezone?: string; latitude?: number; longitude?: number };
+  }
+
+  interface AbuseIpdbResp {
+    data?: {
+      abuseConfidenceScore?: number;
+      totalReports?: number;
+      usageType?: string;
+      isp?: string;
+      domain?: string;
+      isTor?: boolean;
+    };
+  }
+
   interface ShodanResp {
     ports?: number[];
     hostnames?: string[];
@@ -640,46 +766,108 @@ export async function lookupIpFull(
     noRecord?: boolean;
   }
 
-  const [ipWhoRaw, ipApiRaw, shodanRaw, routing, dnsblChecks] = await Promise.all([
+  const proxyCheckUrl = `https://proxycheck.io/v2/${encodeURIComponent(parsed.normalized)}?vpn=1&asn=1&risk=1${
+    keys.proxycheckKey ? `&key=${encodeURIComponent(keys.proxycheckKey)}` : ''
+  }`;
+
+  const [ipWhoRaw, ipApiRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw] = await Promise.all([
     fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300),
     fetchJson<IpApiResp>(
       `http://ip-api.com/json/${encodeURIComponent(parsed.normalized)}?lang=zh-CN&fields=status,continentCode,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as,mobile,proxy,hosting`,
       2300
     ),
+    fetchJson<IpQueryResp>(`https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`, 2200),
+    fetchJson<Record<string, unknown>>(proxyCheckUrl, 2200),
     parsed.version === 4 ? fetchShodan<ShodanResp>(parsed.normalized) : Promise.resolve(null),
     fetchRirAndRouting(parsed.normalized),
     parsed.version === 4 ? checkIpv4Dnsbl(parsed.normalized) : Promise.resolve([]),
+    // 方案 B 可选增强源：配置了 Key 时并发接入 ipapi.is 与 AbuseIPDB
+    keys.ipapiIsKey
+      ? fetchJson<IpapiIsResp>(`https://api.ipapi.is/?q=${encodeURIComponent(parsed.normalized)}&key=${encodeURIComponent(keys.ipapiIsKey)}`, 2300)
+      : Promise.resolve(null),
+    keys.abuseIpdbKey
+      ? fetchJson<AbuseIpdbResp>(
+          `https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(parsed.normalized)}&maxAgeInDays=90`,
+          2300,
+          { Key: keys.abuseIpdbKey }
+        )
+      : Promise.resolve(null),
   ]);
 
-  // HTTP 200 with an error payload or an empty object is still missing data.
+  // 严格校验各上游返回：空对象（如测试桩默认返回）或错误状态不采信
   const ipWho = ipWhoRaw?.success === true ? ipWhoRaw : null;
   const ipApi = ipApiRaw?.status === 'success' ? ipApiRaw : null;
+  const ipQuery = ipQueryRaw && ipQueryRaw.ip && (ipQueryRaw.isp || ipQueryRaw.risk || ipQueryRaw.location) ? ipQueryRaw : null;
+  const pcEntry: ProxyCheckEntry | null =
+    proxyCheckRaw && (proxyCheckRaw.status === 'ok' || proxyCheckRaw.status === 'warning')
+      && typeof proxyCheckRaw[parsed.normalized] === 'object' && proxyCheckRaw[parsed.normalized] !== null
+      ? (proxyCheckRaw[parsed.normalized] as ProxyCheckEntry)
+      : null;
+  const ipapiIs = ipapiIsRaw && typeof ipapiIsRaw.asn === 'object' && ipapiIsRaw.asn !== null ? ipapiIsRaw : null;
+  const abuseData = abuseRaw && typeof abuseRaw.data?.abuseConfidenceScore === 'number' ? abuseRaw.data : null;
+
   const shodan = shodanRaw && Array.isArray(shodanRaw.ports) && Array.isArray(shodanRaw.tags)
     && Array.isArray(shodanRaw.vulns) ? shodanRaw : null;
+  const dnsblAnswered = dnsblChecks.filter((c) => c.status !== 'unknown').length;
   const dnsblListed = dnsblChecks.filter((c) => c.status === 'listed').map((c) => c.name);
   const dnsblComplete = parsed.version === 4 && dnsblChecks.length === DNSBL_ZONES.length
-    && dnsblChecks.every((c) => c.status !== 'unknown');
-  const cf = isSelf && cfMeta ? cfMeta : null;
-  const countryCode = ((cf?.country as string) || ipWho?.country_code || ipApi?.countryCode || '').toUpperCase();
-  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || ipApi?.continentCode || '').toUpperCase();
-  const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipApi?.country || countryCode);
-  const flagEmoji = isoToFlag(countryCode);
-  const region = ipApi?.regionName || ipWho?.region || (cf?.region as string) || '—';
-  const city = ipApi?.city || ipWho?.city || (cf?.city as string) || '—';
-  const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
-  const regionEn = englishPlace(ipWho?.region, cf?.region, ipApi?.regionName);
-  const cityEn = englishPlace(ipWho?.city, cf?.city, ipApi?.city);
-  const latitude = ipWho?.latitude ?? ipApi?.lat ?? (cf?.latitude ? Number(cf.latitude) : null);
-  const longitude = ipWho?.longitude ?? ipApi?.lon ?? (cf?.longitude ? Number(cf.longitude) : null);
-  const timezone = ipWho?.timezone?.id || ipApi?.timezone || (cf?.timezone as string) || '—';
+    && dnsblAnswered === DNSBL_ZONES.length;
 
-  const asFromApi = ipApi?.as ? Number((ipApi.as.match(/^AS(\d+)/i) || [])[1]) || null : null;
-  const asn = (cf?.asn ? Number(cf.asn) : null) || ipWho?.connection?.asn || asFromApi || routing.bgpAsn || null;
+  const cf = isSelf && cfMeta ? cfMeta : null;
+  const countryCode = (
+    (cf?.country as string)
+    || ipWho?.country_code
+    || ipApi?.countryCode
+    || ipQuery?.location?.country_code
+    || pcEntry?.isocode
+    || ipapiIs?.location?.country_code
+    || ''
+  ).toUpperCase();
+  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || ipApi?.continentCode || '').toUpperCase();
+  const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipApi?.country || ipQuery?.location?.country || pcEntry?.country || countryCode);
+  const flagEmoji = isoToFlag(countryCode);
+  const region = ipApi?.regionName || ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || (cf?.region as string) || '—';
+  const city = ipApi?.city || ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || (cf?.city as string) || '—';
+  const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
+  const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region, ipApi?.regionName);
+  const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, cf?.city, ipApi?.city);
+  const latitude = ipWho?.latitude ?? ipApi?.lat ?? ipQuery?.location?.latitude ?? pcEntry?.latitude ?? ipapiIs?.location?.latitude ?? (cf?.latitude ? Number(cf.latitude) : null);
+  const longitude = ipWho?.longitude ?? ipApi?.lon ?? ipQuery?.location?.longitude ?? pcEntry?.longitude ?? ipapiIs?.location?.longitude ?? (cf?.longitude ? Number(cf.longitude) : null);
+  const timezone = ipWho?.timezone?.id || ipApi?.timezone || ipQuery?.location?.timezone || pcEntry?.timezone || ipapiIs?.location?.timezone || (cf?.timezone as string) || '—';
+
+  const parseAsnStr = (s?: string) => (s ? Number((s.match(/(\d+)/) || [])[1]) || null : null);
+  const asn = (cf?.asn ? Number(cf.asn) : null)
+    || ipWho?.connection?.asn
+    || parseAsnStr(ipApi?.as)
+    || ipapiIs?.asn?.asn
+    || parseAsnStr(ipQuery?.isp?.asn)
+    || parseAsnStr(pcEntry?.asn)
+    || routing.bgpAsn
+    || null;
   const profile = asn ? KNOWN_ASN_PROFILES[asn] : undefined;
 
-  const isp = ipWho?.connection?.isp || ipApi?.isp || (cf?.asOrganization as string) || profile?.name || '未知';
-  const org = ipApi?.org || ipWho?.connection?.org || (cf?.asOrganization as string) || isp;
-  let domain = ipWho?.connection?.domain || '';
+  // 若 ASN 不在内置 160+ 表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型
+  const peeringDb = asn && !profile ? await fetchPeeringDbType(asn) : null;
+
+  const isp = ipWho?.connection?.isp
+    || ipApi?.isp
+    || ipQuery?.isp?.isp
+    || pcEntry?.provider
+    || ipapiIs?.company?.name
+    || abuseData?.isp
+    || (cf?.asOrganization as string)
+    || profile?.name
+    || peeringDb?.name
+    || '未知';
+  const org = ipApi?.org
+    || ipWho?.connection?.org
+    || ipQuery?.isp?.org
+    || pcEntry?.organisation
+    || ipapiIs?.asn?.org
+    || (cf?.asOrganization as string)
+    || isp;
+
+  let domain = ipWho?.connection?.domain || ipapiIs?.company?.domain || ipapiIs?.asn?.domain || abuseData?.domain || '';
   if (!domain && org) {
     if (/tencent/i.test(isp + org)) domain = 'tencent.com';
     else if (/alibaba|aliyun/i.test(isp + org)) domain = 'alibabacloud.com';
@@ -688,16 +876,38 @@ export async function lookupIpFull(
     else if (/amazon|aws/i.test(isp + org)) domain = 'amazonaws.com';
     else if (/comcast/i.test(isp + org)) domain = 'comcast.com';
     else if (/chunghwa|hinet/i.test(isp + org)) domain = 'hinet.net';
+    else if (asn) domain = `as${asn}.net`;
   }
 
-  const upstreamHosting = Boolean(ipWho?.security?.hosting || ipApi?.hosting);
-  const upstreamMobile = Boolean(ipApi?.mobile);
-  const classifiedUsage = classifyIspAndAsn(asn, `${isp} ${org}`, upstreamHosting, upstreamMobile);
-  const residentialEvidence = profile?.type === 'residential' || /telecom|broadband|cable|communications|fiber|fios/i.test(`${isp} ${org}`);
-  const usage = classifiedUsage === 'residential' && !residentialEvidence ? 'unknown' : classifiedUsage;
+  const pcTypeLow = String(pcEntry?.type || '').trim().toLowerCase();
+  const ipapiCompanyType = ipapiIs?.company?.type || '';
+  const ipapiAsnType = ipapiIs?.asn?.type || '';
 
-  const networkKnown = usage !== 'unknown' && Boolean(asn || (isp !== '未知' && isp !== '—'));
+  const upstreamHosting = Boolean(
+    ipWho?.security?.hosting
+    || ipApi?.hosting
+    || ipQuery?.risk?.is_datacenter
+    || ipapiIs?.is_datacenter
+    || pcTypeLow === 'hosting'
+    || ipapiCompanyType.toLowerCase() === 'hosting'
+  );
+  const upstreamMobile = Boolean(
+    ipApi?.mobile
+    || ipQuery?.risk?.is_mobile
+    || ipapiIs?.is_mobile
+    || pcTypeLow === 'wireless'
+  );
+  const upstreamTypeHint = ipapiCompanyType || ipapiAsnType
+    || (pcTypeLow === 'isp' || pcTypeLow === 'residential' ? 'isp' : pcTypeLow === 'business' ? 'business' : '');
+
+  const hasOperatorIdentity = Boolean(asn || (isp !== '未知' && isp !== '—'));
+  const usage: UsageType | 'unknown' = hasOperatorIdentity
+    ? classifyIspAndAsn(asn, `${isp} ${org}`, upstreamHosting, upstreamMobile, peeringDb?.infoType, upstreamTypeHint)
+    : 'unknown';
+
+  const networkKnown = usage !== 'unknown' && hasOperatorIdentity;
   const isDatacenter = networkKnown ? usage === 'hosting' || usage === 'cdn' : null;
+
   let ipTypeLabel = '家庭宽带';
   let ipTypeTone: 'green' | 'amber' | 'danger' | 'gray' = 'green';
   if (usage === 'hosting') {
@@ -713,14 +923,16 @@ export async function lookupIpFull(
     ipTypeLabel = '教育网';
     ipTypeTone = 'green';
   } else if (usage === 'business') {
-    ipTypeLabel = '企业专线';
+    ipTypeLabel = '商业网络';
+    ipTypeTone = 'gray';
+  }
+  if (!networkKnown) {
+    ipTypeLabel = '未知';
     ipTypeTone = 'gray';
   }
 
-  if (!networkKnown) { ipTypeLabel = '未知'; ipTypeTone = 'gray'; }
-
   const rirName = routing.rirName || '—';
-  const rirCountry = (routing.rirCountry || '').toUpperCase();
+  const rirCountry = (routing.rirCountry || ipapiIs?.asn?.country || '').toUpperCase();
   const isNative = countryCode && rirCountry ? usage !== 'cdn' && rirCountry === countryCode : null;
 
   const tags = (shodan?.tags || []).map((t) => t.toLowerCase());
@@ -729,23 +941,82 @@ export async function lookupIpFull(
   const proxyPorts = openPorts.filter((p) => PROXY_PORTS_SET.has(p));
   const ptrRecord = routing.ptrRecord || shodan?.hostnames?.[0] || '—';
 
-  const hasScanner = tags.includes('scanner');
-  const hasCompromised = tags.includes('compromised') || tags.includes('malware');
-  const threatFound = Boolean(hasCompromised || hasScanner || vulnsCount > 0 || dnsblListed.length > 0);
-  const hasThreat = threatFound ? true : shodan && dnsblComplete ? false : null;
-  const threatLabel = dnsblListed.length ? `命中黑名单 (${dnsblListed.join(', ')})`
-    : hasScanner ? '扫描活动记录' : hasCompromised ? '存在风险记录'
-      : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE`
-        : hasThreat === false ? '已查来源未见威胁' : '威胁数据不完整';
-
-  const isTor = Boolean(ipWho?.security?.tor || tags.includes('tor'));
-  const isVpn = Boolean(ipWho?.security?.vpn || tags.includes('vpn') || (profile && profile.riskModifier <= -60));
-  const proxyFound = Boolean(isTor || isVpn || ipWho?.security?.proxy || ipApi?.proxy || proxyPorts.length > 0);
-  const securityKnown = ipApi && typeof ipApi.proxy === 'boolean'
-    || ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean');
+  const isTor = Boolean(
+    ipWho?.security?.tor
+    || ipQuery?.risk?.is_tor
+    || ipapiIs?.is_tor
+    || abuseData?.isTor
+    || pcTypeLow === 'tor'
+    || tags.includes('tor')
+  );
+  const isVpn = Boolean(
+    ipWho?.security?.vpn
+    || ipQuery?.risk?.is_vpn
+    || ipapiIs?.is_vpn
+    || pcTypeLow === 'vpn'
+    || tags.includes('vpn')
+    || (profile && profile.riskModifier <= -60)
+  );
+  const proxyFound = Boolean(
+    isTor
+    || isVpn
+    || ipWho?.security?.proxy
+    || ipApi?.proxy
+    || ipQuery?.risk?.is_proxy
+    || ipapiIs?.is_proxy
+    || pcEntry?.proxy === 'yes'
+    || proxyPorts.length > 0
+  );
+  const securityKnown = Boolean(
+    (ipApi && typeof ipApi.proxy === 'boolean')
+    || (ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean'))
+    || (ipQuery?.risk && typeof ipQuery.risk.is_proxy === 'boolean')
+    || (pcEntry && (pcEntry.proxy === 'yes' || pcEntry.proxy === 'no'))
+    || (ipapiIs && typeof ipapiIs.is_proxy === 'boolean')
+  );
   const isProxy = proxyFound ? true : securityKnown ? false : null;
   const proxyLabel = isTor ? 'Tor 出口' : isVpn ? 'VPN 节点' : isProxy === true ? '公开代理'
     : isProxy === false ? '已查来源未见代理' : '代理状态未知';
+
+  const isDualIsp = detectDualIsp({
+    usage,
+    asn,
+    isp,
+    org,
+    isDatacenter,
+    isProxy,
+    ipapiCompanyType,
+    ipapiAsnType,
+    peeringDbType: peeringDb?.infoType,
+  });
+
+  const hasScanner = tags.includes('scanner');
+  const hasCompromised = tags.includes('compromised') || tags.includes('malware');
+  const highAbuseScore = Boolean(
+    (typeof abuseData?.abuseConfidenceScore === 'number' && abuseData.abuseConfidenceScore >= 25)
+    || ipapiIs?.is_abuser === true
+    || (typeof ipQuery?.risk?.risk_score === 'number' && ipQuery.risk.risk_score >= 65)
+    || (typeof pcEntry?.risk === 'number' && pcEntry.risk >= 75 && !proxyFound)
+  );
+  const threatFound = Boolean(hasCompromised || hasScanner || vulnsCount > 0 || dnsblListed.length > 0 || highAbuseScore);
+  const threatEvaluated = parsed.version === 6
+    ? Boolean(securityKnown || abuseData || ipQuery?.risk || pcEntry)
+    : Boolean((shodan && dnsblComplete) || (dnsblAnswered >= 2 && (shodan || ipQuery?.risk || pcEntry || abuseData)));
+  const hasThreat = threatFound ? true : (parsed.version === 4 ? Boolean(shodan && dnsblComplete) : threatEvaluated) ? false : null;
+
+  const threatLabel = dnsblListed.length
+    ? `命中黑名单 (${dnsblListed.join(', ')})`
+    : abuseData && abuseData.abuseConfidenceScore! >= 25
+      ? `滥用举报 (${abuseData.abuseConfidenceScore}%)`
+      : hasScanner
+        ? '扫描活动记录'
+        : hasCompromised || highAbuseScore
+          ? '存在风险记录'
+          : vulnsCount > 0
+            ? `${vulnsCount} 个历史 CVE`
+            : hasThreat === false || (parsed.version === 4 && dnsblAnswered >= 2 && !threatFound && Boolean(shodan))
+              ? '已查来源未见威胁'
+              : '威胁数据不完整';
 
   // 分值都在 score-rules.ts；每一项连同它依据的原始数据记进 factors，页面上可以逐项展开核对
   const flag = (v: unknown) => (typeof v === 'boolean' ? String(v) : '');
@@ -753,15 +1024,17 @@ export async function lookupIpFull(
     const text = value === null || value === undefined ? '' : String(value).trim();
     return text ? [{ source, field, value: text.slice(0, 160) }] : [];
   };
-  /* 没有记录时证据只列一行，不逐个字段重复 "[]" */
   const shodanEmpty = shodan?.noRecord ? ev('Shodan InternetDB', 'HTTP 404', 'No information available') : null;
   const shodanTags = shodanEmpty || (shodan ? ev('Shodan InternetDB', 'tags', tags.join(', ') || '[]') : []);
 
-  const networkDelta = !networkKnown ? 0 : usage === 'hosting' ? SCORE_DELTAS.hosting : usage === 'cdn' ? SCORE_DELTAS.cdn
-    : usage === 'mobile' ? SCORE_DELTAS.mobile : 0;
+  const networkDelta = !networkKnown ? 0
+    : usage === 'hosting' ? SCORE_DELTAS.hosting
+      : usage === 'cdn' ? SCORE_DELTAS.cdn
+        : usage === 'business' ? SCORE_DELTAS.business
+          : usage === 'mobile' ? SCORE_DELTAS.mobile : 0;
   const nativeDelta = isNative === false && usage !== 'cdn' ? SCORE_DELTAS.nonNative : 0;
   const proxyDelta = isProxy ? SCORE_DELTAS.proxy : 0;
-  const reputationDelta = dnsblListed.length > 0 || hasThreat ? SCORE_DELTAS.reputation : 0;
+  const reputationDelta = dnsblListed.length > 0 || threatFound ? SCORE_DELTAS.reputation : 0;
   const portsDelta = openPorts.length > MANY_PORTS_THRESHOLD ? SCORE_DELTAS.manyPorts : 0;
 
   const factors: ScoreFactor[] = [
@@ -770,7 +1043,7 @@ export async function lookupIpFull(
       label: '网络类型',
       status: ipTypeLabel,
       delta: networkDelta,
-      tone: !networkKnown ? 'muted' : usage === 'hosting' ? 'leak' : usage === 'cdn' ? 'warn' : 'ok',
+      tone: !networkKnown ? 'muted' : usage === 'hosting' ? 'leak' : usage === 'cdn' || usage === 'business' ? 'warn' : 'ok',
       evidence: [
         ...ev('Cloudflare', 'request.cf.asn', cf?.asn),
         ...ev('ipwho.is', 'connection.asn', ipWho?.connection?.asn),
@@ -781,6 +1054,10 @@ export async function lookupIpFull(
         ...ev('ip-api.com', 'org', ipApi?.org),
         ...ev('ip-api.com', 'hosting', flag(ipApi?.hosting)),
         ...ev('ip-api.com', 'mobile', flag(ipApi?.mobile)),
+        ...ev('ipquery.io', 'risk.is_datacenter', flag(ipQuery?.risk?.is_datacenter)),
+        ...ev('proxycheck.io', 'type', pcEntry?.type),
+        ...(peeringDb ? ev('PeeringDB', 'info_type', `${peeringDb.infoType} (${peeringDb.name})`) : []),
+        ...(ipapiIs ? ev('ipapi.is', 'company.type / asn.type', `${ipapiCompanyType || '—'} / ${ipapiAsnType || '—'}`) : []),
         ...(profile ? ev('JudgeIP ASN 表', `AS${profile.asn}`, `${profile.type} · ${profile.name}`) : []),
       ],
     },
@@ -795,6 +1072,7 @@ export async function lookupIpFull(
         ...ev('Cloudflare', 'request.cf.country', cf?.country),
         ...ev('ipwho.is', 'country_code', ipWho?.country_code),
         ...ev('ip-api.com', 'countryCode', ipApi?.countryCode),
+        ...ev('ipquery.io', 'location.country_code', ipQuery?.location?.country_code),
       ],
     },
     {
@@ -808,6 +1086,9 @@ export async function lookupIpFull(
         ...ev('ipwho.is', 'security.vpn', flag(ipWho?.security?.vpn)),
         ...ev('ipwho.is', 'security.tor', flag(ipWho?.security?.tor)),
         ...ev('ip-api.com', 'proxy', flag(ipApi?.proxy)),
+        ...ev('ipquery.io', 'risk.is_vpn / is_proxy', ipQuery?.risk ? `${Boolean(ipQuery.risk.is_vpn)} / ${Boolean(ipQuery.risk.is_proxy)}` : ''),
+        ...ev('proxycheck.io', 'proxy / type', pcEntry ? `${pcEntry.proxy || 'no'}${pcEntry.type ? ` (${pcEntry.type})` : ''}` : ''),
+        ...(ipapiIs ? ev('ipapi.is', 'is_vpn / is_proxy', `${Boolean(ipapiIs.is_vpn)} / ${Boolean(ipapiIs.is_proxy)}`) : []),
         ...shodanTags,
         ...(shodan && !shodanEmpty ? ev('Shodan InternetDB', '代理特征端口', proxyPorts.join(', ') || '[]') : []),
         ...(profile && profile.riskModifier <= -60 ? ev('JudgeIP ASN 表', `AS${profile.asn}`, profile.note) : []),
@@ -818,9 +1099,13 @@ export async function lookupIpFull(
       label: '黑名单与威胁记录',
       status: threatLabel,
       delta: reputationDelta,
-      tone: hasThreat === null ? 'muted' : hasThreat ? 'leak' : 'ok',
+      tone: hasThreat === null && !threatFound ? 'muted' : threatFound ? 'leak' : 'ok',
       evidence: [
         ...dnsblChecks.flatMap((c) => (c.query ? ev(c.name, c.query, c.answer || '无响应') : [])),
+        ...(typeof pcEntry?.risk === 'number' ? ev('proxycheck.io', 'risk', `${pcEntry.risk} / 100`) : []),
+        ...(typeof ipQuery?.risk?.risk_score === 'number' ? ev('ipquery.io', 'risk_score', `${ipQuery.risk.risk_score} / 100`) : []),
+        ...(abuseData ? ev('AbuseIPDB', 'abuseConfidenceScore', `${abuseData.abuseConfidenceScore}% (${abuseData.totalReports || 0} reports)`) : []),
+        ...(ipapiIs?.company?.abuser_score ? ev('ipapi.is', 'abuser_score', ipapiIs.company.abuser_score) : []),
         ...shodanTags,
         ...(shodan && !shodanEmpty ? ev('Shodan InternetDB', 'vulns', (shodan.vulns || []).slice(0, 8).join(', ') || '[]') : []),
       ],
@@ -837,26 +1122,49 @@ export async function lookupIpFull(
 
   const rawScore = SCORE_BASE + factors.reduce((sum, f) => sum + f.delta, 0);
   const computedScore = clampScore(rawScore);
-  // 分数限制在 5–99 之间；被截断时单列一项，各项相加才对得上最终分数
   if (computedScore !== rawScore) {
     factors.push({ key: 'clamp', label: '分数上下限', status: '限制在 5–99 之间', delta: computedScore - rawScore, tone: 'muted', evidence: [] });
   }
 
-  const scoreReady = networkKnown && Boolean(countryCode) && isNative !== null && isProxy !== null
-    && hasThreat !== null && Boolean(shodan) && dnsblComplete;
-  const score = scoreReady ? computedScore : null;
+  // 置信度分级（对齐 IPFinal / CleanIP）：
+  // - high：IPv4 且网络类型、定位国、原生性、代理状态、Shodan 端口、全部 4 个 DNSBL 均已确认
+  // - medium：具备网络类型 + 定位国 + 代理状态，且（IPv6 免测端口/DNSBL，或 IPv4 至少 2 个 DNSBL 答复 / 备选风险源就位）
+  // - low：具备网络类型 + 定位国 + 代理状态，但原生性或外围黑名单未返回
+  // - none：基础归属或安全状态全灭，不出分
+  const fullIpv4Evidence = parsed.version === 4 && networkKnown && Boolean(countryCode) && isNative !== null
+    && isProxy !== null && Boolean(shodan) && dnsblComplete;
+  const mediumEvidence = networkKnown && Boolean(countryCode) && isProxy !== null && (
+    parsed.version === 6
+      ? isNative !== null || Boolean(ipQuery || pcEntry || ipapiIs)
+      : (dnsblAnswered >= 2 && Boolean(shodan || ipQuery || pcEntry)) || (dnsblComplete && !shodan && Boolean(ipQuery || pcEntry))
+  );
+  const lowEvidence = networkKnown && Boolean(countryCode) && isProxy !== null && Boolean(ipQuery || pcEntry || ipapiIs);
+
+  const scoreConfidence: ScoreConfidence = fullIpv4Evidence
+    ? 'high'
+    : mediumEvidence
+      ? 'medium'
+      : lowEvidence
+        ? 'low'
+        : 'none';
+
+  const score = scoreConfidence !== 'none' ? computedScore : null;
   const scoreTone = score === null ? 'muted' : score >= 78 ? 'good' : score >= 50 ? 'warn' : 'bad';
   const grade = score === null ? '—' : scoreToCleanGrade(score);
-  const lookupStatus = scoreReady ? 'complete' : networkKnown || countryCode || routing.bgpPrefix || shodan || dnsblComplete ? 'partial' : 'unavailable';
+  const lookupStatus = fullIpv4Evidence
+    ? 'complete'
+    : score !== null || networkKnown || countryCode || routing.bgpPrefix || shodan || dnsblComplete
+      ? 'partial'
+      : 'unavailable';
 
   const rpkiStatus = routing.rpkiStatus || 'unknown';
   const rpkiLabel = rpkiStatus === 'valid' ? 'RPKI 有效 (Valid)' : rpkiStatus === 'invalid' ? 'RPKI 异常 (Invalid)' : rpkiStatus === 'not_found' ? '未签发 ROA' : 'RPKI 状态未知';
 
   const scenes = score !== null ? buildSceneFitMatrix({
     usage,
-    isNative: isNative === true,
+    isNative: isNative !== false,
     isProxy: isProxy === true,
-    hasThreat: hasThreat === true,
+    hasThreat: threatFound,
     dnsblCount: dnsblListed.length,
     countryCode,
     score,
@@ -890,13 +1198,13 @@ export async function lookupIpFull(
     },
     {
       label: '扫描器与自动化标记',
-      status: !shodan ? '查询未完成' : hasScanner ? '存在扫描行为' : '无记录',
-      tone: !shodan ? 'muted' : hasScanner ? 'warn' : 'ok',
+      status: parsed.version === 6 ? '仅支持 IPv4' : !shodan ? '查询未完成' : hasScanner ? '存在扫描行为' : '无记录',
+      tone: parsed.version === 6 || !shodan ? 'muted' : hasScanner ? 'warn' : 'ok',
     },
     {
       label: '失陷主机 / 漏洞暴露',
-      status: !shodan ? '查询未完成' : hasCompromised ? '失陷标记' : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE` : '正常',
-      tone: !shodan ? 'muted' : hasCompromised ? 'leak' : vulnsCount > 0 ? 'warn' : 'ok',
+      status: parsed.version === 6 ? '仅支持 IPv4' : !shodan ? '查询未完成' : hasCompromised ? '失陷标记' : vulnsCount > 0 ? `${vulnsCount} 个历史 CVE` : '正常',
+      tone: parsed.version === 6 || !shodan ? 'muted' : hasCompromised ? 'leak' : vulnsCount > 0 ? 'warn' : 'ok',
     },
   ];
 
@@ -907,6 +1215,7 @@ export async function lookupIpFull(
     ipTypeLabel,
     ipTypeTone,
     usageType: networkKnown ? usage : 'unknown',
+    isDualIsp,
     isp,
     org,
     asn,
@@ -923,6 +1232,7 @@ export async function lookupIpFull(
     score,
     grade,
     scoreTone,
+    scoreConfidence,
     lookupStatus,
     portsKnown: Boolean(shodan),
     scoreBase: SCORE_BASE,
@@ -958,6 +1268,7 @@ export async function lookupIpFull(
     const first = memCache.keys().next().value;
     if (first) memCache.delete(first);
   }
-  memCache.set(cacheKey, { exp: Date.now() + (lookupStatus === 'complete' ? CACHE_COMPLETE_MINUTES * 60 * 1000 : CACHE_PARTIAL_SECONDS * 1000), data: result });
+  const cacheTtlMs = score !== null ? CACHE_COMPLETE_MINUTES * 60 * 1000 : CACHE_PARTIAL_SECONDS * 1000;
+  memCache.set(cacheKey, { exp: Date.now() + cacheTtlMs, data: result });
   return result;
 }

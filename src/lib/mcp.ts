@@ -33,7 +33,7 @@ export const MCP_TOOLS = [
     name: 'check_ip',
     title: 'Check an IP address',
     description:
-      'Look up one IPv4 or IPv6 address on JudgeIP: network type (residential, mobile, data center, CDN), operator and ASN, location, whether registry and geolocation countries match (native IP), proxy/VPN/Tor flags, DNS blocklists, open ports, and a 5-99 score with the points added or subtracted for each item. IPv6 addresses get no score. Omit `ip` to check the address this request came from, which is the machine running the MCP client (for hosted clients, the provider\'s server rather than the user).',
+      'Look up one IPv4 or IPv6 address on JudgeIP: network type (residential, mobile, business, data center, CDN), Dual-ISP status, operator and ASN, location, whether registry and geolocation countries match (native IP), proxy/VPN/Tor flags, DNS blocklists, open ports, and a 5-99 purity score with confidence level and points added or subtracted for each item. Omit `ip` to check the address this request came from, which is the machine running the MCP client (for hosted clients, the provider\'s server rather than the user).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -82,15 +82,18 @@ export function renderRulesText(lang: Lang): string {
   for (const rule of SCORE_RULES) {
     lines.push('', rule.label[lang]);
     for (const row of rule.rows) lines.push(`  ${formatDelta(row.delta).padStart(3)}  ${row.when[lang]}`);
-    lines.push(`  ${en ? 'Basis: ' : '依据：'}${rule.basis[lang]}`, `  ${en ? 'Sources: ' : '数据来源：'}${rule.sources.join(en ? ', ' : '、')}`);
+    lines.push(
+      `  ${en ? 'Basis: ' : '依据：'}${rule.basis[lang]}`,
+      `  ${en ? 'Sources: ' : '数据来源：'}${rule.sources.map((s) => (typeof s === 'string' ? s : s[lang])).join(en ? ', ' : '、')}`,
+    );
   }
   lines.push('', en ? 'Grades' : '等级');
   SCORE_GRADES.forEach((g, i) => lines.push(`  ${g.grade.padEnd(2)}  ${Math.max(g.min, SCORE_MIN)}-${i === 0 ? SCORE_MAX : SCORE_GRADES[i - 1].min - 1}`));
   lines.push(
     '',
     en
-      ? 'No score is given when any input is missing: IPv6 addresses (port and blocklist data cover IPv4 only), an undetermined network type, a missing registry or geolocation country, or a blocklist or port source that did not answer. Missing data is never treated as clean.'
-      : '评分所需的数据缺任何一项就不出分：IPv6 地址（端口与黑名单数据只覆盖 IPv4）、网络类型无法判定、拿不到注册国家或定位国家、黑名单或端口数据源没有答复。缺的数据不按“正常”处理。',
+      ? 'Scores carry a confidence level: high (all IPv4 feeds answered), medium (IPv6 or partial secondary feeds), or low. No score is given only when core network or security feeds all fail, or for reserved addresses.'
+      : '评分附带置信度（高 / 中 / 低）：全部 IPv4 数据源齐备为高置信度；IPv6（免测端口与传统邮件黑名单）或个别次要源未答复时照常出分并标为中/低置信度；仅在基础归属与安全数据源全部不可达或保留地址时不出分。',
     en ? 'These are JudgeIP\'s own rules, not any platform\'s official risk score.' : '这是 JudgeIP 自己的规则，不是任何平台的官方风控分。',
     `https://judgeip.com${en ? '/en' : ''}/scoring`,
   );

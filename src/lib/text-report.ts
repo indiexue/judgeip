@@ -30,10 +30,15 @@ const known = (value: string) => Boolean(value) && value !== '—' && value !== 
 export type Tr = (zh: string, enText: string) => string;
 
 export function scoreText(info: HomeIpLookupResult, t: Tr): string {
-  if (info.score !== null) return `${info.score} / ${SCORE_MAX} · ${info.grade}`;
-  return info.version === 6
-    ? t('未出分（端口与黑名单数据只覆盖 IPv4）', 'No score (port and blocklist data cover IPv4 only)')
-    : t('未出分（有数据源未返回）', 'No score (a data source did not respond)');
+  if (info.score !== null) {
+    const conf = info.scoreConfidence === 'medium'
+      ? t(' · 置信度中', ' · medium confidence')
+      : info.scoreConfidence === 'low'
+        ? t(' · 置信度低', ' · low confidence')
+        : '';
+    return `${info.score} / ${SCORE_MAX} · ${info.grade}${conf}`;
+  }
+  return t('未出分（基础归属或风险数据源未返回）', 'No score (core network or risk sources did not respond)');
 }
 
 export function operatorText(info: HomeIpLookupResult, t: Tr): string {
@@ -81,7 +86,7 @@ export function renderTextReport(info: HomeIpLookupResult, lang: Lang): string {
     add(t('说明', 'Note'), info.bogonReason || info.org);
   } else {
     add(t('评分', 'Score'), scoreText(info, t));
-    add(t('网络类型', 'Network type'), info.ipTypeLabel);
+    add(t('网络类型', 'Network type'), info.isDualIsp ? `${info.ipTypeLabel} · ${t('双 ISP', 'Dual ISP')}` : info.ipTypeLabel);
     add(t('运营商', 'Operator'), operatorText(info, t));
     add(t('位置', 'Location'), locationText(info, t));
     if (known(info.timezone)) add(t('时区', 'Time zone'), info.timezone);

@@ -138,10 +138,9 @@
         return { ip: ip, state: 'match' };
       }
 
-      /* 平台走的是 IPv6、页面上是 IPv4：IPv6 没有评分，按它重新判定只会得到一排「无法判断」，
-         结论留给页面上的 IPv4，在出口一栏说明 */
+      /* 平台走的是 IPv6、页面上是 IPv4：同一双栈线路的两个协议族地址属于正常现象，标为 IPv6 出口并沿用本页 IPv4 的完整核验 */
       if (compared === 'uncompared' && P.isIPv6(ip)) {
-        showExit(row, ip, loc, 'muted', T('IPv6 出口', 'IPv6 egress'), T('IPv6 没有评分，结论按本页的 IPv4', 'IPv6 has no score; verdict uses the IPv4 on this page'));
+        showExit(row, ip, loc, 'muted', T('IPv6 出口', 'IPv6 egress'), T('双栈 IPv6 接入，结论沿用本页 IPv4 完整核验', 'Dual-stack IPv6; verdict uses the full IPv4 check on this page'));
         return { ip: ip, state: 'v6' };
       }
 
