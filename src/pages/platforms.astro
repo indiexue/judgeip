@@ -51,7 +51,7 @@ if (info.isBogon) {
   extraJs={target.isSelf ? ['/assets/js/probe.js', '/assets/js/platforms.js'] : []}
 >
   <section class="hero">
-    <h1 class="hero__title">{t('平台 IP 检测', 'Platform IP check')}</h1>
+    <h1 class="hero__title">{t('平台 IP 检测', 'Platform IP check')}<span class="hero__dot">.</span></h1>
     <p class="hero__lede">
       {t(
         '支付、电商、接单、社交四类平台，逐个列出平台看到的出口 IP、评分门槛和结论。',
@@ -63,12 +63,46 @@ if (info.isBogon) {
   <IpQueryForm action={href('/platforms')} value={target.queryValue} error={target.errorMsg} />
 
   <div class="probe" id="platforms" data-visible-ip={info.ip} data-level-labels={JSON.stringify(Object.fromEntries(LEVELS.map((level) => [level, LEVEL_LABELS[level][lang]])))}>
-    {target.isSelf && (
-      <div class="probe__bar">
-        <button class="probe__run" type="button" data-pf-run>{t('重新检测出口', 'Re-check egress')}</button>
-        <span class="probe__hint" data-pf-progress>{t('页面加载后自动读取各平台看到的出口…', 'Reading the egress each platform sees after the page loads…')}</span>
+    <!-- 4-Card KPI Summary Strip (ipfinal style) -->
+    <div class="stat-cards">
+      <div class="stat-card">
+        <span class="stat-card__label">{t('覆盖平台', 'Platforms')}</span>
+        <span class="stat-card__val mono">{PLATFORMS.length}</span>
       </div>
-    )}
+      <div class="stat-card">
+        <span class="stat-card__label">{LEVEL_LABELS.pass[lang]}</span>
+        <span class="stat-card__val mono is-good" data-pf-kpi="pass">{count('pass')}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">{LEVEL_LABELS.warn[lang]}</span>
+        <span class="stat-card__val mono is-warn" data-pf-kpi="warn">{count('warn')}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">{LEVEL_LABELS.fail[lang]}</span>
+        <span class="stat-card__val mono is-bad" data-pf-kpi="fail">{count('fail')}</span>
+      </div>
+    </div>
+
+    <!-- Category Anchor Bar + Re-check Button -->
+    <div class="filter-bar">
+      <div class="filter-bar__pills">
+        {PLATFORM_CATEGORIES.map((category) => {
+          const catCount = PLATFORMS.filter((p) => p.category === category.key).length;
+          return (
+            <a class="filter-pill" href={`#${category.key}`}>
+              <span>{category.label[lang]}</span>
+              <span class="filter-pill__num mono">{catCount}</span>
+            </a>
+          );
+        })}
+      </div>
+      {target.isSelf && (
+        <div class="filter-bar__right">
+          <span class="probe__hint" data-pf-progress>{t('自动读取各平台出口…', 'Reading platform egress…')}</span>
+          <button class="probe__run probe__run--ghost" type="button" data-pf-run>{t('重新检测', 'Re-check')}</button>
+        </div>
+      )}
+    </div>
 
     <div class={`verdict ${tone}`} data-pf-verdict>
       <span class="verdict__dot" aria-hidden="true"></span>
@@ -81,12 +115,15 @@ if (info.isBogon) {
     </div>
 
     <div class="groups">
-      <section class="group">
-        <h2 class="group__title">{target.isSelf ? t('当前 IP', 'Current IP') : t('查询的 IP', 'Queried IP')}</h2>
-        <div class="rows">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">{target.isSelf ? t('当前基准 IP', 'Baseline IP') : t('查询的 IP', 'Queried IP')}</h2>
+          <a class="panel__link mono" href={href(`/ip/${info.ip}`)}>{t('完整报告 ›', 'Full report ›')}</a>
+        </div>
+        <div class="rows rows--flush">
           <div class="row">
             <span class="row__label">IP</span>
-            <span class="row__value"><a class="mono" href={href(`/ip/${info.ip}`)}>{info.ip}</a></span>
+            <span class="row__value"><a class="asn-link mono" href={href(`/ip/${info.ip}`)}>{info.ip}</a></span>
           </div>
           <div class="row">
             <span class="row__label">{t('评分', 'Score')}</span>
@@ -116,15 +153,18 @@ if (info.isBogon) {
       </section>
 
       {PLATFORM_CATEGORIES.map((category) => (
-        <section class="group" id={category.key}>
-          <h2 class="group__title">{category.label[lang]}</h2>
-          <div class="tablewrap">
+        <section class="panel" id={category.key}>
+          <div class="panel__head">
+            <h2 class="panel__title">{category.label[lang]}</h2>
+            <span class="panel__sub mono">{PLATFORMS.filter((p) => p.category === category.key).length}</span>
+          </div>
+          <div class="tablewrap tablewrap--flush">
             <table class="dtable">
               <thead>
                 <tr>
                   <th scope="col">{t('平台', 'Platform')}</th>
                   {target.isSelf && <th scope="col">{t('平台看到的出口', 'Egress it sees')}</th>}
-                  <th scope="col" class="num">{t('门槛', 'Threshold')}</th>
+                  <th scope="col" class="num">{t('推荐门槛', 'Threshold')}</th>
                   <th scope="col">{t('要求', 'Requires')}</th>
                   <th scope="col">{t('结论', 'Verdict')}</th>
                 </tr>
@@ -134,13 +174,21 @@ if (info.isBogon) {
                   const v = verdicts.get(p.id)!;
                   return (
                     <tr data-platform={p.id} data-trace={p.traceHost} data-level={v.level}>
-                      <th scope="row">{p.name}</th>
+                      <th scope="row">
+                        <span class="pf-name">
+                          <span class="pf-mark" aria-hidden="true">{p.name.charAt(0)}</span>
+                          <span>
+                            <strong>{p.name}</strong>
+                            {p.traceHost && <span class="dtable__sub mono">{p.traceHost}</span>}
+                          </span>
+                        </span>
+                      </th>
                       {target.isSelf && (
                         <td data-pf-exit>
                           <span class="dim">{p.traceHost ? t('待检测', 'Pending') : t('读不到，按当前 IP 推断', 'Not readable; inferred from current IP')}</span>
                         </td>
                       )}
-                      <td class="num">{p.minScore}</td>
+                      <td class="num mono">≥ {p.minScore}</td>
                       <td>{p.requires.map((r) => REQUIREMENT_LABELS[r][lang]).join(sep)}</td>
                       <td data-pf-result>
                         <span class={`tag ${TAG[v.level]}`}>{v.label}</span>

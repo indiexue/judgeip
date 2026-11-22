@@ -60,9 +60,12 @@ const channels = [
     </div>
 
     <div class="groups">
-      <section class="group">
-        <h2 class="group__title">{t('各通道的出口', 'Egress by channel')}</h2>
-        <div class="tablewrap">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">{t('各通道的出口', 'Egress by channel')}</h2>
+          <span class="panel__sub">{t('点击任意 IP 查看完整报告', 'Click any IP for full report')}</span>
+        </div>
+        <div class="tablewrap tablewrap--flush">
           <table class="dtable dtable--egress">
             <thead>
               <tr>

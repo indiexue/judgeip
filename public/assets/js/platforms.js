@@ -111,12 +111,16 @@
   }
 
   function summarize() {
-    if (!verdict || !verdictTitle) return;
     var counts = {};
     rows.forEach(function (row) {
       var level = row.node.getAttribute('data-level') || 'unknown';
       counts[level] = (counts[level] || 0) + 1;
     });
+    ['pass', 'warn', 'fail', 'unknown'].forEach(function (k) {
+      var kpi = root.querySelector('[data-pf-kpi="' + k + '"]');
+      if (kpi) kpi.textContent = String(counts[k] || 0);
+    });
+    if (!verdict || !verdictTitle) return;
     verdictTitle.textContent = LEVELS.filter(function (level) { return counts[level]; }).map(function (level) {
       return (labels[level] || level) + ' ' + counts[level];
     }).join(' · ');

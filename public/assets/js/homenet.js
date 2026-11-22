@@ -260,6 +260,25 @@
       .catch(function () {});
   }
 
+  function scoreRiskTier(score, version) {
+    if (typeof score !== 'number') {
+      return {
+        cls: 'muted',
+        badge: 'gray',
+        label: T('暂未评分', 'No score'),
+        desc: version === 6
+          ? T('端口与黑名单数据仅覆盖 IPv4，暂不出综合分', 'Port and blocklist feeds cover IPv4 only')
+          : T('部分公开数据源未及时返回，暂不出分', 'Some upstream sources did not respond in time')
+      };
+    }
+    if (score >= 90) return { cls: 'excellent', badge: 'green', label: T('极度纯净', 'Pristine'), desc: T('原生或家用特征清晰，未发现代理与黑名单风险', 'Clean residential/mobile signals with no proxy or blocklist hits') };
+    if (score >= 80) return { cls: 'good', badge: 'green', label: T('纯净', 'Clean'), desc: T('信誉记录良好，适合绝大多数主流平台', 'Solid reputation suitable for most mainstream platforms') };
+    if (score >= 68) return { cls: 'ok', badge: 'green', label: T('正常', 'Normal'), desc: T('存在少量非家用或广播特征，常规访问正常', 'Minor non-residential or geo-announced traits; normal for general use') };
+    if (score >= 50) return { cls: 'warn', badge: 'amber', label: T('低风险', 'Low risk'), desc: T('有一定机房或代理特征，敏感平台可能要求二次验证', 'Hosting or proxy indicators present; strict platforms may challenge') };
+    if (score >= 30) return { cls: 'bad', badge: 'danger', label: T('中风险', 'Medium risk'), desc: T('明显机房、代理或历史漏洞记录，风控平台易拦截', 'Clear hosting, proxy or CVE records; frequently restricted') };
+    return { cls: 'danger', badge: 'danger', label: T('高风险', 'High risk'), desc: T('多项风险与黑名单叠加命中，不建议用于敏感业务', 'Multiple proxy, hosting or blocklist hits stacked') };
+  }
+
   function promoteIpv4ToMainCard(v4) {
     var currentIpEl = document.getElementById('current-ip');
     if (currentIpEl) {
@@ -271,8 +290,14 @@
         currentIpEl.textContent = v4;
       }
     }
+    setFieldText('protoVersion', 'IPv4');
+    setFieldText('cliCmd', 'curl -sL judgeip.com/' + v4);
     var cardLink = document.getElementById('share-card-link');
     if (cardLink) cardLink.href = lp('/card') + '?ip=' + encodeURIComponent(v4);
+    var pfLink = document.getElementById('platforms-check-link');
+    if (pfLink) pfLink.href = lp('/platforms') + '?ip=' + encodeURIComponent(v4);
+    var cmpLink = document.getElementById('compare-ips-link');
+    if (cmpLink) cmpLink.href = lp('/compare') + '?ips=' + encodeURIComponent(v4) + ',8.8.8.8,1.1.1.1';
     document.title = v4 + T(' 的 IP 归属与威胁情报查询 · JudgeIP', ': owner, network type and threat data · JudgeIP');
 
     window.fetch('/api/ipinfo?ip=' + encodeURIComponent(v4) + (window.I18N && I18N.lang === 'en' ? '&lang=en' : ''), {
@@ -286,10 +311,11 @@
 
         setFieldHtml(
           'ipType',
-          '<span class="badge badge--' + esc(info.ipTypeTone) + '">' + esc(info.ipTypeLabel) + '</span>' +
+          '<span class="badge badge--solid badge--' + esc(info.ipTypeTone) + '">' + esc(info.ipTypeLabel) + '</span>' +
           (!info.isBogon
-            ? '<span class="badge badge--' + (info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber') + '" style="margin-left:6px;">' + (info.isNative === null ? T('原生属性未知', 'IP origin unknown') : info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced IP')) + '</span>'
-            : '')
+            ? '<span class="badge badge--solid badge--' + (info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber') + '">' + (info.isNative === null ? T('原生未知', 'Origin unknown') : info.isNative ? T('原生 IP', 'Native IP') : T('广播 IP', 'Geo-announced')) + '</span>'
+            : '') +
+          (info.isProxy ? '<span class="badge badge--solid badge--danger">' + esc(info.proxyLabel) + '</span>' : '')
         );
         setFieldText('isp', info.isp);
         setFieldText('org', info.org);
@@ -301,31 +327,77 @@
         } else {
           setFieldText('asn', '—');
         }
-        setFieldText('domain', info.domain);
+        var domEl = document.querySelector('[data-field="domain"]');
+        if (domEl) {
+          domEl.textContent = info.domain || '—';
+          domEl.hidden = !info.domain || info.domain === '—';
+        }
         setFieldText('rirName', info.rirName);
-        setFieldHtml('datacenter', '<span class="badge badge--' + (info.isDatacenter === null ? 'gray' : info.isDatacenter ? 'danger' : 'green') + '">' + (info.isDatacenter === null ? T('未知', 'Unknown') : info.isDatacenter ? T('是', 'Yes') : T('否', 'No')) + '</span>');
+        setFieldHtml('datacenter', info.isDatacenter ? '<span class="badge badge--danger">' + T('机房 / IDC', 'IDC / Hosting') + '</span>' : '');
         setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
         setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
-        var gradeBadgeTone = info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger';
-        if (typeof info.score !== 'number') {
-          setFieldText('score', T('数据不足，暂不评分', 'Insufficient data to score'));
-        } else {
+
+        var tier = scoreRiskTier(info.score, info.version);
+        var scoreEl = document.querySelector('[data-field="score"]');
+        if (scoreEl) {
+          scoreEl.className = 'hero-score__main is-' + tier.cls;
+          scoreEl.innerHTML =
+            '<span class="hero-score__num mono">' + (typeof info.score === 'number' ? Number(info.score) : '—') + '</span>' +
+            '<div class="hero-score__verdict">' +
+              '<span class="hero-score__pill badge badge--solid badge--' + tier.badge + '">' + esc(tier.label) + '</span>' +
+              '<p class="hero-score__desc">' + esc(tier.desc) + '</p>' +
+            '</div>';
+        }
+        var gradeEl = document.querySelector('[data-field="gradeBadge"]');
+        if (gradeEl) {
+          gradeEl.className = 'badge badge--' + (info.lookupStatus === 'complete' ? 'green' : 'gray');
+          gradeEl.textContent = info.lookupStatus === 'complete' ? T('等级 ', 'Grade ') + info.grade : T('数据不完整', 'Partial data');
+        }
+        var specEl = document.querySelector('[data-field="spectrumThumb"]');
+        if (specEl) {
+          var oldThumb = specEl.querySelector('.spectrum__thumb');
+          if (oldThumb) oldThumb.remove();
+          if (typeof info.score === 'number') {
+            var thumb = document.createElement('span');
+            thumb.className = 'spectrum__thumb is-' + tier.cls;
+            thumb.style.left = Math.max(2, Math.min(98, Number(info.score))) + '%';
+            specEl.appendChild(thumb);
+          }
+        }
+        if (Array.isArray(info.factors)) {
+          var signDelta = function (d) { return d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '0'; };
+          var negs = info.factors.filter(function (f) { return f.delta < 0 && f.key !== 'clamp'; });
+          var reasonsHtml = '';
+          if (negs.length > 0) {
+            reasonsHtml = negs.map(function (f) {
+              return '<li class="hero-reasons__item is-bad"><span class="hero-reasons__dot">×</span><span>' + esc(f.label) + '：' + esc(f.status) + '（<span class="mono">' + signDelta(f.delta) + '</span>）</span></li>';
+            }).join('');
+          } else if (typeof info.score === 'number') {
+            reasonsHtml =
+              '<li class="hero-reasons__item is-good"><span class="hero-reasons__dot">✓</span><span>' + T('网络类型与注册归属核验正常，无扣分项', 'Network type and RIR origin verified with zero deductions') + '</span></li>' +
+              '<li class="hero-reasons__item is-good"><span class="hero-reasons__dot">✓</span><span>' + T((info.dnsblTotal || 4) + ' 个 DNSBL 黑名单与威胁库均未命中', 'Clean across all ' + (info.dnsblTotal || 4) + ' DNSBLs and threat feeds') + '</span></li>';
+          } else {
+            reasonsHtml = '<li class="hero-reasons__item is-muted"><span class="hero-reasons__dot">·</span><span>' + esc(tier.desc) + '</span></li>';
+          }
+          setFieldHtml('heroReasons', reasonsHtml);
+        }
+        if (!info.isBogon) {
+          var listedCount = Array.isArray(info.dnsblListed) ? info.dnsblListed.length : 0;
+          var totalCount = info.dnsblTotal || 4;
+          var openLen = Array.isArray(info.openPorts) ? info.openPorts.length : 0;
+          var rpkiText = info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—';
           setFieldHtml(
-            'score',
-            '<span class="score score--' + esc(info.scoreTone) + '">' +
-            T('<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP 评分 ', '<svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label="IP score ') + Number(info.score) + T(' 分，满分 100 分">', ' out of 100">') +
-            '<rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>' +
-            '<rect class="score__fill" x="0" y="0" width="' + Number(info.score) + '" height="6" rx="3"></rect></svg>' +
-            '<span class="score__num mono">' + Number(info.score) + '<span class="score__total">/100</span></span>' +
-            (info.grade ? '<span class="badge badge--' + gradeBadgeTone + '" style="margin-left:6px;">' + esc(info.grade) + '</span>' : '') +
-            '</span>'
+            'heroKpis',
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('DNSBL 黑名单', 'Blocklists') + '</span><span class="hero-kpi__val mono ' + (listedCount > 0 ? 'is-bad' : 'is-good') + '">' + listedCount + ' / ' + totalCount + '</span></div>' +
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('公网开放端口', 'Open ports') + '</span><span class="hero-kpi__val mono">' + (!info.portsKnown ? '?' : openLen) + '</span></div>' +
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('RPKI 路由签名', 'RPKI ROA') + '</span><span class="hero-kpi__val mono ' + (info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : '') + '">' + rpkiText + '</span></div>'
           );
         }
 
         setFieldHtml(
           'country',
           (info.flagEmoji ? '<span class="flag">' + esc(info.flagEmoji) + '</span> ' : '') +
-          esc(info.countryZh) +
+          '<strong>' + esc(info.countryZh) + '</strong>' +
           (info.countryCode ? ' <span class="dim mono">' + esc(info.countryCode) + '</span>' : '')
         );
         setFieldText('region', info.region);
@@ -337,15 +409,32 @@
         setFieldHtml(
           'timezone',
           '<span class="mono">' + esc(info.timezone) + '</span>' +
-          (info.localTimeHm ? T('<span class="dim"> · 当地 </span><span class="mono">', '<span class="dim"> · local </span><span class="mono">') + esc(info.localTimeHm) + '</span>' : '')
+          (info.localTimeHm ? '<span class="dim"> · </span><span class="mono">' + esc(info.localTimeHm) + '</span>' : '')
         );
         setFieldText('continent', info.continentZh);
 
         if (Array.isArray(info.scenes)) {
+          var ringC = +(2 * Math.PI * 18).toFixed(2);
           var scenesHtml = info.scenes.map(function (sc) {
-            return '<div class="scene-card"><div class="scene-card__top"><span class="scene-card__name">' + esc(sc.label) + '</span>' +
+            var pct = sc.tone === 'ok'
+              ? (typeof info.score === 'number' ? Math.max(76, Math.min(98, info.score)) : 88)
+              : sc.tone === 'warn'
+                ? (typeof info.score === 'number' ? Math.max(45, Math.min(72, Math.round(info.score * 0.78))) : 58)
+                : (typeof info.score === 'number' ? Math.max(18, Math.min(42, Math.round(info.score * 0.55))) : 28);
+            var offset = +(ringC * (1 - pct / 100)).toFixed(2);
+            return '<div class="scene-card is-' + esc(sc.tone) + '">' +
+              '<div class="scene-card__top"><span class="scene-card__name">' + esc(sc.label) + '</span>' +
               '<span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span></div>' +
-              '<span class="scene-card__note">' + esc(sc.note) + '</span></div>';
+              '<div class="scene-card__mid">' +
+                '<div class="scene-ring" aria-hidden="true">' +
+                  '<svg viewBox="0 0 44 44">' +
+                    '<circle class="scene-ring__track" cx="22" cy="22" r="18"></circle>' +
+                    '<circle class="scene-ring__fill" cx="22" cy="22" r="18" stroke-dasharray="' + ringC + '" stroke-dashoffset="' + offset + '"></circle>' +
+                  '</svg>' +
+                  '<span class="scene-ring__num mono">' + pct + '</span>' +
+                '</div>' +
+                '<span class="scene-card__note">' + esc(sc.note) + '</span>' +
+              '</div></div>';
           }).join('');
           setFieldHtml('scenes', scenesHtml || '<p class="geo__note">' + T('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates') + '</p>');
         }
@@ -392,6 +481,14 @@
             rtHtml += T('<div class="row"><span class="row__label">滥用举报邮箱</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Abuse contact</span><span class="row__value"><span class="mono">') + esc(info.abuseEmail) + '</span></span></div>';
           }
           setFieldHtml('riskTech', rtHtml);
+        }
+
+        if (Array.isArray(info.dnsblChecks) && info.dnsblChecks.length > 0) {
+          var chips = info.dnsblChecks.map(function (c) {
+            var icon = c.status === 'not_listed' ? '✓' : c.status === 'listed' ? '×' : '?';
+            return '<span class="dnsbl-chip is-' + esc(c.status) + '"><span class="dnsbl-chip__icon">' + icon + '</span><span>' + esc(c.name) + '</span></span>';
+          }).join('');
+          setFieldHtml('dnsblStrip', '<span class="dnsbl-strip__label">' + T('黑名单实时核验', 'Live DNSBLs') + '</span><div class="dnsbl-strip__chips">' + chips + '</div>');
         }
       })
       .catch(function () {});

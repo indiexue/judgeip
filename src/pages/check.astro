@@ -43,9 +43,12 @@ const dimensions = [
       </div>
     </div>
     <div class="groups">
-      <section class="group">
-        <h2 class="group__title">{t('检测概览', 'Overview')}</h2>
-        <div class="rows">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">{t('检测概览', 'Overview')}</h2>
+          <span class="panel__sub">6 checks</span>
+        </div>
+        <div class="rows rows--flush">
           <div class="row">
             <span class="row__label">{t('当前出口 IP', 'Current exit IP')}</span>
             <span class="row__value" data-check-ip><span class="mono">{visitorIp}</span></span>
@@ -60,9 +63,11 @@ const dimensions = [
           </div>
         </div>
       </section>
-      <section class="group">
-        <h2 class="group__title">{t('检测明细', 'Check details')}</h2>
-        <div class="rows">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">{t('检测明细', 'Check details')}</h2>
+        </div>
+        <div class="rows rows--flush">
           {dimensions.map(([key, zh, en]) => (
             <div class="row" data-dim={key}>
               <span class="row__label">{t(zh, en)}</span>

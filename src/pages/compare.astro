@@ -103,9 +103,12 @@ const pending = t('待查询', 'Pending');
       </div>
 
       <div class="groups">
-        <section class="group" id="properties">
-          <h2 class="group__title">{t('对比', 'Comparison')}</h2>
-          <div class="tablewrap">
+        <section class="panel" id="properties">
+          <div class="panel__head">
+            <h2 class="panel__title">{t('属性对比', 'Properties')}</h2>
+            <span class="panel__sub">{t('点击表头地址打开单 IP 报告', 'Click header IP for full report')}</span>
+          </div>
+          <div class="tablewrap tablewrap--flush">
             <table class="dtable dtable--compare">
               <thead>
                 <tr>
@@ -139,9 +142,12 @@ const pending = t('待查询', 'Pending');
           )}
         </section>
 
-        <section class="group" id="factors">
-          <h2 class="group__title">{t('加减分', 'Points')}</h2>
-          <div class="tablewrap">
+        <section class="panel" id="factors">
+          <div class="panel__head">
+            <h2 class="panel__title">{t('加减分拆解', 'Score Breakdown')}</h2>
+            <a class="panel__link" href={href('/scoring')}>{t('评分规则 ›', 'Scoring rules ›')}</a>
+          </div>
+          <div class="tablewrap tablewrap--flush">
             <table class="dtable dtable--compare">
               <thead>
                 <tr>

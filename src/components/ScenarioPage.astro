@@ -79,9 +79,12 @@ if (info.isBogon) {
     </div>
 
     <div class="groups">
-      <section class="group">
-        <h2 class="group__title">{target.isSelf ? t('当前 IP', 'Current IP') : t('查询的 IP', 'Queried IP')}</h2>
-        <div class="rows">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">{target.isSelf ? t('当前 IP', 'Current IP') : t('查询的 IP', 'Queried IP')}</h2>
+          <a class="panel__link mono" href={href(`/ip/${info.ip}`)}>{t('完整报告 ›', 'Full report ›')}</a>
+        </div>
+        <div class="rows rows--flush">
           <div class="row">
             <span class="row__label">IP</span>
             <span class="row__value"><a class="mono" href={href(`/ip/${info.ip}`)}>{info.ip}</a></span>
@@ -109,9 +112,12 @@ if (info.isBogon) {
         </div>
       </section>
 
-      <section class="group" id="weights">
-        <h2 class="group__title">{t('打分表', 'Score sheet')}</h2>
-        <div class="tablewrap">
+      <section class="panel" id="weights">
+        <div class="panel__head">
+          <h2 class="panel__title">{t('权重与打分表', 'Weights & Score Sheet')}</h2>
+          <span class="panel__sub mono">100 pts</span>
+        </div>
+        <div class="tablewrap tablewrap--flush">
           <table class="dtable dtable--scenario">
             <thead>
               <tr>

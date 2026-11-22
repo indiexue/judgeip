@@ -32,6 +32,10 @@
   margin: 0 0 var(--size-2);
 }
 
+.panel__head.connhead {
+  margin: 0;
+}
+
 .connhead .group__title {
   flex: 1 1 auto;
   min-inline-size: 0;

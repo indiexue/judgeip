@@ -41,82 +41,119 @@ const switchHref = (en ? basePath : localePath(basePath, 'en')) + search;
 
 const isLeakActive = ['/webrtc', '/dnsleak', '/fingerprint', '/headers'].includes(activeNav);
 const isNetActive = ['/connectivity', '/egress', '/cloudflare', '/cdn', '/split', '/ping'].includes(activeNav);
-const isToolsActive = ['/tools', '/platforms', '/compare', '/native-ip', '/residential-ip', '/tiktok-ip', '/whois', '/dns-tools', '/ip-calc', '/card', '/status'].includes(activeNav);
+const isToolsActive = ['/tools', '/platforms', '/compare', '/native-ip', '/residential-ip', '/tiktok-ip', '/whois', '/dns-tools', '/ip-calc', '/card', '/status', '/scoring', '/data', '/api-docs'].includes(activeNav);
 
 const topNav = [
-  { path: '/', label: t('IP 检视', 'My IP') },
+  { path: '/', label: t('首页', 'Home') },
+  { path: '/egress', label: t('我的出口', 'My Egress') },
+  { path: '/platforms', label: t('平台检测', 'Platforms') },
+  { path: '/claude', label: t('Claude 检测', 'Claude') },
+  { path: '/gpt', label: t('GPT 检测', 'GPT') },
   { path: '/check', label: t('环境体检', 'Checkup') },
-  { path: '/claude', label: t('Claude 检测', 'Claude Check') },
-  { path: '/ai', label: t('AI 解锁', 'AI Access') },
-  { path: '/gpt', label: t('GPT 检测', 'GPT Check') },
 ];
 
 const navGroups = [
   {
-    label: t('泄露与指纹', 'Leaks'),
+    label: t('分流与网络', 'Routing'),
+    path: '/split',
+    active: isNetActive && activeNav !== '/egress',
+    wide: false,
+    items: [
+      { path: '/split', label: t('网站分流测试', 'Split Routing'), desc: t('34 个主流网站实际出口 IP', 'Actual egress IP across 34 sites') },
+      { path: '/connectivity', label: t('网络连通性', 'Connectivity'), desc: t('国内外 44 站可用性与延迟', '44 global & China sites latency') },
+      { path: '/cloudflare', label: t('Cloudflare 检测', 'Cloudflare Edge'), desc: t('边缘机房、Turnstile 与 WARP', 'Edge colo, Turnstile & WARP') },
+      { path: '/cdn', label: t('CDN 命中节点', 'CDN Nodes'), desc: t('主流 CDN 命中的边缘机房', 'Hit nodes across major CDNs') },
+      { path: '/ping', label: t('全球 Ping 测试', 'Global Ping'), desc: t('多地区节点延迟与抖动', 'Multi-region HTTP/TCP RTT') },
+    ],
+  },
+  {
+    label: t('泄漏与指纹', 'Leaks'),
     path: '/webrtc',
     active: isLeakActive,
+    wide: false,
     items: [
-      { path: '/webrtc', label: t('WebRTC 泄露检测', 'WebRTC Leak Test') },
-      { path: '/dnsleak', label: t('DNS 泄露检测', 'DNS Leak Test') },
-      { path: '/fingerprint', label: t('浏览器指纹检测', 'Browser Fingerprint') },
-      { path: '/headers', label: t('HTTP 请求头 / UA', 'HTTP Headers / UA') },
+      { path: '/webrtc', label: t('WebRTC 泄漏', 'WebRTC Leak'), desc: t('STUN 候选公网与内网地址', 'STUN candidate public & local IPs') },
+      { path: '/dnsleak', label: t('DNS 泄漏检测', 'DNS Leak'), desc: t('递归解析器归属与跨区检查', 'Resolver ownership & region check') },
+      { path: '/fingerprint', label: t('浏览器指纹', 'Fingerprint'), desc: t('Canvas / WebGL / TLS 一致性', 'Canvas, WebGL & TLS signals') },
+      { path: '/headers', label: t('HTTP 请求头 / UA', 'Headers & UA'), desc: t('边缘收到的原始请求头与代理解析', 'Raw request headers & proxy hints') },
     ],
   },
   {
-    label: t('节点与分流', 'Routing'),
-    path: '/connectivity',
-    active: isNetActive,
-    items: [
-      { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
-      { path: '/egress', label: t('我的出口', 'My Egress IPs') },
-      { path: '/split', label: t('网站分流测试', 'Split Routing Test') },
-      { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
-      { path: '/cdn', label: t('CDN 命中节点', 'CDN Edge Nodes') },
-      { path: '/ping', label: t('全球 Ping 测试', 'Global Ping') },
-    ],
-  },
-  {
-    label: t('查询工具', 'Tools'),
+    label: t('全部功能', 'All Tools'),
     path: '/tools',
-    active: isToolsActive,
+    active: isToolsActive && activeNav !== '/platforms',
+    wide: true,
     items: [
-      { path: '/platforms', label: t('平台检测', 'Platform Check') },
-      { path: '/compare', label: t('多 IP 对比', 'Compare IPs') },
-      { path: '/whois', label: t('Whois / RDAP 查询', 'Whois / RDAP') },
-      { path: '/dns-tools', label: t('DNS 解析与黑名单', 'DNS & Blocklists') },
-      { path: '/ip-calc', label: t('CIDR 子网计算器', 'CIDR Calculator') },
-      { path: '/card', label: t('IP 分享卡片', 'IP Card') },
-      { path: '/status', label: t('全球服务状态', 'Service Status') },
-      { path: '/tools', label: t('全部工具 ›', 'All tools ›') },
+      { path: '/compare', label: t('多 IP 对比', 'Compare IPs'), desc: t('最多 6 个 IP 并排对比加减分', 'Side-by-side score & factor diff') },
+      { path: '/ai', label: t('AI 解锁检测', 'AI Access'), desc: t('ChatGPT / Claude / Gemini 可用性', 'AI service egress & region check') },
+      { path: '/native-ip', label: t('原生 IP 检测', 'Native IP'), desc: t('RIR 注册国与定位国对比打分', 'Registry vs geolocation country') },
+      { path: '/residential-ip', label: t('住宅 IP 检测', 'Residential IP'), desc: t('住宅 / 移动 / 机房属性核验', 'ISP vs hosting ASN verification') },
+      { path: '/tiktok-ip', label: t('TikTok IP 检测', 'TikTok IP'), desc: t('住宅原生权重与设备时区语言比对', 'TikTok weights & browser locale') },
+      { path: '/whois', label: t('Whois / RDAP', 'Whois / RDAP'), desc: t('IP 网段、ASN 与域名注册记录', 'Live RIR & domain RDAP lookup') },
+      { path: '/dns-tools', label: t('DNS 与黑名单', 'DNS & DNSBL'), desc: t('多记录解析与垃圾邮件黑名单', 'DoH records & spam blocklists') },
+      { path: '/ip-calc', label: t('IP 子网计算器', 'CIDR Calculator'), desc: t('IPv4 / IPv6 掩码与地址范围', 'IPv4 / IPv6 netmask & range') },
+      { path: '/card', label: t('IP 信息卡', 'IP Share Card'), desc: t('生成可嵌入 SVG / PNG 签名卡片', 'Downloadable SVG & PNG card') },
+      { path: '/api-docs', label: t('CLI / API / MCP', 'CLI / API / MCP'), desc: t('免密钥终端报告与 MCP 接入', 'Keyless curl, JSON & MCP server') },
+      { path: '/scoring', label: t('评分规则', 'Scoring Rules'), desc: t('公开每一项加减分与判定依据', 'Published points & raw evidence') },
+      { path: '/tools', label: t('查看全部工具 ›', 'Browse all tools ›'), desc: t('完整工具目录与数据说明', 'Full directory & data notes') },
     ],
   },
 ];
 
-const footLinks = [
-  { path: '/', label: t('IP 检视', 'My IP') },
-  { path: '/check', label: t('环境体检', 'Checkup') },
-  { path: '/claude', label: t('Claude 检测', 'Claude Check') },
-  { path: '/ai', label: t('AI 解锁检测', 'AI Access Check') },
-  { path: '/gpt', label: t('GPT · Codex 检测', 'GPT · Codex Check') },
-  { path: '/platforms', label: t('平台检测', 'Platform Check') },
-  { path: '/compare', label: t('多 IP 对比', 'Compare IPs') },
-  { path: '/native-ip', label: t('原生 IP 检测', 'Native IP Check') },
-  { path: '/residential-ip', label: t('住宅 IP 检测', 'Residential IP Check') },
-  { path: '/tiktok-ip', label: t('TikTok IP 检测', 'TikTok IP Check') },
-  { path: '/egress', label: t('我的出口', 'My Egress IPs') },
-  { path: '/webrtc', label: t('WebRTC 泄露', 'WebRTC Leak') },
-  { path: '/dnsleak', label: t('DNS 泄露检测', 'DNS Leak') },
-  { path: '/split', label: t('网站分流测试', 'Split Routing') },
-  { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
-  { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
-  { path: '/cdn', label: t('CDN 命中节点', 'CDN Edge Nodes') },
-  { path: '/ping', label: t('全球 Ping', 'Global Ping') },
-  { path: '/whois', label: 'Whois / RDAP' },
-  { path: '/dns-tools', label: t('DNS / 黑名单', 'DNS / Blocklists') },
-  { path: '/ip-calc', label: t('CIDR 计算器', 'CIDR Calculator') },
-  { path: '/headers', label: t('HTTP 请求头', 'HTTP Headers') },
-  { path: '/card', label: t('IP 分享卡片', 'IP Card') },
+const footCols = [
+  {
+    id: 'foot-detect',
+    title: t('核心检测', 'Detection'),
+    links: [
+      { path: '/', label: t('我的 IP', 'My IP') },
+      { path: '/egress', label: t('我的出口', 'My Egress') },
+      { path: '/platforms', label: t('平台检测', 'Platform Check') },
+      { path: '/check', label: t('环境体检', 'Checkup') },
+      { path: '/claude', label: t('Claude 检测', 'Claude Check') },
+      { path: '/gpt', label: t('GPT · Codex 检测', 'GPT · Codex') },
+      { path: '/ai', label: t('AI 解锁检测', 'AI Access') },
+    ],
+  },
+  {
+    id: 'foot-routing',
+    title: t('分流与隐私', 'Routing & Privacy'),
+    links: [
+      { path: '/split', label: t('网站分流测试', 'Split Routing') },
+      { path: '/connectivity', label: t('网络连通性', 'Connectivity') },
+      { path: '/webrtc', label: t('WebRTC 泄漏', 'WebRTC Leak') },
+      { path: '/dnsleak', label: t('DNS 泄漏检测', 'DNS Leak') },
+      { path: '/fingerprint', label: t('浏览器指纹', 'Fingerprint') },
+      { path: '/cloudflare', label: t('Cloudflare 节点', 'Cloudflare Edge') },
+      { path: '/cdn', label: t('CDN 命中节点', 'CDN Nodes') },
+    ],
+  },
+  {
+    id: 'foot-tools',
+    title: t('查询与对比', 'Lookup & Tools'),
+    links: [
+      { path: '/compare', label: t('多 IP 对比', 'Compare IPs') },
+      { path: '/native-ip', label: t('原生 IP 检测', 'Native IP') },
+      { path: '/residential-ip', label: t('住宅 IP 检测', 'Residential IP') },
+      { path: '/tiktok-ip', label: t('TikTok IP 检测', 'TikTok IP') },
+      { path: '/whois', label: 'Whois / RDAP' },
+      { path: '/dns-tools', label: t('DNS / 黑名单', 'DNS & DNSBL') },
+      { path: '/ip-calc', label: t('IP 计算器', 'CIDR Calculator') },
+      { path: '/ping', label: t('全球 Ping', 'Global Ping') },
+      { path: '/card', label: t('IP 信息卡', 'IP Card') },
+    ],
+  },
+  {
+    id: 'foot-about',
+    title: t('说明与接口', 'Docs & API'),
+    links: [
+      { path: '/tools', label: t('全部工具', 'All Tools') },
+      { path: '/scoring', label: t('评分规则', 'Scoring Rules') },
+      { path: '/data', label: t('数据说明', 'Data Sources') },
+      { path: '/api-docs', label: t('API 与 MCP', 'API & MCP') },
+      { path: '/headers', label: t('HTTP 请求头', 'HTTP Headers') },
+      { path: '/status', label: t('服务状态', 'Service Status') },
+    ],
+  },
 ];
 ---
 
@@ -135,7 +172,7 @@ const footLinks = [
     <link rel="alternate" hreflang="x-default" href={zhUrl} />
     <meta name="author" content="JudgeIP" />
     <meta name="color-scheme" content="only light" data-light="only light" data-dark="dark" />
-    <meta name="theme-color" content="#f8fafc" data-light="#f8fafc" data-dark="#0b1120" />
+    <meta name="theme-color" content="#f7f8f7" data-light="#f7f8f7" data-dark="#09090b" />
     <meta name="format-detection" content="telephone=no" />
 
     <meta property="og:type" content="website" />
@@ -207,11 +244,24 @@ const footLinks = [
           ))}
 
           {navGroups.map((group) => (
-            <div class="nav__group" data-nav-group>
-              <a class={`nav__item nav__item--group${group.active ? ' is-active' : ''}`} href={href(group.path)} aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>{group.label}</a>
-              <div class="nav__sub" role="group" aria-label={group.label}>
+            <div class={`nav__group${group.wide ? ' nav__group--wide' : ''}`} data-nav-group>
+              <a class={`nav__item nav__item--group${group.active ? ' is-active' : ''}`} href={href(group.path)} aria-haspopup="true" aria-expanded="false" data-nav-group-toggle>
+                {group.wide && (
+                  <svg class="nav__grid-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <rect x="2" y="2" width="4.8" height="4.8" rx="1"></rect>
+                    <rect x="9.2" y="2" width="4.8" height="4.8" rx="1"></rect>
+                    <rect x="2" y="9.2" width="4.8" height="4.8" rx="1"></rect>
+                    <rect x="9.2" y="9.2" width="4.8" height="4.8" rx="1"></rect>
+                  </svg>
+                )}
+                {group.label}
+              </a>
+              <div class={`nav__sub${group.wide ? ' nav__sub--grid' : ''}`} role="group" aria-label={group.label}>
                 {group.items.map((item) => (
-                  <a class={`nav__subitem${activeNav === item.path ? ' is-active' : ''}`} href={href(item.path)}>{item.label}</a>
+                  <a class={`nav__subitem${activeNav === item.path ? ' is-active' : ''}`} href={href(item.path)}>
+                    <span class="nav__sublabel">{item.label}</span>
+                    {item.desc && <span class="nav__subdesc">{item.desc}</span>}
+                  </a>
                 ))}
               </div>
             </div>
@@ -219,7 +269,16 @@ const footLinks = [
         </nav>
 
         <div class="navbar__actions">
-          <a class="lang-switch" href={switchHref} hreflang={en ? 'zh-CN' : 'en'} lang={en ? 'zh-CN' : 'en'} title={en ? '切换到中文' : 'Switch to English'}>{en ? '中文' : 'EN'}</a>
+          <a class="nav-api-pill" href={href('/api-docs')} title={t('免密钥 CLI / JSON API / MCP 服务', 'Keyless CLI, JSON API & MCP')}>
+            <span class="mono">API · MCP</span>
+          </a>
+
+          <a class="lang-switch" href={switchHref} hreflang={en ? 'zh-CN' : 'en'} lang={en ? 'zh-CN' : 'en'} title={en ? '切换到中文' : 'Switch to English'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"></path>
+            </svg>
+            <span>{en ? '中文' : 'EN'}</span>
+          </a>
 
           <button class="theme-toggle" type="button" data-theme-toggle aria-label={t('切换到深色模式', 'Switch to dark mode')} title={t('切换到深色模式', 'Switch to dark mode')}>
             <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -247,8 +306,10 @@ const footLinks = [
       <main id="main" tabindex="-1">
         <slot />
       </main>
+    </div>
 
-      <footer class="foot">
+    <footer class="foot">
+      <div class="foot__inner">
         <div class="foot__grid">
           <div class="foot__col foot__col--brand">
             <a class="brand brand--foot" href={href('/')} aria-label={t('JudgeIP 首页', 'JudgeIP home')}>
@@ -273,38 +334,33 @@ const footLinks = [
               </span>
               <span class="brand__word">Judge<span class="brand__accent">IP</span></span>
             </a>
-            <p class="foot__about">{t('查本机 IP、IP 类型与风险、AI 服务出口、DNS / WebRTC 泄露和路由信息。', 'Check your IP, its type and risk signals, AI service exits, DNS / WebRTC leaks and routing data.')}</p>
+            <p class="foot__about">{t('打开即测、无需注册，查清 IP 纯净度、原始证据、分流与泄露。', 'Instant IP purity, raw evidence, routing and leak checks — no sign-up.')}</p>
             <div class="foot__meta">
-              <span>CLI：<span class="mono">curl -sL judgeip.com</span></span>
-              <span>{t('联系', 'Contact')}：<span class="mono">hi@judgeip.com</span></span>
+              <span class="foot__cli"><span class="dim">$</span> <span class="mono">curl -sL judgeip.com</span></span>
+              <span class="foot__contact">hi@judgeip.com</span>
             </div>
           </div>
 
-          <nav class="foot__col" aria-labelledby="foot-legal">
-            <h2 class="foot__title" id="foot-legal">{t('说明与协议', 'About')}</h2>
-            <ul class="foot__list">
-              <li><a class="foot__link" href={href('/tools')}>{t('全部工具', 'All tools')}</a></li>
-              <li><a class="foot__link" href={href('/scoring')}>{t('评分规则', 'Scoring rules')}</a></li>
-              <li><a class="foot__link" href={href('/data')}>{t('数据说明', 'Data sources')}</a></li>
-              <li><a class="foot__link" href={href('/api-docs')}>{t('API 与 MCP', 'API & MCP')}</a></li>
-              <li><a class="foot__link" href={href('/status')}>{t('服务状态', 'Service status')}</a></li>
-              <li><a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a></li>
-              <li><a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a></li>
-            </ul>
-          </nav>
-
-          <nav class="foot__col foot__col--products" aria-labelledby="foot-products">
-            <h2 class="foot__title" id="foot-products">{t('检测工具', 'Checks')}</h2>
-            <ul class="foot__list foot__list--grid">
-              {footLinks.map((item) => (
-                <li><a class="foot__link" href={href(item.path)}>{item.label}</a></li>
-              ))}
-            </ul>
-          </nav>
+          {footCols.map((col) => (
+            <nav class="foot__col foot__col--products" aria-labelledby={col.id}>
+              <h2 class="foot__title" id={col.id}>{col.title}</h2>
+              <ul class="foot__list">
+                {col.links.map((item) => (
+                  <li><a class="foot__link" href={href(item.path)}>{item.label}</a></li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
-        <p class="foot__copy">© 2026 JudgeIP.com</p>
-      </footer>
-    </div>
+        <div class="foot__bottom">
+          <span>© 2026 JudgeIP.com · {t('每项评分均附带可展开核对的上游原始数据', 'Every deduction is backed by verifiable upstream records')}</span>
+          <span class="foot__legal">
+            <a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a>
+            <a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a>
+          </span>
+        </div>
+      </div>
+    </footer>
   </body>
 </html>

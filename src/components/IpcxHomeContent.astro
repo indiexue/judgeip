@@ -2,10 +2,10 @@
 import type { HomeIpLookupResult } from '../lib/ipcx-lookup';
 import { getLang, localePath } from '../lib/i18n';
 import { formatDelta } from '../lib/score-rules';
+
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
 const lp = (path: string) => localePath(path, lang);
-
 
 interface Props {
   info: HomeIpLookupResult;
@@ -16,23 +16,127 @@ interface Props {
 
 const { info, isSelf, queryValue = '', errorMsg = '' } = Astro.props;
 const encodedIp = encodeURIComponent(info.ip);
+
+function scoreRiskTier(score: number | null) {
+  if (score === null) {
+    return {
+      cls: 'muted',
+      badge: 'gray',
+      label: t('暂未评分', 'No score'),
+      desc: info.version === 6
+        ? t('端口与黑名单数据仅覆盖 IPv4，暂不出综合分', 'Port and blocklist feeds cover IPv4 only')
+        : t('部分公开数据源未及时返回，暂不出分', 'Some upstream sources did not respond in time'),
+    };
+  }
+  if (score >= 90) {
+    return {
+      cls: 'excellent',
+      badge: 'green',
+      label: t('极度纯净', 'Pristine'),
+      desc: t('原生或家用特征清晰，未发现代理与黑名单风险', 'Clean residential/mobile signals with no proxy or blocklist hits'),
+    };
+  }
+  if (score >= 80) {
+    return {
+      cls: 'good',
+      badge: 'green',
+      label: t('纯净', 'Clean'),
+      desc: t('信誉记录良好，适合绝大多数主流平台', 'Solid reputation suitable for most mainstream platforms'),
+    };
+  }
+  if (score >= 68) {
+    return {
+      cls: 'ok',
+      badge: 'green',
+      label: t('正常', 'Normal'),
+      desc: t('存在少量非家用或广播特征，常规访问正常', 'Minor non-residential or geo-announced traits; normal for general use'),
+    };
+  }
+  if (score >= 50) {
+    return {
+      cls: 'warn',
+      badge: 'amber',
+      label: t('低风险', 'Low risk'),
+      desc: t('有一定机房或代理特征，敏感平台可能要求二次验证', 'Hosting or proxy indicators present; strict platforms may challenge'),
+    };
+  }
+  if (score >= 30) {
+    return {
+      cls: 'bad',
+      badge: 'danger',
+      label: t('中风险', 'Medium risk'),
+      desc: t('明显机房、代理或历史漏洞记录，风控平台易拦截', 'Clear hosting, proxy or CVE records; frequently restricted'),
+    };
+  }
+  return {
+    cls: 'danger',
+    badge: 'danger',
+    label: t('高风险', 'High risk'),
+    desc: t('多项风险与黑名单叠加命中，不建议用于敏感业务', 'Multiple proxy, hosting or blocklist hits stacked'),
+  };
+}
+
+const tier = scoreRiskTier(info.score);
+const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'clamp');
+const ringR = 18;
+const ringC = +(2 * Math.PI * ringR).toFixed(2);
+function sceneGauge(tone: string, baseScore: number | null) {
+  if (tone === 'ok') {
+    const pct = baseScore !== null ? Math.max(76, Math.min(98, baseScore)) : 88;
+    return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
+  }
+  if (tone === 'warn') {
+    const pct = baseScore !== null ? Math.max(45, Math.min(72, Math.round(baseScore * 0.78))) : 58;
+    return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
+  }
+  const pct = baseScore !== null ? Math.max(18, Math.min(42, Math.round(baseScore * 0.55))) : 28;
+  return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
+}
 ---
 
-<form class="query" method="get" action={lp('/')} novalidate>
-  <div class="query__line">
-    <span class="query__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="10.5" cy="10.5" r="6.5"></circle>
-        <path d="m20 20-4.9-4.9"></path>
-      </svg>
-    </span>
+<!-- Section Jump Bar + Compact Search (ipfinal style) -->
+<div class="secnav">
+  <div class="secnav__links" role="navigation" aria-label={t('本页模块导航', 'Section jump links')}>
+    <a class="secnav__link is-active" href="#ip-hero">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.2"></circle><path d="M8 7.2v4M8 4.9v.2" stroke-linecap="round"></path></svg>
+      <span>{t('IP 信息', 'IP Info')}</span>
+    </a>
+    {!info.isBogon && (
+      <>
+        <a class="secnav__link" href="#scene-fit">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2l1.6 3.6L13.2 7 9.6 8.6 8 12.2 6.4 8.6 2.8 7l3.6-1.4L8 2z" stroke-linejoin="round"></path></svg>
+          <span>{t('场景适配', 'Scene Fit')}</span>
+        </a>
+        <a class="secnav__link" href="#score-factors">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h6.5" stroke-linecap="round"></path></svg>
+          <span>{t('评分证据', 'Evidence')}</span>
+        </a>
+        <a class="secnav__link" href="#risk-tech">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 1.8l5.2 2.3v3.8c0 3.2-2.2 5.7-5.2 6.4-3-.7-5.2-3.2-5.2-6.4V4.1L8 1.8z" stroke-linejoin="round"></path></svg>
+          <span>{t('风险检测', 'Risk & BGP')}</span>
+        </a>
+        <a class="secnav__link" href="#multi-geo">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 14s4.5-4.1 4.5-7.5a4.5 4.5 0 1 0-9 0C3.5 9.9 8 14 8 14z"></path><circle cx="8" cy="6.5" r="1.5"></circle></svg>
+          <span>{t('多库定位', 'Geo DBs')}</span>
+        </a>
+      </>
+    )}
+    {isSelf && (
+      <a class="secnav__link" href="#net-conn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.2 6.2a8.5 8.5 0 0 1 11.6 0M4.6 8.8a5 5 0 0 1 6.8 0M7.2 11.5a1.2 1.2 0 0 1 1.6 0" stroke-linecap="round"></path></svg>
+        <span>{t('网络检测', 'Network')}</span>
+      </a>
+    )}
+  </div>
+
+  <form class="secnav__search" method="get" action={lp('/')} novalidate role="search">
     <input
-      class="query__input mono"
+      class="secnav__input mono"
       type="text"
       name="ip"
       value={queryValue}
       data-mask-query
-      placeholder={t('输入任意 IPv4 或 IPv6，查询归属、IP 类型与路由风险（如 8.8.8.8、73.162.88.1）', 'Enter any IPv4 or IPv6 address to see its owner, type and routing risk (e.g. 8.8.8.8, 73.162.88.1)')}
+      placeholder={t('查任意 IPv4 / IPv6…', 'Check any IPv4 / IPv6…')}
       inputmode="text"
       enterkeyhint="search"
       autocomplete="off"
@@ -40,195 +144,276 @@ const encodedIp = encodeURIComponent(info.ip);
       spellcheck="false"
       aria-label={t('要查询的 IP 地址', 'IP address to look up')}
     />
-    <button class="query__submit" type="submit">{t('查询', 'Look up')}</button>
-  </div>
-
-  {errorMsg && (
-    <p class="notice" role="alert">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="9"></circle>
-        <path d="M12 7.5v5.2M12 16.3v.2"></path>
-      </svg>
-      <span>{errorMsg}</span>
-    </p>
-  )}
-</form>
-
-<!-- Primary IP Inspection Bar -->
-<div class="current" data-current-card data-is-self={isSelf ? '1' : '0'} data-initial-version={String(info.version)}>
-  <div class="current__line">
-    <span class="current__eyebrow">{isSelf ? t('当前出口 IP', 'Your exit IP') : t('查询目标 IP', 'Queried IP')}</span>
-    <span class="current__ip mono" id="current-ip">{info.ip}</span>
-    {info.ptrRecord && info.ptrRecord !== '—' && (
-      <span class="current__host" data-field="heroPtr">{info.ptrRecord}</span>
-    )}
-  </div>
-  <div class="current__actions">
-    {!isSelf && (
-      <a class="copy" href={lp('/')} style="text-decoration:none;">
-        <span class="copy__label">{t('返回本机', 'Back to my IP')}</span>
-      </a>
-    )}
-    <button class="copy" type="button" data-copy-target="current-ip" data-copy-done={t('已复制', 'Copied')}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
-        <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
-      </svg>
-      <span class="copy__label">{t('复制', 'Copy')}</span>
-    </button>
-    <a class="copy" id="share-card-link" href={lp(`/card?ip=${encodedIp}`)} style="text-decoration:none;" title={t('生成可下载的 IP 报告卡片', 'Generate a downloadable IP card')}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
-        <path d="M7 9h6M7 13h10"></path>
-      </svg>
-      <span class="copy__label">{t('分享卡', 'Card')}</span>
-    </a>
-    <button class="mask" type="button" data-mask-toggle aria-pressed="false" aria-label={t('隐藏 IP 地址', 'Hide IP address')} title={t('隐藏 IP 地址', 'Hide IP address')}>
-      <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
-        <circle cx="12" cy="12" r="2.9"></circle>
-      </svg>
-      <svg class="mask__icon mask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
-        <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
-        <path d="M4 4l16 16"></path>
+    <button class="secnav__submit" type="submit" aria-label={t('查询', 'Look up')} title={t('查询', 'Look up')}>
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="8.8" cy="8.8" r="5.4"></circle>
+        <path d="m16.5 16.5-3.8-3.8"></path>
       </svg>
     </button>
-  </div>
+  </form>
 </div>
 
-{isSelf && (
-  <a class="esim-banner" href={lp('/check')}>
-    <div class="esim-banner__body">
-      <div class="esim-banner__title">{t('环境体检：6 项交叉检查', 'Checkup: 6 cross-checks')}</div>
-      <div class="esim-banner__desc">{t('同时检查 IP、WebRTC 泄露、DNS 是否跨区、时区与语言是否一致，以及自动化指纹。', 'Checks your IP, WebRTC leaks, cross-region DNS, time zone and language consistency, and automation fingerprints in one run.')}</div>
-    </div>
-    <span class="esim-banner__cta">{t('开始体检 ›', 'Run checkup ›')}</span>
-  </a>
+{errorMsg && (
+  <p class="notice notice--top" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7.5v5.2M12 16.3v.2"></path>
+    </svg>
+    <span>{errorMsg}</span>
+  </p>
 )}
 
-<!-- High-Efficiency 2-Column Bento Dashboard -->
-<div class="groups groups--bento">
-  <!-- Left Col 1: 网络与信誉属性 -->
-  <section class="group">
-    <h2 class="group__title">{t('网络与信誉', 'Network and reputation')}</h2>
-    <div class="rows">
-      <div class="row">
-        <span class="row__label">{t('评分', 'Score')}</span>
-        <span class="row__value" data-field="score">
-          {info.score === null ? (
-            <span class="geo__note">{t('数据不足，暂不评分', 'Insufficient data to score')}</span>
-          ) : (
-          <span class={`score score--${info.scoreTone}`}>
-            <svg class="score__bar" viewBox="0 0 100 6" role="img" aria-label={(lang === 'en' ? `IP score ${info.score} out of 100` : `IP 评分 ${info.score} 分，满分 100 分`)}>
-              <rect class="score__track" x="0" y="0" width="100" height="6" rx="3"></rect>
-              <rect class="score__fill" x="0" y="0" width={info.score} height="6" rx="3"></rect>
-            </svg>
-            <span class="score__num mono">
-              {info.score}<span class="score__total">/100</span>
-            </span>
-            <span class={`badge badge--${info.scoreTone === 'good' ? 'green' : info.scoreTone === 'warn' ? 'amber' : 'danger'}`}>
-              {info.grade}
-            </span>
-          </span>
-          )}
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('网络类型', 'Network type')}</span>
-        <span class="row__value" data-field="ipType">
-          <span class={`badge badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
-          {!info.isBogon && (
-            <span class={`badge badge--${info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber'}`} style="margin-left:6px;">
-              {info.isNative === null ? t('原生属性未知', 'IP origin unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP')}
-            </span>
-          )}
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('运营商 (ISP)', 'ISP')}</span>
-        <span class="row__value" data-field="isp">{info.isp}</span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('所属机构', 'Organization')}</span>
-        <span class="row__value" data-field="org">{info.org}</span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('ASN 自治系统', 'ASN')}</span>
-        <span class="row__value" data-field="asn">
-          {info.asn ? (
-            <>
-              <a class="asn-link mono" href={lp(`/whois?q=${info.asnCode}`)} title={(lang === 'en' ? `View registration data for ${info.asnCode}` : `查看 ${info.asnCode} 注册信息`)}>
-                {info.asnCode}
-              </a>
-            </>
-          ) : (
-            <span class="mono">—</span>
-          )}
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('关联域名', 'Domain')}</span>
-        <span class="row__value" data-field="domain"><span class="mono">{info.domain}</span></span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('RIR 注册局', 'RIR')}</span>
-        <span class="row__value" data-field="rirName">{info.rirName}</span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('IDC 机房托管', 'Hosting / IDC')}</span>
-        <span class="row__value" data-field="datacenter">
-          <span class={`badge badge--${info.isDatacenter === null ? 'gray' : info.isDatacenter ? 'danger' : 'green'}`}>
-            {info.isDatacenter === null ? t('未知', 'Unknown') : info.isDatacenter ? t('是', 'Yes') : t('否', 'No')}
-          </span>
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('代理与匿名', 'Proxy and anonymity')}</span>
-        <span class="row__value" data-field="proxy">
-          <span class={`badge badge--${info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
-        </span>
-      </div>
-      <div class="row">
-        <span class="row__label">{t('威胁与黑名单', 'Threats and blocklists')}</span>
-        <span class="row__value" data-field="threat">
-          <span class={`badge badge--${info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
-        </span>
-      </div>
-    </div>
-  </section>
+<!-- Unified Hero Inspection Box (ipfinal style) -->
+<section class="hero-box current" id="ip-hero" data-current-card data-is-self={isSelf ? '1' : '0'} data-initial-version={String(info.version)}>
+  <!-- Top IP Strip -->
+  <div class="hero-box__top">
+    <div class="hero-box__identity">
+      <span class="proto-pill mono" data-field="protoVersion">IPv{info.version}</span>
 
-  <!-- Right Col 1: 地理位置 + 多库对照 -->
-  <div class="groups">
-    <section class="group">
-      <h2 class="group__title">{t('地理位置', 'Location')}</h2>
-      <div class="rows">
-        <div class="row">
-          <span class="row__label">{t('国家 / 地区', 'Country / region')}</span>
-          <span class="row__value" data-field="country">
-            {info.flagEmoji && <span class="flag">{info.flagEmoji}</span>} {info.countryZh}{' '}
+      <button class="mask" type="button" data-mask-toggle aria-pressed="false" aria-label={t('隐藏 IP 地址', 'Hide IP address')} title={t('隐藏 IP 地址', 'Hide IP address')}>
+        <svg class="mask__icon mask__icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z"></path>
+          <circle cx="12" cy="12" r="2.9"></circle>
+        </svg>
+        <svg class="mask__icon mask__icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.8c5.6 0 9.4 6.2 9.4 6.2a17.7 17.7 0 0 1-2.7 3.4M6.2 7.4A17.4 17.4 0 0 0 2.6 12S6.4 18.2 12 18.2a9.4 9.4 0 0 0 3.9-.8"></path>
+          <path d="M10 10a2.9 2.9 0 0 0 4 4"></path>
+          <path d="M4 4l16 16"></path>
+        </svg>
+      </button>
+
+      <span class="current__ip mono" id="current-ip">{info.ip}</span>
+
+      <button class="hero-icon-copy copy" type="button" data-copy-target="current-ip" data-copy-done={t('已复制', 'Copied')} title={t('复制 IP 地址', 'Copy IP address')}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="2.5"></rect>
+          <path d="M5.5 15A2.5 2.5 0 0 1 4 12.7V6.5A2.5 2.5 0 0 1 6.5 4h6.2A2.5 2.5 0 0 1 15 5.5"></path>
+        </svg>
+        <span class="copy__label sr-only">{t('复制', 'Copy')}</span>
+      </button>
+
+      <span class="hero-box__pills" data-field="ipType">
+        <span class={`badge badge--solid badge--${info.ipTypeTone}`}>{info.ipTypeLabel}</span>
+        {!info.isBogon && (
+          <span class={`badge badge--solid badge--${info.isNative === null ? 'gray' : info.isNative ? 'green' : 'amber'}`}>
+            {info.isNative === null ? t('原生未知', 'Origin unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced')}
+          </span>
+        )}
+        {info.isProxy && <span class="badge badge--solid badge--danger">{info.proxyLabel}</span>}
+      </span>
+    </div>
+
+    <div class="hero-box__status">
+      <span class="eyebrow-tag">{isSelf ? t('当前出口', 'Your Egress') : t('指定查询', 'Queried IP')}</span>
+      {!isSelf && (
+        <a class="hero-back" href={lp('/')}>{t('返回本机 ›', 'My IP ›')}</a>
+      )}
+    </div>
+  </div>
+
+  <!-- Split Dashboard Body -->
+  <div class="hero-box__body">
+    <!-- Left Column: Purity Score Gauge & Summary Reasons -->
+    <div class="hero-score" data-field="heroScorePanel">
+      <div class="hero-score__head">
+        <span class="hero-score__title">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M3.2 12.5a6.5 6.5 0 1 1 11.6 0" stroke-linecap="round"></path>
+            <path d="M9 9.5 12.2 6" stroke-linecap="round"></path>
+            <circle cx="9" cy="9.5" r="1.1" fill="currentColor"></circle>
+          </svg>
+          {t('纯净度评分', 'Purity Score')}
+        </span>
+        <span class={`badge badge--${info.lookupStatus === 'complete' ? 'green' : 'gray'}`} data-field="gradeBadge">
+          {info.lookupStatus === 'complete'
+            ? `${t('等级', 'Grade')} ${info.grade}`
+            : info.isBogon ? t('内网保留', 'Reserved') : t('数据不完整', 'Partial data')}
+        </span>
+      </div>
+
+      <div class={`hero-score__main is-${tier.cls}`} data-field="score">
+        <span class="hero-score__num mono">{info.score !== null ? info.score : '—'}</span>
+        <div class="hero-score__verdict">
+          <span class={`hero-score__pill badge badge--solid badge--${tier.badge}`}>{tier.label}</span>
+          <p class="hero-score__desc">{tier.desc}</p>
+        </div>
+      </div>
+
+      <!-- 6-Segment Spectrum Bar (0-30-50-68-80-90-99) -->
+      <div class="spectrum" aria-hidden="true">
+        <div class="spectrum__bar" data-field="spectrumThumb">
+          <span class="spectrum__seg spectrum__seg--1"></span>
+          <span class="spectrum__seg spectrum__seg--2"></span>
+          <span class="spectrum__seg spectrum__seg--3"></span>
+          <span class="spectrum__seg spectrum__seg--4"></span>
+          <span class="spectrum__seg spectrum__seg--5"></span>
+          <span class="spectrum__seg spectrum__seg--6"></span>
+          {info.score !== null && (
+            <span class={`spectrum__thumb is-${tier.cls}`} style={`left: ${Math.max(2, Math.min(98, info.score))}%`}></span>
+          )}
+        </div>
+        <div class="spectrum__ticks mono">
+          <span style="left:0%">0</span>
+          <span style="left:30%">30</span>
+          <span style="left:50%">50</span>
+          <span style="left:68%">68</span>
+          <span style="left:80%">80</span>
+          <span style="left:90%">90</span>
+          <span style="left:100%">99</span>
+        </div>
+        <div class="spectrum__labels">
+          <span>{t('高风险', 'High')}</span>
+          <span>{t('中风险', 'Med')}</span>
+          <span>{t('低风险', 'Low')}</span>
+          <span>{t('正常', 'OK')}</span>
+          <span>{t('纯净', 'Clean')}</span>
+          <span>{t('极净', 'Best')}</span>
+        </div>
+      </div>
+
+      <!-- Concise Deduction / Signal Bullets -->
+      <ul class="hero-reasons" data-field="heroReasons">
+        {info.isBogon ? (
+          <li class="hero-reasons__item is-muted">
+            <span class="hero-reasons__dot">·</span>
+            <span>{info.bogonReason || t('保留或内网地址，不参与公网纯净度评分', 'Private or reserved range; not scored')}</span>
+          </li>
+        ) : activeDeductions.length > 0 ? (
+          activeDeductions.map((f) => (
+            <li class="hero-reasons__item is-bad">
+              <span class="hero-reasons__dot">×</span>
+              <span>{f.label}：{f.status}（<span class="mono">{formatDelta(f.delta)}</span>）</span>
+            </li>
+          ))
+        ) : info.score !== null ? (
+          <>
+            <li class="hero-reasons__item is-good">
+              <span class="hero-reasons__dot">✓</span>
+              <span>{t('网络类型与注册归属核验正常，无扣分项', 'Network type and RIR origin verified with zero deductions')}</span>
+            </li>
+            <li class="hero-reasons__item is-good">
+              <span class="hero-reasons__dot">✓</span>
+              <span>{t(`${info.dnsblTotal} 个 DNSBL 黑名单与威胁库均未命中`, `Clean across all ${info.dnsblTotal} DNSBLs and threat feeds`)}</span>
+            </li>
+          </>
+        ) : (
+          <li class="hero-reasons__item is-muted">
+            <span class="hero-reasons__dot">·</span>
+            <span>{tier.desc}</span>
+          </li>
+        )}
+      </ul>
+
+      <!-- Quick KPI Stat Strip (Authentic factual metrics, zero fake rankings) -->
+      {!info.isBogon && (
+        <div class="hero-kpis" data-field="heroKpis">
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('DNSBL 黑名单', 'Blocklists')}</span>
+            <span class={`hero-kpi__val mono ${info.dnsblListed.length > 0 ? 'is-bad' : 'is-good'}`}>
+              {info.version !== 4 ? 'IPv4' : `${info.dnsblListed.length} / ${info.dnsblTotal}`}
+            </span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('公网开放端口', 'Open ports')}</span>
+            <span class="hero-kpi__val mono">
+              {info.version !== 4 ? '—' : !info.portsKnown ? '?' : info.openPorts.length}
+            </span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('RPKI 路由签名', 'RPKI ROA')}</span>
+            <span class={`hero-kpi__val mono ${info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : ''}`}>
+              {info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—'}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+
+    <!-- Right Column: Structured Metadata Rows -->
+    <div class="hero-meta">
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('地理位置', 'Location')}</span>
+        <span class="hero-meta__val">
+          <span data-field="country">
+            {info.flagEmoji && <span class="flag">{info.flagEmoji}</span>} <strong>{info.countryZh}</strong>{' '}
             {info.countryCode && <span class="dim mono">{info.countryCode}</span>}
           </span>
-        </div>
-        <div class="row">
-          <span class="row__label">{t('省 / 州 · 城市', 'State · city')}</span>
-          <span class="row__value">
-            <span data-field="region">{info.region}</span>
-            <span class="geo__sep">/</span>
-            <span data-field="city">{info.city}</span>
+          <span class="geo__sep">·</span>
+          <span data-field="region">{info.region}</span>
+          <span class="geo__sep">/</span>
+          <span data-field="city">{info.city}</span>
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('ASN 号码', 'ASN')}</span>
+        <span class="hero-meta__val">
+          <span data-field="asn">
+            {info.asn ? (
+              <a class="asn-link mono" href={lp(`/whois?q=${info.asnCode}`)} title={lang === 'en' ? `View registration data for ${info.asnCode}` : `查看 ${info.asnCode} 注册信息`}>
+                {info.asnCode}
+              </a>
+            ) : (
+              <span class="mono">—</span>
+            )}
           </span>
-        </div>
-        <div class="row">
-          <span class="row__label">{t('参考坐标', 'Coordinates')}</span>
-          <span class="row__value" data-field="coords">
-            <span class="mono">
-              {info.latitude !== null && info.longitude !== null ? `${info.latitude}, ${info.longitude}` : '—'}
-            </span>
+          {info.domain && info.domain !== '—' && (
+            <>
+              <span class="dim"> · </span>
+              <span class="mono dim" data-field="domain">{info.domain}</span>
+            </>
+          )}
+          {(!info.domain || info.domain === '—') && <span class="mono dim" data-field="domain" hidden>—</span>}
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('运营商 (ISP)', 'ISP')}</span>
+        <span class="hero-meta__val">
+          <span data-field="isp">{info.isp}</span>
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('所属机构', 'Organization')}</span>
+        <span class="hero-meta__val">
+          <span data-field="org">{info.org}</span>{' '}
+          <span data-field="datacenter">
+            {info.isDatacenter && <span class="badge badge--danger">{t('机房 / IDC', 'IDC / Hosting')}</span>}
           </span>
-        </div>
-        <div class="row">
-          <span class="row__label">{t('时区与时间', 'Time zone and local time')}</span>
-          <span class="row__value" data-field="timezone">
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('注册局与前缀', 'RIR & Prefix')}</span>
+        <span class="hero-meta__val">
+          <span data-field="rirName">{info.rirName}</span>
+          {info.rirCountry && <span class="dim mono"> ({info.rirCountry})</span>}
+          {info.bgpPrefix && info.bgpPrefix !== '—' && (
+            <>
+              <span class="dim"> · </span>
+              <a class="asn-link mono" href={lp(`/ip-calc?q=${encodeURIComponent(info.bgpPrefix)}`)}>{info.bgpPrefix}</a>
+            </>
+          )}
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('代理与威胁', 'Proxy & Risk')}</span>
+        <span class="hero-meta__val tags">
+          <span data-field="proxy">
+            <span class={`badge badge--${info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green'}`}>{info.proxyLabel}</span>
+          </span>
+          <span data-field="threat">
+            <span class={`badge badge--${info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green'}`}>{info.threatLabel}</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('时区与坐标', 'Time & Coords')}</span>
+        <span class="hero-meta__val">
+          <span data-field="timezone">
             <span class="mono">{info.timezone}</span>
             {info.localTimeHm && (
               <>
@@ -237,87 +422,115 @@ const encodedIp = encodeURIComponent(info.ip);
               </>
             )}
           </span>
-        </div>
-        <div class="row">
-          <span class="row__label">{t('所属大洲', 'Continent')}</span>
-          <span class="row__value" data-field="continent">{info.continentZh}</span>
-        </div>
+          <span class="dim"> · </span>
+          <span data-field="coords" class="dim">
+            <span class="mono">{info.latitude !== null && info.longitude !== null ? `${info.latitude}, ${info.longitude}` : '—'}</span>
+          </span>
+          <span data-field="continent" hidden>{info.continentZh}</span>
+        </span>
       </div>
-    </section>
 
-    {!info.isBogon && (
-      <section class="group geo" data-geo data-ip={info.ip} data-self={isSelf ? '1' : '0'}>
-        <h2 class="group__title">{t('多库定位对照', 'Geolocation by database')}</h2>
-        <div class="rows">
-          <div
-            class="row"
-            data-geo-source="cloudflare"
-            data-geo-url={isSelf ? 'https://speed.cloudflare.com/cdn-cgi/trace' : ''}
-            data-geo-fields=""
-          >
-            <span class="row__label">Cloudflare</span>
-            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
-          </div>
-          <div
-            class="row"
-            data-geo-source="ip2location"
-            data-geo-url={`https://api.ip2location.io/?ip=${encodedIp}&format=json`}
-            data-geo-fields="ip country_code region_name city_name"
-          >
-            <span class="row__label">IP2Location</span>
-            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
-          </div>
-          <div
-            class="row"
-            data-geo-source="dbip"
-            data-geo-url={`https://api.db-ip.com/v2/free/${encodedIp}`}
-            data-geo-fields="ipAddress countryCode stateProv city"
-          >
-            <span class="row__label">DB-IP</span>
-            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
-          </div>
-          <div
-            class="row"
-            data-geo-source="ipinfo"
-            data-geo-url={`https://ipinfo.io/${encodedIp}/json`}
-            data-geo-fields="ip country region city"
-          >
-            <span class="row__label">IPinfo.io</span>
-            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
-          </div>
-          <div class="row" data-geo-source="maxmind" data-geo-url="" data-geo-fields="">
-            <span class="row__label">MaxMind</span>
-            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
-          </div>
+      {info.ptrRecord && info.ptrRecord !== '—' && (
+        <div class="hero-meta__row">
+          <span class="hero-meta__label">PTR</span>
+          <span class="hero-meta__val"><span class="current__host mono" data-field="heroPtr">{info.ptrRecord}</span></span>
         </div>
-      </section>
-    )}
+      )}
+    </div>
   </div>
 
-  <!-- Full-Width Span: 8-Category Compact Scene Fit Grid -->
+  <!-- Bottom Action Footer Bar -->
+  <div class="hero-box__foot current__actions">
+    <div class="hero-box__tools">
+      <a class="foot-act is-accent" href="#score-factors">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7" stroke-linecap="round"></path></svg>
+        <span>{t('评分证据', 'Score Evidence')}</span>
+      </a>
+      <button class="foot-act copy" type="button" data-copy-target="current-ip" data-copy-done={t('已复制 IP', 'IP Copied')}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect><path d="M3.5 10.5h-.5A1.5 1.5 0 0 1 1.5 9V3A1.5 1.5 0 0 1 3 1.5h6A1.5 1.5 0 0 1 10.5 3v.5"></path></svg>
+        <span class="copy__label">{t('复制 IP', 'Copy IP')}</span>
+      </button>
+      <a class="foot-act" id="share-card-link" href={lp(`/card?ip=${encodedIp}`)}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.8"></rect><path d="M4.8 6.5h4M4.8 9.2h6.4" stroke-linecap="round"></path></svg>
+        <span>{t('截图分享卡', 'Share Card')}</span>
+      </a>
+      <a class="foot-act" id="platforms-check-link" href={lp(`/platforms?ip=${encodedIp}`)}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2.5" width="5" height="5" rx="1"></rect><rect x="9" y="2.5" width="5" height="5" rx="1"></rect><rect x="2" y="9" width="5" height="5" rx="1"></rect><rect x="9" y="9" width="5" height="5" rx="1"></rect></svg>
+        <span>{t('24 平台判定', '24 Platforms')}</span>
+      </a>
+      <a class="foot-act" id="compare-ips-link" href={lp(`/compare?ips=${encodedIp},8.8.8.8,1.1.1.1`)}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5v11M11 2.5v11M2 6h12M2 10h12" stroke-linecap="round"></path></svg>
+        <span>{t('多 IP 对比', 'Compare')}</span>
+      </a>
+      {isSelf && (
+        <a class="foot-act" href={lp('/check')}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 1.8l5 2.2v3.7c0 3.1-2.1 5.5-5 6.3-2.9-.8-5-3.2-5-6.3V4l5-2.2z"></path><path d="m5.8 8 1.6 1.6 3-3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>{t('6 项环境体检', 'Env Checkup')}</span>
+        </a>
+      )}
+    </div>
+    <span class="hero-box__stamp mono" data-field="cliCmd">
+      curl -sL judgeip.com/{info.ip}
+    </span>
+  </div>
+</section>
+
+<!-- Main Stacked & Bento Sections -->
+<div class="groups groups--bento">
+  <!-- Full-Width Box: 场景适配 (ipfinal circular ring cards) -->
   {!info.isBogon && (
-    <section class="group group--span2" id="scene-fit">
-      <h2 class="group__title">{t('用途适配', 'Fit by use case')}</h2>
+    <section class="panel group--span2" id="scene-fit">
+      <div class="panel__head">
+        <h2 class="panel__title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2l1.6 3.6L13.2 7 9.6 8.6 8 12.2 6.4 8.6 2.8 7l3.6-1.4L8 2z" stroke-linejoin="round"></path></svg>
+          {t('场景适配', 'Fit by Use Case')}
+        </h2>
+        <span class="panel__sub">
+          {t('按已知网络与风险属性估算适配度，非平台官方承诺 · ', 'Estimated from network & risk signals, not official guarantees · ')}
+          <a href={lp('/platforms')}>{t('逐平台测试 ›', 'Per-platform check ›')}</a>
+        </span>
+      </div>
       <div class="scene-grid" data-field="scenes">
         {info.scenes.length === 0 && <p class="geo__note">{t('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates')}</p>}
-        {info.scenes.map((sc) => (
-          <div class="scene-card">
-            <div class="scene-card__top">
-              <span class="scene-card__name">{sc.label}</span>
-              <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
+        {info.scenes.map((sc) => {
+          const g = sceneGauge(sc.tone, info.score);
+          return (
+            <div class={`scene-card is-${sc.tone}`}>
+              <div class="scene-card__top">
+                <span class="scene-card__name">{sc.label}</span>
+                <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
+              </div>
+              <div class="scene-card__mid">
+                <div class="scene-ring" aria-hidden="true">
+                  <svg viewBox="0 0 44 44">
+                    <circle class="scene-ring__track" cx="22" cy="22" r={ringR}></circle>
+                    <circle class="scene-ring__fill" cx="22" cy="22" r={ringR} stroke-dasharray={ringC} stroke-dashoffset={g.stroke}></circle>
+                  </svg>
+                  <span class="scene-ring__num mono">{g.pct}</span>
+                </div>
+                <span class="scene-card__note">{sc.note}</span>
+              </div>
             </div>
-            <span class="scene-card__note">{sc.note}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   )}
 
-  <!-- Full-Width Span: 评分明细，每一项可展开看原始数据 -->
+  <!-- Full-Width Box: 评分明细与原始证据 (JudgeIP Core Differentiator) -->
   {!info.isBogon && (
-    <section class="group group--span2" id="score-factors">
-      <h2 class="group__title">{t('评分明细', 'Score breakdown')}</h2>
-      <div class="factors" data-field="factors">
+    <section class="panel group--span2" id="score-factors">
+      <div class="panel__head">
+        <h2 class="panel__title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7" stroke-linecap="round"></path></svg>
+          {t('评分明细与原始证据', 'Score Breakdown & Raw Evidence')}
+        </h2>
+        <span class="panel__sub">
+          {t('点开任意一项核对上游原始返回 · ', 'Expand any row to inspect raw upstream records · ')}
+          <a href={lp('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={lp('/data')}>{t('数据来源', 'Data sources')}</a>
+        </span>
+      </div>
+      <div class="factors factors--flush" data-field="factors">
         <div class="factor factor--fixed">
           <span class="factor__name">{t('基础分', 'Base score')}</span>
           <span class="factor__delta mono">{info.scoreBase}</span>
@@ -348,18 +561,20 @@ const encodedIp = encodeURIComponent(info.ip);
             : <span class="factor__delta mono">{info.score} · {info.grade}</span>}
         </div>
       </div>
-      <p class="geo__note factors__more">
-        {t('点开任意一项可以看到判断所依据的原始数据。', 'Open any item to see the raw data behind it.')}
-        <a href={lp('/scoring')}>{t('评分规则', 'Scoring rules')}</a> · <a href={lp('/data')}>{t('数据来源', 'Data sources')}</a>
-      </p>
     </section>
   )}
 
-  <!-- Row 3 Left: 风险与路由技术指标 -->
+  <!-- Left Col: 风险与路由技术指标 + DNSBL Chips -->
   {!info.isBogon && (
-    <section class="group" id="risk-tech">
-      <h2 class="group__title">{t('风险与路由指标', 'Risk and routing')}</h2>
-      <div class="rows" data-field="riskTech">
+    <section class="panel" id="risk-tech">
+      <div class="panel__head">
+        <h2 class="panel__title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 1.8l5.2 2.3v3.8c0 3.2-2.2 5.7-5.2 6.4-3-.7-5.2-3.2-5.2-6.4V4.1L8 1.8z" stroke-linejoin="round"></path></svg>
+          {t('风险检测与路由', 'Risk Signals & Routing')}
+        </h2>
+        <span class="panel__sub">{t('多源威胁标记与 BGP/RPKI', 'Threat feeds & BGP')}</span>
+      </div>
+      <div class="rows rows--flush" data-field="riskTech">
         {info.riskChecks.map((rc) => (
           <div class="row">
             <span class="row__label">{rc.label}</span>
@@ -372,7 +587,7 @@ const encodedIp = encodeURIComponent(info.ip);
           <span class="row__label">{t('BGP 路由前缀', 'BGP prefix')}</span>
           <span class="row__value">
             {info.bgpPrefix !== '—' ? (
-              <a class="asn-link mono" href={lp(`/ip-calc?q=${encodeURIComponent(info.bgpPrefix)}`)} title={t("在子网计算器中查看该网段", 'View this range in the CIDR calculator')}>
+              <a class="asn-link mono" href={lp(`/ip-calc?q=${encodeURIComponent(info.bgpPrefix)}`)} title={t('在子网计算器中查看该网段', 'View this range in the CIDR calculator')}>
                 {info.bgpPrefix}
               </a>
             ) : (
@@ -403,63 +618,147 @@ const encodedIp = encodeURIComponent(info.ip);
           </span>
         </div>
       </div>
+
+      {info.version === 4 && info.dnsblChecks.length > 0 && (
+        <div class="dnsbl-strip" data-field="dnsblStrip">
+          <span class="dnsbl-strip__label">{t('黑名单实时核验', 'Live DNSBLs')}</span>
+          <div class="dnsbl-strip__chips">
+            {info.dnsblChecks.map((c) => (
+              <span class={`dnsbl-chip is-${c.status}`}>
+                <span class="dnsbl-chip__icon">{c.status === 'not_listed' ? '✓' : c.status === 'listed' ? '×' : '?'}</span>
+                <span>{c.name}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   )}
 
-  <!-- Row 3 Right: 本机双栈与边缘连接 -->
-  {isSelf && (
-    <section
-      class="group"
-      data-homenet
-      data-visible-ip={info.ip}
-      data-iata="/assets/data/iata.json"
-      data-trace="speed.cloudflare.com"
-      data-v4="https://ipv4.icanhazip.com/ https://v4.ident.me/ https://checkip.amazonaws.com/"
-      data-v6="https://api6.ipify.org?format=json https://ipv6.icanhazip.com/"
-    >
-      <h2 class="group__title">{t('本机双栈与边缘连接', 'Dual stack and edge connection')}</h2>
-      <div class="rows">
-        <div class="row" data-net="v4">
-          <span class="row__label">{t('IPv4 出口', 'IPv4 exit')}</span>
-          <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+  <!-- Right Col: 多库定位对照 + 本机双栈 -->
+  <div class="groups">
+    {!info.isBogon && (
+      <section class="panel geo" id="multi-geo" data-geo data-ip={info.ip} data-self={isSelf ? '1' : '0'}>
+        <div class="panel__head">
+          <h2 class="panel__title">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s4.5-4.1 4.5-7.5a4.5 4.5 0 1 0-9 0C3.5 9.9 8 14 8 14z"></path><circle cx="8" cy="6.5" r="1.5"></circle></svg>
+            {t('多库定位对照', 'Geolocation by Database')}
+          </h2>
+          <span class="panel__sub">{t('5 个地理库交叉比对', '5 databases compared')}</span>
         </div>
-        <div class="row" data-net="v6">
-          <span class="row__label">{t('IPv6 出口', 'IPv6 exit')}</span>
-          <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+        <div class="rows rows--flush">
+          <div
+            class="row"
+            data-geo-source="cloudflare"
+            data-geo-url={isSelf ? 'https://speed.cloudflare.com/cdn-cgi/trace' : ''}
+            data-geo-fields=""
+          >
+            <span class="row__label">Cloudflare</span>
+            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="maxmind"
+            data-geo-url=""
+            data-geo-fields=""
+          >
+            <span class="row__label">MaxMind</span>
+            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="ipinfo"
+            data-geo-url={`https://ipinfo.io/${encodedIp}/json`}
+            data-geo-fields="ip country region city"
+          >
+            <span class="row__label">IPinfo.io</span>
+            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="ip2location"
+            data-geo-url={`https://api.ip2location.io/?ip=${encodedIp}&format=json`}
+            data-geo-fields="ip country_code region_name city_name"
+          >
+            <span class="row__label">IP2Location</span>
+            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
+          </div>
+          <div
+            class="row"
+            data-geo-source="dbip"
+            data-geo-url={`https://api.db-ip.com/v2/free/${encodedIp}`}
+            data-geo-fields="ipAddress countryCode stateProv city"
+          >
+            <span class="row__label">DB-IP</span>
+            <span class="row__value"><span class="geo__note">{t('查询中…', 'Looking up…')}</span></span>
+          </div>
         </div>
-        <div class="row" data-net="family">
-          <span class="row__label">{t('连接协议栈', 'Protocols')}</span>
-          <span class="row__value">
-            <span class="tags">
-              <span class="mono">IPv{info.version}</span>
+      </section>
+    )}
+
+    {isSelf && (
+      <section
+        class="panel"
+        data-homenet
+        data-visible-ip={info.ip}
+        data-iata="/assets/data/iata.json"
+        data-trace="speed.cloudflare.com"
+        data-v4="https://ipv4.icanhazip.com/ https://v4.ident.me/ https://checkip.amazonaws.com/"
+        data-v6="https://api6.ipify.org?format=json https://ipv6.icanhazip.com/"
+      >
+        <div class="panel__head">
+          <h2 class="panel__title">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 5.5h12M2 10.5h12M5.5 2v12M10.5 2v12" stroke-linecap="round"></path></svg>
+            {t('本机双栈与边缘连接', 'Dual Stack & Edge Node')}
+          </h2>
+          <a class="panel__link" href={lp('/egress')}>{t('9 通道出口表 ›', 'All egresses ›')}</a>
+        </div>
+        <div class="rows rows--flush">
+          <div class="row" data-net="v4">
+            <span class="row__label">{t('IPv4 出口', 'IPv4 exit')}</span>
+            <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+          </div>
+          <div class="row" data-net="v6">
+            <span class="row__label">{t('IPv6 出口', 'IPv6 exit')}</span>
+            <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+          </div>
+          <div class="row" data-net="family">
+            <span class="row__label">{t('连接协议栈', 'Protocols')}</span>
+            <span class="row__value">
+              <span class="tags">
+                <span class="mono">IPv{info.version}</span>
+              </span>
             </span>
-          </span>
+          </div>
+          <div class="row" data-net="colo">
+            <span class="row__label">{t('边缘接入机房', 'Edge colo')}</span>
+            <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+          </div>
+          <div class="row" data-net="proto">
+            <span class="row__label">{t('传输与加密', 'Transport & TLS')}</span>
+            <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+          </div>
+          <div class="row" data-net="warp">
+            <span class="row__label">Cloudflare WARP</span>
+            <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
+          </div>
         </div>
-        <div class="row" data-net="colo">
-          <span class="row__label">{t('边缘接入机房', 'Edge colo')}</span>
-          <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
-        </div>
-        <div class="row" data-net="proto">
-          <span class="row__label">{t('传输与加密', 'Transport and encryption')}</span>
-          <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
-        </div>
-        <div class="row" data-net="warp">
-          <span class="row__label">Cloudflare WARP</span>
-          <span class="row__value"><span class="geo__note">{t('检测中…', 'Checking…')}</span></span>
-        </div>
-      </div>
-    </section>
-  )}
+      </section>
+    )}
+  </div>
 
-  <!-- Full-Width Span: 网络连通性 -->
+  <!-- Full-Width Box: 网络连通性 -->
   {isSelf && (
-    <section class="group group--span2 conn conn--home" data-conn data-conn-auto="view" data-rounds="4">
-      <div class="connhead">
-        <h2 class="group__title">{t('国内外节点连通性', 'Connectivity in and outside China')}</h2>
-        <a class="connhead__more" href={lp('/connectivity')}>{t('完整 44 站测速 ›', 'All 44 sites ›')}</a>
+    <section class="panel group--span2 conn conn--home" id="net-conn" data-conn data-conn-auto="view" data-rounds="4">
+      <div class="panel__head connhead">
+        <h2 class="panel__title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.2 6.2a8.5 8.5 0 0 1 11.6 0M4.6 8.8a5 5 0 0 1 6.8 0M7.2 11.5a1.2 1.2 0 0 1 1.6 0" stroke-linecap="round"></path></svg>
+          {t('国内外节点连通性', 'Connectivity in and Outside China')}
+        </h2>
+        <a class="panel__link connhead__more" href={lp('/connectivity')}>{t('完整 44 站测速 ›', 'All 44 sites ›')}</a>
       </div>
       <p class="connnote" data-conn-notice hidden></p>
-      <div class="rows conngrid conngrid--home">
+      <div class="rows rows--flush conngrid conngrid--home">
         <div class="conngrid__col">
           <div class="conngrid__cap">{t('国内直连', 'China direct')}</div>
           {[
@@ -468,7 +767,7 @@ const encodedIp = encodeURIComponent(info.ip);
             { key: 'taobao', url: 'https://www.taobao.com/favicon.ico', mark: t('淘', 'T'), dom: 'taobao.com', label: t('淘宝', 'Taobao') },
             { key: 'bytedance', url: 'https://perfops.byte-test.com/500b-bench.jpg', mark: t('字', 'B'), dom: 'bytedance.com', label: t('字节跳动', 'ByteDance') },
           ].map((item) => (
-            <div class="conntile" data-conn-key={item.key} data-conn-url={item.url} data-conn-group="cn" title={(lang === 'en' ? `Probe: ${item.url.replace(/^https?:\/\//, '')}` : `探测地址：${item.url.replace(/^https?:\/\//, '')}`)}>
+            <div class="conntile" data-conn-key={item.key} data-conn-url={item.url} data-conn-group="cn" title={lang === 'en' ? `Probe: ${item.url.replace(/^https?:\/\//, '')}` : `探测地址：${item.url.replace(/^https?:\/\//, '')}`}>
               <span class="conntile__mark conntile__mark--cn" aria-hidden="true">
                 {item.mark}
                 <img class="favicon" src={`https://favicon.is/${item.dom}`} alt="" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-favicon />
@@ -492,7 +791,7 @@ const encodedIp = encodeURIComponent(info.ip);
             { key: 'github', url: 'https://github.com/generate_204', mark: 'G', dom: 'github.com', label: 'GitHub', grp: 'intl' },
             { key: 'chatgpt', url: 'https://chatgpt.com/cdn-cgi/trace', mark: 'C', dom: 'chatgpt.com', label: 'ChatGPT', grp: 'ai' },
           ].map((item) => (
-            <div class="conntile" data-conn-key={item.key} data-conn-url={item.url} data-conn-group={item.grp} title={(lang === 'en' ? `Probe: ${item.url.replace(/^https?:\/\//, '')}` : `探测地址：${item.url.replace(/^https?:\/\//, '')}`)}>
+            <div class="conntile" data-conn-key={item.key} data-conn-url={item.url} data-conn-group={item.grp} title={lang === 'en' ? `Probe: ${item.url.replace(/^https?:\/\//, '')}` : `探测地址：${item.url.replace(/^https?:\/\//, '')}`}>
               <span class={`conntile__mark conntile__mark--${item.grp}`} aria-hidden="true">
                 {item.mark}
                 <img class="favicon" src={`https://favicon.is/${item.dom}`} alt="" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-favicon />
@@ -511,4 +810,33 @@ const encodedIp = encodeURIComponent(info.ip);
       </div>
     </section>
   )}
+
+  <!-- Quick More Tools Directory Grid (ipfinal bottom launcher) -->
+  <section class="panel group--span2" id="more-checks">
+    <div class="panel__head">
+      <h2 class="panel__title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"></rect><rect x="9" y="2" width="5" height="5" rx="1"></rect><rect x="2" y="9" width="5" height="5" rx="1"></rect><rect x="9" y="9" width="5" height="5" rx="1"></rect></svg>
+        {t('更多专项检测', 'More Diagnostics')}
+      </h2>
+      <a class="panel__link" href={lp('/tools')}>{t('全部 22 个工具 ›', 'All 22 tools ›')}</a>
+    </div>
+    <div class="quick-grid">
+      {[
+        { path: '/egress', name: t('我的出口', 'My Egress'), desc: t('国内 / 国外 / WebRTC / DNS / AI 九通道汇总', '9-channel egress & split summary') },
+        { path: '/platforms', name: t('平台检测', 'Platform Check'), desc: t('PayPal / TikTok / Upwork 等 24 站门槛判定', '24 payment, shop & social verdicts') },
+        { path: '/compare', name: t('多 IP 对比', 'Compare IPs'), desc: t('并排对比最多 6 个线路 IP 的加减分', 'Compare up to 6 IPs side by side') },
+        { path: '/claude', name: t('Claude 检测', 'Claude Check'), desc: t('claude.ai 真实出口、支持地区与原生核验', 'Claude egress, region & residential fit') },
+        { path: '/gpt', name: t('GPT · Codex 检测', 'GPT · Codex'), desc: t('ChatGPT 网页端与 API 线路分开检测', 'Separate web & API egress checks') },
+        { path: '/split', name: t('网站分流测试', 'Split Routing'), desc: t('34 个国内外网站各自看到的出口 IP', 'Per-site egress across 34 websites') },
+        { path: '/webrtc', name: t('WebRTC 泄漏', 'WebRTC Leak'), desc: t('检查 STUN 候选是否绕过代理暴露公网', 'Check STUN public IP exposure') },
+        { path: '/dnsleak', name: t('DNS 泄漏检测', 'DNS Leak'), desc: t('检测递归解析器是否落回国内网络', 'Inspect recursive DNS resolvers') },
+        { path: '/whois', name: 'Whois / RDAP', desc: t('查询 IP 段、ASN 与域名的注册局记录', 'RIR & domain registration records') },
+      ].map((item) => (
+        <a class="quick-card" href={lp(item.path)}>
+          <span class="quick-card__name">{item.name}</span>
+          <span class="quick-card__desc">{item.desc}</span>
+        </a>
+      ))}
+    </div>
+  </section>
 </div>
