@@ -30,6 +30,7 @@ const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络
   bodyClass="page-home"
   currentLabel={pick(lang, 'IP 检测', 'IP check')}
   activeNav="/"
+  extraJs={['/assets/js/ip-search.js']}
 >
   <IpcxHomeContent info={info} isSelf={false} queryValue={info.ip} />
 </IpcxLayout>

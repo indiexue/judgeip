@@ -49,7 +49,7 @@ const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络
   currentLabel={pick(lang, 'IP 检测', 'IP check')}
   activeNav="/"
   extraCss={['/assets/css/connectivity.css']}
-  extraJs={isSelf ? ['/assets/js/probe.js', '/assets/js/homenet.js', '/assets/js/connectivity.js'] : []}
+  extraJs={isSelf ? ['/assets/js/probe.js', '/assets/js/ip-search.js', '/assets/js/homenet.js', '/assets/js/connectivity.js'] : ['/assets/js/ip-search.js']}
 >
   <IpcxHomeContent info={info} isSelf={isSelf} queryValue={rawQuery && !errorMsg ? info.ip : rawQuery} errorMsg={errorMsg} />
 </IpcxLayout>

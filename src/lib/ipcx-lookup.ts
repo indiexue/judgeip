@@ -54,6 +54,17 @@ export interface OptionalIntelKeys {
   proxycheckKey?: string;
 }
 
+export interface LookupSourceEvent {
+  id: string;
+  label: string;
+  status: 'ok' | 'skip' | 'fail';
+}
+
+export interface LookupStreamOptions {
+  bypassCache?: boolean;
+  onSource?: (event: LookupSourceEvent) => void;
+}
+
 export interface HomeIpLookupResult {
   ip: string;
   version: 4 | 6;
@@ -360,7 +371,10 @@ function parseRdapFallback(rdap: {
   return { rirName, rirCountry, lines };
 }
 
-async function fetchRirAndRouting(ip: string): Promise<{
+async function fetchRirAndRouting(
+  ip: string,
+  onSource?: (ev: LookupSourceEvent) => void,
+): Promise<{
   rirName?: string;
   rirCountry?: string;
   bgpPrefix?: string;
@@ -400,7 +414,10 @@ async function fetchRirAndRouting(ip: string): Promise<{
 
   const [whoisResp, netResp, rdnsResp] = await Promise.all([
     fetchJson<RipeWhois>(`https://stat.ripe.net/data/whois/data.json?resource=${encodeURIComponent(ip)}`, 3200),
-    fetchJson<RipeNetInfo>(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`, 2600),
+    fetchJson<RipeNetInfo>(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`, 2600).then((r) => {
+      onSource?.({ id: 'bgp', label: 'RIPEstat BGP', status: r?.data ? 'ok' : 'fail' });
+      return r;
+    }),
     fetchJson<RipeReverseDns>(`https://stat.ripe.net/data/reverse-dns-ip/data.json?resource=${encodeURIComponent(ip)}`, 2200),
   ]);
 
@@ -459,6 +476,7 @@ async function fetchRirAndRouting(ip: string): Promise<{
       }
     }
   }
+  onSource?.({ id: 'rir', label: 'RIR / RDAP', status: rirCountry || rirName ? 'ok' : 'fail' });
 
   const bgpPrefix = netResp?.data?.prefix || '';
   const bgpAsn = netResp?.data?.asns?.[0] ? Number(netResp.data.asns[0]) : undefined;
@@ -474,6 +492,9 @@ async function fetchRirAndRouting(ip: string): Promise<{
     if (st === 'valid') rpkiStatus = 'valid';
     else if (st.startsWith('invalid')) rpkiStatus = 'invalid';
     else if (st === 'unknown') rpkiStatus = 'not_found';
+    onSource?.({ id: 'rpki', label: 'RPKI ROA', status: rpkiStatus !== 'unknown' ? 'ok' : 'fail' });
+  } else {
+    onSource?.({ id: 'rpki', label: 'RPKI ROA', status: 'skip' });
   }
 
   return { rirName, rirCountry, bgpPrefix, bgpAsn, rpkiStatus, ptrRecord, abuseEmail, whoisLines };
@@ -481,7 +502,10 @@ async function fetchRirAndRouting(ip: string): Promise<{
 
 const DNS_RCODES: Record<number, string> = { 0: 'NOERROR', 2: 'SERVFAIL', 3: 'NXDOMAIN', 5: 'REFUSED' };
 
-export async function checkIpv4Dnsbl(ipv4: string): Promise<DnsblCheck[]> {
+export async function checkIpv4Dnsbl(
+  ipv4: string,
+  onZone?: (name: string, status: 'listed' | 'not_listed' | 'unknown') => void,
+): Promise<DnsblCheck[]> {
   const parsed = parseIp(ipv4);
   if (!parsed || parsed.version !== 4 || parsed.isBogon) {
     return DNSBL_ZONES.map(({ name }) => ({ name, status: 'unknown' }));
@@ -499,13 +523,19 @@ export async function checkIpv4Dnsbl(ipv4: string): Promise<DnsblCheck[]> {
     const answer = answers.length ? `A ${answers.slice(0, 4).join(', ')}` : rcode || undefined;
     // Public-resolver refusals and provider error codes are not clean results.
     if (res?.Status === 0 && answers.length) {
-      if (answers.some((a) => /^127\.0\.0\.[1-9]\d{0,2}$/.test(a))) return { name, status: 'listed', query, answer };
+      const st = answers.some((a) => /^127\.0\.0\.[1-9]\d{0,2}$/.test(a)) ? 'listed' : 'unknown';
+      onZone?.(name, st);
+      return { name, status: st, query, answer };
+    }
+    if (res?.Answer && !Array.isArray(res.Answer)) {
+      onZone?.(name, 'unknown');
       return { name, status: 'unknown', query, answer };
     }
-    if (res?.Answer && !Array.isArray(res.Answer)) return { name, status: 'unknown', query, answer };
     const authoritativeNegative = (res?.Status === 3 || res?.Status === 0)
       && answers.length === 0 && Array.isArray(res?.Authority) && res.Authority.some((a) => a?.type === 6);
-    return { name, status: authoritativeNegative ? 'not_listed' : 'unknown', query, answer };
+    const finalSt = authoritativeNegative ? 'not_listed' : 'unknown';
+    onZone?.(name, finalSt);
+    return { name, status: finalSt, query, answer };
   }));
 }
 
@@ -586,11 +616,25 @@ function buildSceneFitMatrix(opts: {
 
 const memCache = new Map<string, { exp: number; data: HomeIpLookupResult }>();
 
+export const STREAM_SOURCES: Array<{ id: string; label: string }> = [
+  { id: 'ipwhois', label: 'ipwho.is' },
+  { id: 'ipapi', label: 'ip-api.com' },
+  { id: 'ipquery', label: 'ipquery.io' },
+  { id: 'proxycheck', label: 'proxycheck.io' },
+  { id: 'rir', label: 'RIR / RDAP' },
+  { id: 'bgp', label: 'RIPEstat BGP' },
+  { id: 'rpki', label: 'RPKI ROA' },
+  { id: 'shodan', label: 'Shodan InternetDB' },
+  { id: 'dnsbl', label: '4× DNSBL' },
+  { id: 'peeringdb', label: 'PeeringDB / ASN' },
+];
+
 export async function lookupIpFull(
   rawIp: string,
   cfMeta?: Record<string, unknown> | null,
   isSelf = false,
   optionalKeys?: OptionalIntelKeys | null,
+  streamOpts?: LookupStreamOptions,
 ): Promise<HomeIpLookupResult> {
   const parsed = parseIp(rawIp);
   if (!parsed) {
@@ -658,7 +702,10 @@ export async function lookupIpFull(
 
   const cacheKey = parsed.normalized;
   const cached = memCache.get(cacheKey);
-  if (cached && cached.exp > Date.now() && !isSelf) {
+  if (cached && cached.exp > Date.now() && !isSelf && !streamOpts?.bypassCache) {
+    if (streamOpts?.onSource) {
+      for (const src of STREAM_SOURCES) streamOpts.onSource({ id: src.id, label: src.label, status: 'ok' });
+    }
     return { ...cached.data, localTimeHm: formatLocalTime(cached.data.timezone) };
   }
 
@@ -770,17 +817,47 @@ export async function lookupIpFull(
     keys.proxycheckKey ? `&key=${encodeURIComponent(keys.proxycheckKey)}` : ''
   }`;
 
+  const onSrc = streamOpts?.onSource;
   const [ipWhoRaw, ipApiRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw] = await Promise.all([
-    fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300),
+    fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300).then((r) => {
+      onSrc?.({ id: 'ipwhois', label: 'ipwho.is', status: r?.success === true ? 'ok' : 'fail' });
+      return r;
+    }),
     fetchJson<IpApiResp>(
       `http://ip-api.com/json/${encodeURIComponent(parsed.normalized)}?lang=zh-CN&fields=status,continentCode,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as,mobile,proxy,hosting`,
       2300
-    ),
-    fetchJson<IpQueryResp>(`https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`, 2200),
-    fetchJson<Record<string, unknown>>(proxyCheckUrl, 2200),
-    parsed.version === 4 ? fetchShodan<ShodanResp>(parsed.normalized) : Promise.resolve(null),
-    fetchRirAndRouting(parsed.normalized),
-    parsed.version === 4 ? checkIpv4Dnsbl(parsed.normalized) : Promise.resolve([]),
+    ).then((r) => {
+      onSrc?.({ id: 'ipapi', label: 'ip-api.com', status: r?.status === 'success' ? 'ok' : 'fail' });
+      return r;
+    }),
+    fetchJson<IpQueryResp>(`https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`, 2200).then((r) => {
+      onSrc?.({ id: 'ipquery', label: 'ipquery.io', status: r?.ip ? 'ok' : 'fail' });
+      return r;
+    }),
+    fetchJson<Record<string, unknown>>(proxyCheckUrl, 2200).then((r) => {
+      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: r && (r.status === 'ok' || r.status === 'warning') ? 'ok' : 'fail' });
+      return r;
+    }),
+    parsed.version === 4
+      ? fetchShodan<ShodanResp>(parsed.normalized).then((r) => {
+          onSrc?.({ id: 'shodan', label: 'Shodan InternetDB', status: r ? 'ok' : 'fail' });
+          return r;
+        })
+      : Promise.resolve(null).then((r) => {
+          onSrc?.({ id: 'shodan', label: 'Shodan InternetDB', status: 'skip' });
+          return r;
+        }),
+    fetchRirAndRouting(parsed.normalized, onSrc),
+    parsed.version === 4
+      ? checkIpv4Dnsbl(parsed.normalized).then((checks) => {
+          const okCount = checks.filter((c) => c.status !== 'unknown').length;
+          onSrc?.({ id: 'dnsbl', label: '4× DNSBL', status: okCount >= 2 ? 'ok' : 'fail' });
+          return checks;
+        })
+      : Promise.resolve([] as DnsblCheck[]).then((checks) => {
+          onSrc?.({ id: 'dnsbl', label: '4× DNSBL', status: 'skip' });
+          return checks;
+        }),
     // 方案 B 可选增强源：配置了 Key 时并发接入 ipapi.is 与 AbuseIPDB
     keys.ipapiIsKey
       ? fetchJson<IpapiIsResp>(`https://api.ipapi.is/?q=${encodeURIComponent(parsed.normalized)}&key=${encodeURIComponent(keys.ipapiIsKey)}`, 2300)
@@ -848,6 +925,11 @@ export async function lookupIpFull(
 
   // 若 ASN 不在内置 160+ 表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型
   const peeringDb = asn && !profile ? await fetchPeeringDbType(asn) : null;
+  onSrc?.({
+    id: 'peeringdb',
+    label: 'PeeringDB / ASN',
+    status: profile || peeringDb ? 'ok' : asn ? 'skip' : 'fail',
+  });
 
   const isp = ipWho?.connection?.isp
     || ipApi?.isp

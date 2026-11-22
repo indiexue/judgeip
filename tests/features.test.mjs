@@ -593,4 +593,36 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
   });
 });
 
+test('streaming lookup emits every upstream source completion and supports cache bypass', async () => {
+  await withFetch(upstream({
+    'ipquery.io': { ip: '82.152.6.22', isp: { asn: 'AS7922', org: 'Comcast', isp: 'Comcast Cable' }, location: { country_code: 'US' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
+    'proxycheck.io': { status: 'ok', '82.152.6.22': { asn: 'AS7922', provider: 'Comcast Cable', proxy: 'no', type: 'ISP', risk: 0 } },
+  }), async () => {
+    const { lookupIpFull, STREAM_SOURCES } = await loadTs('../src/lib/ipcx-lookup.ts');
+    const seen = [];
+    const info = await lookupIpFull('82.152.6.22', null, false, null, {
+      onSource: (ev) => seen.push(ev),
+    });
+    assert.equal(info.score, 95);
+    assert.equal(seen.length, STREAM_SOURCES.length);
+    assert.deepEqual(new Set(seen.map((s) => s.id)), new Set(STREAM_SOURCES.map((s) => s.id)));
+    assert.ok(seen.every((s) => s.status === 'ok'));
+
+    // Cached call still fires all source events so client progress reaches 10/10
+    const cachedSeen = [];
+    await lookupIpFull('82.152.6.22', null, false, null, { onSource: (ev) => cachedSeen.push(ev) });
+    assert.equal(cachedSeen.length, STREAM_SOURCES.length);
+
+    // IPv6 marks IPv4-only feeds (shodan, dnsbl) as 'skip'
+    const v6Seen = [];
+    const v6Info = await lookupIpFull('2606:4700:4700::1111', null, false, null, {
+      onSource: (ev) => v6Seen.push(ev),
+    });
+    assert.ok(typeof v6Info.score === 'number');
+    assert.equal(v6Seen.find((s) => s.id === 'shodan').status, 'skip');
+    assert.equal(v6Seen.find((s) => s.id === 'dnsbl').status, 'skip');
+  });
+});
+
+
 
