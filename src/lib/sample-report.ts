@@ -1,5 +1,5 @@
 /**
- * API 文档页的示例数据：8.8.8.8 的一次完整查询结果。
+ * API 文档页的示例数据：8.8.8.8 的格式示例（非当前实时查询）。
  * 文档里的文本报告和 JSON 示例都由它渲染，输出格式改了示例跟着变。
  */
 import type { HomeIpLookupResult } from './ipcx-lookup';
@@ -21,15 +21,18 @@ export const SAMPLE_REPORT: HomeIpLookupResult = {
   rirCountry: 'US',
   isNative: true,
   isDatacenter: true,
-  hasThreat: false,
-  threatLabel: '已查来源未见威胁',
+  hasThreat: null,
+  threatLabel: '威胁数据不完整',
   isProxy: true,
   proxyLabel: '公开代理',
   score: 38,
   grade: 'D',
   scoreTone: 'bad',
-  scoreConfidence: 'high',
-  lookupStatus: 'complete',
+  scoreConfidence: 'low',
+  reputationCoverage: 'unavailable',
+  reputationChecks: [],
+  scoringVersion: '2026-11-23',
+  lookupStatus: 'partial',
   portsKnown: true,
   scoreBase: 95,
   factors: [
@@ -66,9 +69,9 @@ export const SAMPLE_REPORT: HomeIpLookupResult = {
     {
       key: 'reputation',
       label: '黑名单与威胁记录',
-      status: '已查来源未见威胁',
+      status: '威胁数据不完整',
       delta: 0,
-      tone: 'ok',
+      tone: 'muted',
       evidence: [{ source: 'SpamCop', field: '8.8.8.8.bl.spamcop.net', value: 'NXDOMAIN' }],
     },
     {

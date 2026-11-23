@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { localizeLookup } from '../src/lib/lookup-en.ts';
 import { loadTs } from './load-ts.mjs';
 
+// All upstreams are mocked; enable the optional abuse source in complete-evidence fixtures.
+process.env.ABUSEIPDB_KEY = 'fixture-only';
+const ipsumFixture = Buffer.alloc(16 + 1000 * 5);
+ipsumFixture.write('IPSM');
+ipsumFixture.writeDoubleBE(Date.now(), 4);
+ipsumFixture.writeUInt32BE(1000, 12);
+for (let i = 0; i < 1000; i++) { ipsumFixture.writeUInt32BE(11 * 2 ** 24 + i, 16 + i * 5); ipsumFixture.writeUInt8(1, 20 + i * 5); }
+
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
 async function withFetch(fetcher, fn) {
@@ -16,6 +24,8 @@ function upstream(overrides = {}) {
   const base = {
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' } },
     'ip-api.com': { status: 'success', countryCode: 'US', continentCode: 'NA', as: 'AS7922 Comcast', isp: 'Comcast Cable', proxy: false, hosting: false, mobile: false },
+    'abuseipdb.com': { data: { abuseConfidenceScore: 0, totalReports: 0 } },
+    'judgeip.com/assets/data/ipsum.bin': () => new Response(ipsumFixture),
     internetdb: { ports: [], tags: [], vulns: [], hostnames: [] },
     'whois/data': { data: { authorities: ['ARIN'], records: [[{ key: 'NetRange', value: '73.0.0.0 - 73.255.255.255' }, { key: 'Country', value: 'US' }, { key: 'Comment', value: 'ignored' }]] } },
     'network-info': { data: { prefix: '73.162.0.0/16', asns: ['7922'] } },
@@ -156,13 +166,13 @@ test('the text report repeats the score, grade and breakdown from the lookup', a
 test('the text report shows medium confidence on IPv6 / partial DNSBL and keeps reserved addresses short', async () => {
   const { renderTextReport } = await loadTs('../src/lib/text-report.ts');
   const v6 = renderTextReport(await lookup('2400:3200::1'), 'zh');
-  assert.match(v6, /评分 +95 \/ 99 · A\+ · 置信度中\n/);
+  assert.match(v6, /评分 +79 \/ 99 · B · 置信度中\n/);
   assert.match(v6, /网络类型 +家庭宽带 · 双 ISP\n/);
   assert.match(v6, /开放端口 +仅支持 IPv4\n/);
   assert.match(v6, /黑名单 +仅支持 IPv4\n/);
 
   const partial = renderTextReport(await lookup('8.8.8.8', { 'dns-query': (url) => url.includes('spamcop') ? json({}, 500) : { Status: 3, Authority: [{ type: 6 }] } }), 'zh');
-  assert.match(partial, /评分 +95 \/ 99 · A\+ · 置信度中\n/);
+  assert.match(partial, /评分 +79 \/ 99 · B · 置信度中\n/);
   assert.match(partial, /黑名单 +3\/4 个有答复，均未列入\n/);
 
   const totalDown = renderTextReport(await withFetch(async () => json({}, 503), async () => {
@@ -304,7 +314,7 @@ test('the API docs sample adds up and renders without Chinese in English', async
   assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(en)), false, JSON.stringify(en));
   const text = renderTextReport(en, 'en');
   assert.equal(/[\p{Script=Han}]/u.test(text), false, text);
-  assert.match(text, /^Score +38 \/ 99 · D$/m);
+  assert.match(text, /^Score +38 \/ 99 · D · low confidence$/m);
 });
 
 test('platform verdicts follow the published thresholds and requirements', async () => {
@@ -497,7 +507,7 @@ test('a compare column carries the same score, factors and labels as the lookup'
   assert.equal(foreign.cells.registry.sub, '注册国家 DE');
 
   const v6 = compareColumn(await lookup('2001:4860:4860::8888'), 'zh');
-  assert.deepEqual([v6.score, v6.cells.score.text, v6.cells.score.tone], [95, '95 / 99', 'ok']);
+  assert.deepEqual([v6.score, v6.cells.score.text, v6.cells.score.tone], [79, '79 / 99', 'ok']);
   assert.match(v6.cells.score.sub, /置信度中/);
   assert.ok(v6.factors.length > 0);
 
@@ -587,7 +597,9 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
     const enriched = await lookupIpFull('73.162.88.9', null, false, { ipapiIsKey: 'k1', abuseIpdbKey: 'k2' });
     assert.equal(enriched.isDualIsp, true);
     assert.equal(enriched.hasThreat, true);
-    assert.equal(enriched.score, 77); // 95 - 18 reputation from AbuseIPDB
+    assert.equal(enriched.score, 29); // Severe abuse cannot be offset by residential identity
+    assert.equal(factor(enriched, 'reputation').delta, -65);
+    assert.equal(factor(enriched, 'safety').delta, -1);
     assert.ok(factor(enriched, 'reputation').evidence.some((e) => e.source === 'AbuseIPDB'));
     assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(enriched, 'en'))), false);
   });
@@ -624,5 +636,64 @@ test('streaming lookup emits every upstream source completion and supports cache
   });
 });
 
+test('missing reputation is capped and cannot imply a clean verdict or platform success', async () => {
+  await withFetch(upstream(), async () => {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    const info = await lookupIpFull('60.249.14.38', null, false, {});
+    assert.equal(info.reputationCoverage, 'limited');
+    assert.equal(info.score, 79);
+    assert.equal(info.scoreConfidence, 'medium');
+    assert.equal(info.lookupStatus, 'partial');
+    assert.equal(info.hasThreat, null);
+    assert.equal(info.threatLabel, '威胁数据不完整');
+    assert.equal(sum(info), info.score);
+    assert.ok(info.reputationChecks.some((c) => c.source === 'AbuseIPDB' && c.status === 'not_configured'));
+    assert.ok(info.scenes.every((s) => s.status === '证据不足，待验证' && s.tone !== 'ok'));
+    assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(info, 'en'))), false);
+    const v6 = await lookupIpFull('2001:4860:4860::8888', null, false, {});
+    assert.equal(v6.reputationCoverage, 'unavailable');
+    assert.equal(v6.score, 59);
+    assert.equal(v6.hasThreat, null);
+    assert.equal(sum(v6), v6.score);
+  });
+});
+
+test('moderate and severe behavior evidence overrides residential identity without stacking correlated reports', async () => {
+  for (const [reports, expected, delta] of [[30, 49, -40], [90, 29, -65]]) {
+    const info = await lookup('73.162.88.1', {
+      'abuseipdb.com': { data: { abuseConfidenceScore: reports, totalReports: 10 } },
+      'dns-query': () => ({ Status: 0, Answer: [{ type: 1, data: '127.0.0.2' }] }),
+    });
+    assert.equal(info.usageType, 'residential');
+    assert.equal(info.isNative, true);
+    assert.equal(info.hasThreat, true);
+    assert.equal(info.score, expected);
+    assert.equal(factor(info, 'reputation').delta, delta);
+    assert.equal(sum(info), info.score);
+    assert.ok(info.scenes.every((s) => s.tone === 'leak'));
+  }
+});
+
+test('incomplete baseline evidence cannot receive a high score even with reputation available', async () => {
+  const info = await lookup('73.162.88.1', { 'dns-query': (url) => url.includes('barracuda') ? { Status: 2 } : { Status: 3, Authority: [{ type: 6 }] } });
+  assert.equal(info.reputationCoverage, 'complete');
+  assert.equal(info.score, 79);
+  assert.equal(factor(info, 'coverage').status, '基础检查不完整');
+  assert.equal(sum(info), 79);
+});
 
 
+test('legacy verdict API shares the evidence engine and never publishes a fraud probability', async () => {
+  await withFetch(upstream(), async () => {
+    const { GET } = await loadTs('../src/pages/api/v1/verdict.ts');
+    const url = new URL('https://judgeip.com/api/v1/verdict?ip=73.162.88.1');
+    const response = await GET({ request: new Request(url, { headers: { 'cf-connecting-ip': '1.1.1.1' } }), url });
+    const { report } = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(report.score, 95);
+    assert.equal(report.fraudRisk, null);
+    assert.equal(report.scoringVersion, '2026-11-23');
+    assert.equal(report.scoreBase + report.factors.reduce((sum, f) => sum + f.delta, 0), report.score);
+    assert.ok(report.platforms.every((item) => item.status === 'warn'));
+  });
+});

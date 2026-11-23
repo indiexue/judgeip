@@ -92,8 +92,8 @@ export function renderRulesText(lang: Lang): string {
   lines.push(
     '',
     en
-      ? 'Scores carry a confidence level: high (all IPv4 feeds answered), medium (IPv6 or partial secondary feeds), or low. No score is given only when core network or security feeds all fail, or for reserved addresses.'
-      : '评分附带置信度（高 / 中 / 低）：全部 IPv4 数据源齐备为高置信度；IPv6（免测端口与传统邮件黑名单）或个别次要源未答复时照常出分并标为中/低置信度；仅在基础归属与安全数据源全部不可达或保留地址时不出分。',
+      ? 'Rule score, not a calibrated fraud probability. Missing key reputation data caps at 59; limited coverage at 79. High confidence requires all IPv4 base checks plus fresh IPsum and configured abuse evidence. Moderate/severe reputation caps at 49/29. Caps are explicit factors.'
+      : '这是未校准的规则参考分，不是欺诈概率。关键信誉数据缺失最高 59，部分覆盖最高 79；高置信度需 IPv4 基础检查、新鲜 IPsum 及授权滥用来源齐备。中/重度信誉风险上限 49/29，所有上限作为独立调整项。',
     en ? 'These are JudgeIP\'s own rules, not any platform\'s official risk score.' : '这是 JudgeIP 自己的规则，不是任何平台的官方风控分。',
     `https://judgeip.com${en ? '/en' : ''}/scoring`,
   );

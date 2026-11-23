@@ -79,12 +79,12 @@
           : T('基础归属或风险数据源未返回，暂不出分', 'Core network or risk sources did not respond')
       };
     }
-    if (score >= 90) return { cls: 'excellent', badge: 'green', label: T('极度纯净', 'Pristine'), desc: T('原生或家用特征清晰，未发现代理与黑名单风险', 'Clean residential/mobile signals with no proxy or blocklist hits') };
-    if (score >= 80) return { cls: 'good', badge: 'green', label: T('纯净', 'Clean'), desc: T('信誉记录良好，适合绝大多数主流平台', 'Solid reputation suitable for most mainstream platforms') };
-    if (score >= 68) return { cls: 'ok', badge: 'green', label: T('正常', 'Normal'), desc: T('存在少量非家用或广播特征，常规访问正常', 'Minor non-residential or geo-announced traits; normal for general use') };
-    if (score >= 50) return { cls: 'warn', badge: 'amber', label: T('低风险', 'Low risk'), desc: T('有一定机房或代理特征，敏感平台可能要求二次验证', 'Hosting or proxy indicators present; strict platforms may challenge') };
-    if (score >= 30) return { cls: 'bad', badge: 'danger', label: T('中风险', 'Medium risk'), desc: T('明显机房、代理或历史漏洞记录，风控平台易拦截', 'Clear hosting, proxy or CVE records; frequently restricted') };
-    return { cls: 'danger', badge: 'danger', label: T('高风险', 'High risk'), desc: T('多项风险与黑名单叠加命中，不建议用于敏感业务', 'Multiple proxy, hosting or blocklist hits stacked') };
+    if (score >= 90) return { cls: 'excellent', badge: 'green', label: T('已查风险较少', 'Few observed risks'), desc: T('仅反映已查来源，不能保证平台放行', 'Checked sources only; platform acceptance is not guaranteed') };
+    if (score >= 80) return { cls: 'good', badge: 'green', label: T('纯净', 'Clean'), desc: T('已查信号有限，不代表没有滥用记录', 'Limited observed signals do not rule out abuse') };
+    if (score >= 68) return { cls: 'ok', badge: 'green', label: T('正常', 'Normal'), desc: T('规则参考分，请结合信誉覆盖与原始证据', 'Rule-based estimate; review coverage and raw evidence') };
+    if (score >= 50) return { cls: 'warn', badge: 'amber', label: T('低风险', 'Low risk'), desc: T('信誉证据可能不足，或存在网络与风险标记', 'Reputation evidence may be limited, or risk flags were found') };
+    if (score >= 30) return { cls: 'bad', badge: 'danger', label: T('中风险', 'Medium risk'), desc: T('已查风险或证据缺口较大，使用前需核实', 'Risk flags or material evidence gaps; verify before use') };
+    return { cls: 'danger', badge: 'danger', label: T('高风险', 'High risk'), desc: T('已查证据触发高风险规则，建议核对来源', 'Observed evidence triggered high-risk rules; review the sources') };
   }
 
   function refreshMultiGeo(ip) {
@@ -251,7 +251,9 @@
       if (hasPtr) setFieldText('heroPtr', info.ptrRecord);
     }
 
-    var tier = scoreRiskTier(info.score, info.version);
+    var tier = typeof info.score === 'number' && info.reputationCoverage !== 'complete' && info.hasThreat !== true
+          ? { cls: 'muted', badge: 'gray', label: T('信誉证据不足', 'Limited reputation evidence'), desc: T('分数受证据上限限制；不代表已发现滥用，也不能判为纯净', 'Score capped for missing evidence; neither proof of abuse nor a clean verdict') }
+          : scoreRiskTier(info.score, info.version);
     var scoreEl = document.querySelector('[data-field="score"]');
     if (scoreEl) {
       scoreEl.className = 'hero-score__main is-' + tier.cls;
@@ -265,15 +267,17 @@
 
     var gradeEl = document.querySelector('[data-field="gradeBadge"]');
     if (gradeEl) {
-      var confText = info.scoreConfidence === 'high' ? T('置信度 高', 'High conf.')
-        : info.scoreConfidence === 'medium' ? T('置信度 中', 'Med conf.')
-          : T('置信度 低', 'Low conf.');
+      var confText = info.scoreConfidence === 'high' ? T('证据覆盖 高', 'Coverage high')
+        : info.scoreConfidence === 'medium' ? T('证据覆盖 中', 'Coverage medium')
+          : T('证据覆盖 低', 'Coverage low');
       gradeEl.className = 'badge badge--' + (info.scoreConfidence === 'high' ? 'green' : typeof info.score === 'number' ? 'amber' : 'gray');
       gradeEl.textContent = typeof info.score === 'number'
         ? T('等级 ', 'Grade ') + info.grade + ' · ' + confText
         : info.isBogon ? T('内网保留', 'Reserved') : T('数据源不可达', 'Unavailable');
     }
 
+    var scoreSpectrum = document.querySelector('[data-field="scoreSpectrum"]');
+    if (scoreSpectrum) scoreSpectrum.hidden = info.hasThreat === null;
     var specEl = document.querySelector('[data-field="spectrumThumb"]');
     if (specEl) {
       var oldThumb = specEl.querySelector('.spectrum__thumb');
@@ -294,7 +298,7 @@
       var reasonsHtml = '';
       if (negs.length > 0) {
         reasonsHtml = negs.map(function (f) {
-          return '<li class="hero-reasons__item is-bad"><span class="hero-reasons__dot">×</span><span>' + esc(f.label) + '：' + esc(f.status) + '（<span class="mono">' + signDelta(f.delta) + '</span>）</span></li>';
+          return '<li class="hero-reasons__item ' + (f.key === 'coverage' ? 'is-muted' : 'is-bad') + '"><span class="hero-reasons__dot">' + (f.key === 'coverage' ? '·' : '×') + '</span><span>' + esc(f.label) + '：' + esc(f.status) + '（<span class="mono">' + signDelta(f.delta) + '</span>）</span></li>';
         }).join('');
       } else if (typeof info.score === 'number') {
         reasonsHtml =
@@ -334,26 +338,12 @@
     setFieldText('continent', info.continentZh);
 
     if (Array.isArray(info.scenes)) {
-      var ringC = +(2 * Math.PI * 18).toFixed(2);
-      var scenesHtml = info.scenes.map(function (sc) {
-        var pct = sc.tone === 'ok'
-          ? (typeof info.score === 'number' ? Math.max(76, Math.min(98, info.score)) : 88)
-          : sc.tone === 'warn'
-            ? (typeof info.score === 'number' ? Math.max(45, Math.min(72, Math.round(info.score * 0.78))) : 58)
-            : (typeof info.score === 'number' ? Math.max(18, Math.min(42, Math.round(info.score * 0.55))) : 28);
-        var offset = +(ringC * (1 - pct / 100)).toFixed(2);
-        return '<div class="scene-card is-' + esc(sc.tone) + '">' +
+var scenesHtml = info.scenes.map(function (sc) {
+return '<div class="scene-card is-' + esc(sc.tone) + '">' +
           '<div class="scene-card__top"><span class="scene-card__name">' + esc(sc.label) + '</span>' +
           '<span class="tag tag--' + esc(sc.tone) + '">' + esc(sc.status) + '</span></div>' +
           '<div class="scene-card__mid">' +
-            '<div class="scene-ring" aria-hidden="true">' +
-              '<svg viewBox="0 0 44 44">' +
-                '<circle class="scene-ring__track" cx="22" cy="22" r="18"></circle>' +
-                '<circle class="scene-ring__fill" cx="22" cy="22" r="18" stroke-dasharray="' + ringC + '" stroke-dashoffset="' + offset + '"></circle>' +
-              '</svg>' +
-              '<span class="scene-ring__num mono">' + pct + '</span>' +
-            '</div>' +
-            '<span class="scene-card__note">' + esc(sc.note) + '</span>' +
+'<span class="scene-card__note">' + esc(sc.note) + '</span>' +
           '</div></div>';
       }).join('');
       setFieldHtml('scenes', scenesHtml || '<p class="geo__note">' + T('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates') + '</p>');

@@ -32,8 +32,8 @@ function scoreRiskTier(score: number | null) {
     return {
       cls: 'excellent',
       badge: 'green',
-      label: t('极度纯净', 'Pristine'),
-      desc: t('原生或家用特征清晰，未发现代理与黑名单风险', 'Clean residential/mobile signals with no proxy or blocklist hits'),
+      label: t('已查风险较少', 'Few observed risks'),
+      desc: t('仅反映已查来源，不能保证平台放行', 'Checked sources only; platform acceptance is not guaranteed'),
     };
   }
   if (score >= 80) {
@@ -41,7 +41,7 @@ function scoreRiskTier(score: number | null) {
       cls: 'good',
       badge: 'green',
       label: t('纯净', 'Clean'),
-      desc: t('信誉记录良好，适合绝大多数主流平台', 'Solid reputation suitable for most mainstream platforms'),
+      desc: t('已查信号有限，不代表没有滥用记录', 'Limited observed signals do not rule out abuse'),
     };
   }
   if (score >= 68) {
@@ -49,7 +49,7 @@ function scoreRiskTier(score: number | null) {
       cls: 'ok',
       badge: 'green',
       label: t('正常', 'Normal'),
-      desc: t('存在少量非家用或广播特征，常规访问正常', 'Minor non-residential or geo-announced traits; normal for general use'),
+      desc: t('规则参考分，请结合信誉覆盖与原始证据', 'Rule-based estimate; review coverage and raw evidence'),
     };
   }
   if (score >= 50) {
@@ -57,7 +57,7 @@ function scoreRiskTier(score: number | null) {
       cls: 'warn',
       badge: 'amber',
       label: t('低风险', 'Low risk'),
-      desc: t('有一定机房或代理特征，敏感平台可能要求二次验证', 'Hosting or proxy indicators present; strict platforms may challenge'),
+      desc: t('信誉证据可能不足，或存在网络与风险标记', 'Reputation evidence may be limited, or risk flags were found'),
     };
   }
   if (score >= 30) {
@@ -65,33 +65,21 @@ function scoreRiskTier(score: number | null) {
       cls: 'bad',
       badge: 'danger',
       label: t('中风险', 'Medium risk'),
-      desc: t('明显机房、代理或历史漏洞记录，风控平台易拦截', 'Clear hosting, proxy or CVE records; frequently restricted'),
+      desc: t('已查风险或证据缺口较大，使用前需核实', 'Risk flags or material evidence gaps; verify before use'),
     };
   }
   return {
     cls: 'danger',
     badge: 'danger',
     label: t('高风险', 'High risk'),
-    desc: t('多项风险与黑名单叠加命中，不建议用于敏感业务', 'Multiple proxy, hosting or blocklist hits stacked'),
+    desc: t('已查证据触发高风险规则，建议核对来源', 'Observed evidence triggered high-risk rules; review the sources'),
   };
 }
 
-const tier = scoreRiskTier(info.score);
+const tier = info.score !== null && info.reputationCoverage !== 'complete' && info.hasThreat !== true
+  ? { cls: 'muted', badge: 'gray', label: t('信誉证据不足', 'Limited reputation evidence'), desc: t('分数受证据上限限制；不代表已发现滥用，也不能判为纯净', 'Score capped for missing evidence; neither proof of abuse nor a clean verdict') }
+  : scoreRiskTier(info.score);
 const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'clamp');
-const ringR = 18;
-const ringC = +(2 * Math.PI * ringR).toFixed(2);
-function sceneGauge(tone: string, baseScore: number | null) {
-  if (tone === 'ok') {
-    const pct = baseScore !== null ? Math.max(76, Math.min(98, baseScore)) : 88;
-    return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
-  }
-  if (tone === 'warn') {
-    const pct = baseScore !== null ? Math.max(45, Math.min(72, Math.round(baseScore * 0.78))) : 58;
-    return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
-  }
-  const pct = baseScore !== null ? Math.max(18, Math.min(42, Math.round(baseScore * 0.55))) : 28;
-  return { pct, stroke: +(ringC * (1 - pct / 100)).toFixed(2) };
-}
 ---
 
 <!-- Section Jump Bar + Compact Search (ipfinal style) -->
@@ -223,16 +211,16 @@ function sceneGauge(tone: string, baseScore: number | null) {
             <path d="M9 9.5 12.2 6" stroke-linecap="round"></path>
             <circle cx="9" cy="9.5" r="1.1" fill="currentColor"></circle>
           </svg>
-          {t('纯净度评分', 'Purity Score')}
+          {t('风险参考评分', 'Risk reference score')}
         </span>
         <span class={`badge badge--${info.scoreConfidence === 'high' ? 'green' : info.score !== null ? 'amber' : 'gray'}`} data-field="gradeBadge">
           {info.score !== null
             ? `${t('等级', 'Grade')} ${info.grade} · ${
                 info.scoreConfidence === 'high'
-                  ? t('置信度 高', 'High conf.')
+                  ? t('证据覆盖 高', 'Coverage high')
                   : info.scoreConfidence === 'medium'
-                    ? t('置信度 中', 'Med conf.')
-                    : t('置信度 低', 'Low conf.')
+                    ? t('证据覆盖 中', 'Coverage medium')
+                    : t('证据覆盖 低', 'Coverage low')
               }`
             : info.isBogon ? t('内网保留', 'Reserved') : t('数据源不可达', 'Unavailable')}
         </span>
@@ -249,7 +237,7 @@ function sceneGauge(tone: string, baseScore: number | null) {
       <div class="hero-score__skel" aria-hidden="true"></div>
 
       <!-- 6-Segment Spectrum Bar (0-30-50-68-80-90-99) -->
-      <div class="spectrum" aria-hidden="true">
+      <div class="spectrum" data-field="scoreSpectrum" aria-hidden="true" hidden={info.hasThreat === null}>
         <div class="spectrum__bar" data-field="spectrumThumb">
           <span class="spectrum__seg spectrum__seg--1"></span>
           <span class="spectrum__seg spectrum__seg--2"></span>
@@ -289,8 +277,8 @@ function sceneGauge(tone: string, baseScore: number | null) {
           </li>
         ) : activeDeductions.length > 0 ? (
           activeDeductions.map((f) => (
-            <li class="hero-reasons__item is-bad">
-              <span class="hero-reasons__dot">×</span>
+            <li class={`hero-reasons__item ${f.key === 'coverage' ? 'is-muted' : 'is-bad'}`}>
+              <span class="hero-reasons__dot">{f.key === 'coverage' ? '·' : '×'}</span>
               <span>{f.label}：{f.status}（<span class="mono">{formatDelta(f.delta)}</span>）</span>
             </li>
           ))
@@ -512,14 +500,13 @@ function sceneGauge(tone: string, baseScore: number | null) {
         {t('场景适配', 'Fit by Use Case')}
       </h2>
       <span class="panel__sub">
-        {t('按已知网络与风险属性估算适配度，非平台官方承诺 · ', 'Estimated from network & risk signals, not official guarantees · ')}
+        {t('规则参考，非平台实测或成功率 · ', 'Rules only, not platform tests or success rates · ')}
         <a href={lp('/platforms')}>{t('逐平台测试 ›', 'Per-platform check ›')}</a>
       </span>
     </div>
     <div class="scene-grid" data-field="scenes">
       {info.scenes.length === 0 && <p class="geo__note">{t('数据不足，暂不提供用途判断', 'Insufficient data for use-case estimates')}</p>}
       {info.scenes.map((sc) => {
-        const g = sceneGauge(sc.tone, info.score);
         return (
           <div class={`scene-card is-${sc.tone}`}>
             <div class="scene-card__top">
@@ -527,13 +514,6 @@ function sceneGauge(tone: string, baseScore: number | null) {
               <span class={`tag tag--${sc.tone}`}>{sc.status}</span>
             </div>
             <div class="scene-card__mid">
-              <div class="scene-ring" aria-hidden="true">
-                <svg viewBox="0 0 44 44">
-                  <circle class="scene-ring__track" cx="22" cy="22" r={ringR}></circle>
-                  <circle class="scene-ring__fill" cx="22" cy="22" r={ringR} stroke-dasharray={ringC} stroke-dashoffset={g.stroke}></circle>
-                </svg>
-                <span class="scene-ring__num mono">{g.pct}</span>
-              </div>
               <span class="scene-card__note">{sc.note}</span>
             </div>
           </div>

@@ -14,6 +14,8 @@ export const SCORE_DELTAS = {
   nonNative: -12,
   proxy: -24,
   reputation: -18,
+  reputationModerate: -40,
+  reputationSevere: -65,
   manyPorts: -5,
 } as const;
 
@@ -31,7 +33,10 @@ export const SCORE_GRADES: Array<{ grade: string; min: number }> = [
   { grade: 'F', min: 0 },
 ];
 
-export type ScoreFactorKey = 'network' | 'native' | 'proxy' | 'reputation' | 'ports' | 'clamp';
+export type ScoreFactorKey = 'network' | 'native' | 'proxy' | 'reputation' | 'ports' | 'coverage' | 'safety' | 'clamp';
+export type ReputationCoverage = 'complete' | 'limited' | 'unavailable';
+export const COVERAGE_CAPS = { complete: 99, limited: 79, unavailable: 59 } as const;
+export const REPUTATION_CAPS = { none: 99, mild: 99, moderate: 49, severe: 29 } as const;
 
 export interface ScoreRuleRow {
   when: { zh: string; en: string };
@@ -92,13 +97,15 @@ export const SCORE_RULES: ScoreRule[] = [
     key: 'reputation',
     label: { zh: '黑名单与威胁记录', en: 'Blocklists and threat records' },
     rows: [
-      { when: { zh: '命中任一 DNSBL、高风险欺诈/滥用分，或有扫描、失陷标签与历史 CVE', en: 'Listed on any DNSBL, high abuse/risk score, or tagged as scanner/compromised/CVE' }, delta: SCORE_DELTAS.reputation },
+      { when: { zh: '单项 DNSBL、低强度聚合名单命中或历史 CVE', en: 'A DNSBL hit, low-strength aggregate listing, or historical CVEs' }, delta: SCORE_DELTAS.reputation },
+      { when: { zh: '扫描/滥用标记、IPsum 至少 3 份底层名单或风险分达到中度阈值', en: 'Scanner/abuser flag, IPsum count at least 3, or moderate risk threshold' }, delta: SCORE_DELTAS.reputationModerate },
+      { when: { zh: '失陷/恶意软件标记、IPsum 至少 5 份底层名单或严重风险阈值', en: 'Compromise/malware tag, IPsum count at least 5, or severe risk threshold' }, delta: SCORE_DELTAS.reputationSevere },
     ],
     basis: {
-      zh: '通过 DoH 查询 SpamCop、DroneBL、Barracuda、UCEPROTECT 四个黑名单，并结合 Shodan 漏洞/失陷标签与多源风险分（proxycheck / ipquery 及可选 AbuseIPDB）。多项同时命中也只扣一次。',
-      en: 'Queries SpamCop, DroneBL, Barracuda and UCEPROTECT over DoH, combined with Shodan compromise/CVE records and multi-source abuse scores (proxycheck / ipquery and optional AbuseIPDB). Multiple hits deduct once.',
+      zh: '四个 DNSBL、IPsum 聚合名单、Shodan 与可选 AbuseIPDB/ipapi.is 分级取最严重一档，不把相关名单逐项累加。AbuseIPDB ≥25/75、ipquery ≥65/90、proxycheck ≥75/90 分别为中度/重度；ipapi.is 滥用标记为中度。中度最高 49，重度最高 29。IPsum 的底层名单数不是独立来源票数；规则未经标注样本校准。',
+      en: 'Takes the strongest tier across four DNSBLs, the IPsum aggregate, Shodan and optional AbuseIPDB/ipapi.is, without adding correlated hits. Moderate/severe thresholds: AbuseIPDB 25/75, ipquery 65/90, proxycheck 75/90; ipapi.is abuser flags are moderate. Moderate caps at 49, severe at 29. IPsum counts are not independent votes. These rules are not calibrated against labeled outcomes.',
     },
-    sources: ['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT', 'Shodan InternetDB', 'proxycheck.io'],
+    sources: ['SpamCop', 'DroneBL', 'Barracuda', 'UCEPROTECT', 'IPsum', 'Shodan InternetDB', 'proxycheck.io', 'ipquery.io', 'AbuseIPDB (optional)', 'ipapi.is (optional)'],
   },
   {
     key: 'ports',

@@ -28,7 +28,7 @@ const gradeRows = SCORE_GRADES.map((g, i) => ({
 
 /* 例子直接用规则里的分值算，规则调整后这里跟着变 */
 const examples = [
-  { label: t('家庭宽带，注册地与定位一致，无代理、无黑名单', 'Residential, registry matches location, no proxy, not listed'), deltas: [] as number[] },
+  { label: t('家庭宽带，全部规定证据齐备且无风险命中', 'Residential with all required evidence available and no risk hits'), deltas: [] as number[] },
   { label: t('移动网络，其余同上', 'Mobile network, otherwise the same'), deltas: [SCORE_DELTAS.mobile] },
   { label: t('云主机，其余正常', 'Cloud hosting, otherwise clean'), deltas: [SCORE_DELTAS.hosting] },
   { label: t('云主机，同时被标记为 VPN', 'Cloud hosting flagged as a VPN'), deltas: [SCORE_DELTAS.hosting, SCORE_DELTAS.proxy] },
@@ -57,8 +57,8 @@ const examples = [
     <h1 class="hero__title">{t('评分规则', 'Scoring rules')}</h1>
     <p class="hero__lede">
       {t(
-        `每个 IP 从 ${SCORE_BASE} 分起算，按下面五项加减，结果限制在 ${SCORE_MIN}–${SCORE_MAX} 之间。报告里的“评分明细”逐项列出实际加减的分数和原始数据。`,
-        `Every IP starts at ${SCORE_BASE}. The five items below add or subtract points, and the result is kept within ${SCORE_MIN}–${SCORE_MAX}. The "Score breakdown" in each report lists the points actually applied and the raw data behind them.`,
+        `每个 IP 从 ${SCORE_BASE} 分起算，按下面项目加减，再应用证据覆盖和风险上限，结果限制在 ${SCORE_MIN}–${SCORE_MAX} 之间。报告里的“评分明细”逐项列出实际加减的分数和原始数据。`,
+        `Every IP starts at ${SCORE_BASE}. The items below add or subtract points before coverage and safety caps; the result is kept within ${SCORE_MIN}–${SCORE_MAX}. The "Score breakdown" in each report lists the points actually applied and the raw data behind them.`,
       )}
     </p>
   </section>
@@ -118,6 +118,16 @@ const examples = [
       </p>
     </section>
 
+    <section class="group" id="coverage">
+      <h2 class="group__title">{t('证据覆盖与安全上限', 'Coverage and safety caps')}</h2>
+      <div class="prose prose--page"><ul>
+        <li>{t('信誉覆盖齐备：新鲜 IPsum 数据与至少一个已配置的 AbuseIPDB/ipapi.is 滥用来源有效返回。高置信度还要求全部 IPv4 基础检查齐备；并不代表实际准确率。', 'Complete reputation coverage requires a fresh IPsum feed and a valid configured AbuseIPDB/ipapi.is abuse source. High confidence also requires all IPv4 base checks; it is not an accuracy probability.')}</li>
+        <li>{t('信誉覆盖有限：上述两类只取得一类，最高参考分 79；两类都未取得，最高 59；基础检查不齐备（含 IPv6）也最高 79。上限表示证据缺口，不表示已发现滥用。未配置、超时、未列入和命中分别展示。', 'Only one reputation category available: cap 79. Neither available: cap 59. Incomplete base checks (including IPv6) also cap at 79. These caps express missing evidence, not observed abuse. Not configured, unavailable, not listed and listed are distinct.')}</li>
+        <li>{t('中度信誉风险最高 49，重度最高 29。证据上限与安全上限均列为独立调整项，基础分加所有调整项等于最终分。', 'Moderate reputation risk caps at 49, severe at 29. Coverage and safety adjustments are listed separately; base plus all adjustments equals the final score.')}</li>
+        <li>{t('规则分未经标注样本校准，不是欺诈概率、平台通过率或官方风控分。住宅/原生身份不能抵消严重滥用记录。', 'The rule score is not calibrated against labeled outcomes and is not a fraud probability, platform success rate or official verdict. Residential/native identity does not cancel severe abuse evidence.')}</li>
+      </ul></div>
+    </section>
+
     <section class="group" id="grades">
       <h2 class="group__title">{t('等级', 'Grades')}</h2>
       <div class="tablewrap">
@@ -141,6 +151,7 @@ const examples = [
     </section>
 
     <section class="group" id="examples">
+      <p class="group__lede">{t('下列算例假定全部规定信誉证据齐备；现实查询还会应用证据覆盖与风险安全上限。', 'These examples assume all required reputation evidence is available; live lookups also apply coverage and safety caps.')}</p>
       <h2 class="group__title">{t('算例', 'Worked examples')}</h2>
       <div class="tablewrap">
         <table class="dtable">
@@ -169,9 +180,9 @@ const examples = [
       <div class="prose prose--page">
         <p>{t('只要拿到了基础网络归属与至少一家代理/风险情报源，报告都会计算并展示分数，同时在右上角标明置信度，不因单个次要接口抖动而隐藏整张评分卡：', 'Whenever core network ownership and at least one proxy/risk source respond, a score is computed and paired with a confidence badge rather than hidden because a secondary feed timed out:')}</p>
         <ul>
-          <li>{t('置信度 高：IPv4 地址，且网络类型、原生 IP（注册国与定位国）、多源代理标记、4 个 DNSBL 黑名单与 Shodan 端口数据全部确认。', 'High confidence: IPv4 address with network type, native IP (registry vs location country), proxy flags, all four DNSBLs and Shodan port history confirmed.')}</li>
+          <li>{t('置信度 高：IPv4 地址，且网络类型、原生 IP（注册国与定位国）、多源代理标记、4 个 DNSBL 黑名单与 Shodan 端口数据全部确认，并且上述信誉覆盖齐备。', 'High confidence: IPv4 address with network type, native IP (registry vs location country), proxy flags, all four DNSBLs, Shodan port history and the required reputation coverage confirmed.')}</li>
           <li>{t('置信度 中：IPv6 地址（端口与传统邮件 DNSBL 仅支持 IPv4，由多源双栈代理与风险库替代评估），或 IPv4 地址有个别次要源超时但核心网络与安全源齐备。', 'Medium confidence: IPv6 addresses (evaluated via dual-stack network, native and proxy/risk feeds since Shodan and DNSBLs are IPv4-only), or IPv4 addresses where a secondary feed timed out while core sources responded.')}</li>
-          <li>{t('置信度 低：仅拿到基础归属与部分安全标记，原生性或黑名单尚未核验完成。', 'Low confidence: core network and proxy sources responded, while registry country or blocklists could not be verified.')}</li>
+          <li>{t('置信度 低：仅拿到基础归属与部分安全标记，或关键信誉数据缺失；分数受覆盖上限约束。', 'Low confidence: core network and proxy evidence is available but key reputation data may be missing; coverage caps apply.')}</li>
           <li>{t('不出分（—）：内网/保留地址，或所有上游归属与安全数据源全部不可达。', 'No score (—): private/reserved addresses, or when all upstream network and security sources fail to respond.')}</li>
         </ul>
       </div>

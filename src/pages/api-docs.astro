@@ -322,11 +322,12 @@ const toolArgs = (tool: (typeof MCP_TOOLS)[number]) => Object.keys(tool.inputSch
     </section>
 
     <section class="group" id="notes">
+      <p class="group__lede">{t('2026-11-23 评分版本：/api/v1/verdict 已与站点共用评分。保留 report 包装；score 在证据不足时可为 null，fraudRisk 已弃用并固定为 null，因为参考分不是欺诈概率。', 'Scoring version 2026-11-23: /api/v1/verdict now shares the site scoring engine and retains the report envelope. score may be null; fraudRisk is deprecated and always null because a rule score is not a fraud probability.')}</p>
       <h2 class="group__title">{t('使用说明', 'Notes')}</h2>
       <div class="prose prose--page">
         <ul>
-          <li>{t('IPv6 地址能查，但没有分数：端口和黑名单数据只覆盖 IPv4。', 'IPv6 addresses can be looked up but get no score: port and blocklist data cover IPv4 only.')}</li>
-          <li>{t('数据源没答复时对应字段为空或 null，分数也不出，不会用默认值代替。', 'When a source does not answer, its fields are empty or null and no score is given. Defaults are never substituted.')}</li>
+          <li>{t('IPv6 可查询并给有限证据参考分；IPv4 专用来源缺失时不会假定阴性。', 'IPv6 can receive a limited-evidence rule score; IPv4-only sources are never treated as negative results.')}</li>
+          <li>{t('数据源失败或未配置不会当作未命中；关键信誉数据缺失最高 59，部分覆盖最高 79；基础证据不足不出分。', 'Failed or unconfigured sources are not negative results. Missing reputation caps at 59, limited coverage at 79; insufficient core evidence yields no score.')}</li>
           <li>{t('分数是 JudgeIP 按公开规则算出来的，不是任何平台的官方风控分。', 'The score is computed by JudgeIP from published rules. It is not any platform\'s official risk score.')}</li>
           <li>{t('接口不承诺可用性，字段可能随版本增加。需要稳定批量查询请直接使用上游数据源的付费服务。', 'There is no availability guarantee, and fields may be added between releases. For stable bulk lookups, use a paid plan from the upstream sources directly.')}</li>
         </ul>

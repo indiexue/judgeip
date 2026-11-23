@@ -1257,6 +1257,10 @@ main:focus {
 }
 
 /* 6-Segment Color Spectrum Gauge */
+.spectrum[hidden] {
+  display: none;
+}
+
 .spectrum {
   display: flex;
   flex-direction: column;

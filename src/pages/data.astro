@@ -28,8 +28,8 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
     <h1 class="hero__title">{t('数据来源与更新', 'Data sources and freshness')}</h1>
     <p class="hero__lede">
       {t(
-        'JudgeIP 自己不维护 IP 数据库。每次查询都向下面这些公开数据源实时取数，再按公开的规则汇总成报告。',
-        'JudgeIP does not maintain its own IP database. Each lookup queries the public sources below and combines the answers using published rules.',
+        'JudgeIP 自己不维护 IP 数据库。查询使用下面的数据源及明确标注的缓存；失败或未配置的信誉来源不会当成安全证据。',
+        'JudgeIP does not maintain its own IP database. Lookups use the sources and documented caches below; failed or unconfigured reputation sources are not safety evidence.',
       )}
     </p>
   </section>
@@ -146,10 +146,11 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
     </section>
 
     <section class="group" id="limits">
+      <p class="group__lede">{t('IPsum 在每次部署构建时刷新为紧凑索引；超过 72 小时后停止作为有效证据，页面显示未获取并应用证据上限。当前未设置定时自动重建。', 'IPsum is refreshed into a compact index on each deployment build. After 72 hours it becomes unavailable and coverage caps apply. Scheduled automatic rebuilds are not configured.')}</p>
       <h2 class="group__title">{t('已知的不准确之处', 'Known gaps')}</h2>
       <div class="prose prose--page">
         <ul>
-          <li>{t('IPv6 没有分数。端口和黑名单数据只覆盖 IPv4。', 'IPv6 gets no score. Port and blocklist data cover IPv4 only.')}</li>
+          <li>{t('IPv6 可给有限证据参考分，端口、传统 DNSBL 与 IPsum 只覆盖 IPv4；信誉缺口会限制最高分。', 'IPv6 can receive a limited-evidence rule score. Ports, traditional DNSBLs and IPsum are IPv4-only; reputation gaps cap the score.')}</li>
           <li>{t('代理、VPN 标记来自免费数据库，对住宅代理和新节点的覆盖有限。', 'Proxy and VPN flags come from free databases with limited coverage of residential proxies and new nodes.')}</li>
           <li>{t('开放端口是 Shodan 的历史扫描结果，端口关掉后记录可能还在。', 'Open ports are from past Shodan scans; a record can outlive the port being closed.')}</li>
           <li>{t('部分 DNSBL 会拒绝来自公共解析器的查询。遇到拒绝时该黑名单记为未知，不记为未列入。', 'Some DNSBLs refuse queries from public resolvers. A refusal is recorded as unknown, not as not listed.')}</li>

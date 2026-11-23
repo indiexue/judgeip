@@ -168,12 +168,13 @@ test('all upstream failures or empty payloads keep score, location, security and
   }
 });
 
-test('complete data can score while partial data cannot and known threats remain visible', async () => {
+test('basic feeds without reputation are capped and known threats remain visible', async () => {
   await withFetch(completeUpstream, async () => {
     const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
     const info = await lookupIpFull('73.162.88.1');
-    assert.equal(info.lookupStatus, 'complete');
-    assert.equal(info.score, 95);
+    assert.equal(info.lookupStatus, 'partial');
+    assert.equal(info.score, 59);
+    assert.equal(info.reputationCoverage, 'unavailable');
     assert.equal(info.isProxy, false);
     assert.equal(info.rpkiStatus, 'valid');
   });

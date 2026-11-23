@@ -6,9 +6,9 @@
   "description": "JudgeIP.com — IP 归属、网络类型、威胁与代理情报、泄露与分流检测工具箱",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node --experimental-strip-types scripts/build-reputation.ts && astro build",
     "preview": "wrangler dev",
-    "deploy": "astro build && wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
     "check": "astro check",
     "test": "node --test tests/*.test.mjs"
   },
