@@ -146,7 +146,7 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
     </section>
 
     <section class="group" id="limits">
-      <p class="group__lede">{t('IPsum 在每次部署构建时刷新为紧凑索引；超过 72 小时后停止作为有效证据，页面显示未获取并应用证据上限。当前未设置定时自动重建。', 'IPsum is refreshed into a compact index on each deployment build. After 72 hours it becomes unavailable and coverage caps apply. Scheduled automatic rebuilds are not configured.')}</p>
+      <p class="group__lede">{t('IPsum 每天由 GitHub Actions 定时抓取一次，并随之重新部署；当天索引超过 72 小时仍未更新时停止作为有效证据，页面显示未获取并应用证据上限。被至少 2 份名单收录的地址另记入近 30 天历史（公开仓库中的 data/ipsum-history.tsv），当天已不在名单上但近期出现过的地址仍按低一档计分。', 'IPsum is fetched daily by GitHub Actions, which also redeploys the site. If the same-day index is not refreshed within 72 hours it becomes unavailable and coverage caps apply. Addresses listed by at least 2 lists are also kept in a 30-day history (data/ipsum-history.tsv in the public repository); addresses no longer listed today but seen recently are still scored one tier lower.')}</p>
       <h2 class="group__title">{t('已知的不准确之处', 'Known gaps')}</h2>
       <div class="prose prose--page">
         <ul>

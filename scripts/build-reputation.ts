@@ -1,5 +1,6 @@
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { parseIpsumFeed } from '../src/lib/ipsum-format.ts';
+import { compileHistoryIndex, parseHistoryTsv } from '../src/lib/ipsum-history-format.ts';
 
 const root = new URL('../public/assets/data/', import.meta.url);
 const url = 'https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt';
@@ -25,4 +26,16 @@ try {
   try { await readFile(new URL('ipsum.bin', root)); }
   catch { await mkdir(root, { recursive: true }); await writeFile(new URL('ipsum.bin', root), Buffer.alloc(0)); }
   console.warn('IPsum unavailable during build; runtime will validate the previous snapshot or show unavailable.', error instanceof Error ? error.message : 'unknown error');
+}
+
+// The 30-day history is committed daily by GitHub Actions; without it the runtime reports history as unavailable.
+try {
+  const history = parseHistoryTsv(await readFile(new URL('../data/ipsum-history.tsv', import.meta.url), 'utf8'));
+  if (!history) throw new Error('malformed data/ipsum-history.tsv');
+  const index = compileHistoryIndex(history);
+  await writeFile(new URL('ipsum-history.bin', root), index);
+  console.log(`IPsum history compiled: ${history.entries.size} entries, ${index.length} bytes, updated ${history.updatedAt}`);
+} catch (error) {
+  await writeFile(new URL('ipsum-history.bin', root), Buffer.alloc(0));
+  console.warn('IPsum history unavailable during build.', error instanceof Error ? error.message : 'unknown error');
 }

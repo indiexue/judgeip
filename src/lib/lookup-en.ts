@@ -162,6 +162,7 @@ const LABELS: Record<string, string> = {
 const PATTERNS: Array<[RegExp, (...m: string[]) => string]> = [
   [/^命中黑名单 \((.*)\)$/, (_, l) => `Blocklisted (${l})`],
   [/^滥用举报 \((.*)\)$/, (_, s) => `Abuse reports (${s})`],
+  [/^近 30 天曾被 (\d+) 个名单收录$/, (_, n) => `Listed by ${n} lists in the last 30 days`],
   [/^地区受限 \((.*)\)$/, (_, c) => `Region blocked (${c})`],
   [/^合规受限 \((.*)\)$/, (_, c) => `Compliance limits (${c})`],
   [/^暴露 \((.*)\)$/, (_, p) => `Open (${p})`],

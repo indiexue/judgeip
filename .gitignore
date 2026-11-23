@@ -10,3 +10,4 @@ dist/
 coverage/
 public/assets/data/ipsum.bin
 public/assets/data/ipsum-meta.json
+public/assets/data/ipsum-history.bin

@@ -749,3 +749,4 @@ test('scene verdicts follow network type, proxy status and region', async () => 
   assert.equal(scene(hk, 'ai').tone, 'leak');
   assert.equal(scene(hk, 'ai').note, '所在地区不在官方支持范围');
 });
+

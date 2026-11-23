@@ -97,9 +97,9 @@ export const SCORE_RULES: ScoreRule[] = [
     key: 'reputation',
     label: { zh: '黑名单与威胁记录', en: 'Blocklists and threat records' },
     rows: [
-      { when: { zh: '单项 DNSBL、低强度聚合名单命中或历史 CVE', en: 'A DNSBL hit, low-strength aggregate listing, or historical CVEs' }, delta: SCORE_DELTAS.reputation },
-      { when: { zh: '扫描/滥用标记、IPsum 至少 3 份底层名单或风险分达到中度阈值', en: 'Scanner/abuser flag, IPsum count at least 3, or moderate risk threshold' }, delta: SCORE_DELTAS.reputationModerate },
-      { when: { zh: '失陷/恶意软件标记、IPsum 至少 5 份底层名单或严重风险阈值', en: 'Compromise/malware tag, IPsum count at least 5, or severe risk threshold' }, delta: SCORE_DELTAS.reputationSevere },
+      { when: { zh: '单项 DNSBL、低强度聚合名单命中、近 30 天曾被 2–4 份 IPsum 名单收录或历史 CVE', en: 'A DNSBL hit, low-strength aggregate listing, 2–4 IPsum lists within the last 30 days, or historical CVEs' }, delta: SCORE_DELTAS.reputation },
+      { when: { zh: '扫描/滥用标记、当天 IPsum 至少 3 份底层名单、近 30 天曾被至少 5 份收录或风险分达到中度阈值', en: 'Scanner/abuser flag, same-day IPsum count at least 3, at least 5 lists within the last 30 days, or moderate risk threshold' }, delta: SCORE_DELTAS.reputationModerate },
+      { when: { zh: '失陷/恶意软件标记、当天 IPsum 至少 5 份底层名单或严重风险阈值', en: 'Compromise/malware tag, same-day IPsum count at least 5, or severe risk threshold' }, delta: SCORE_DELTAS.reputationSevere },
     ],
     basis: {
       zh: '四个 DNSBL、IPsum 聚合名单、Shodan 与可选 AbuseIPDB/ipapi.is 分级取最严重一档，不把相关名单逐项累加。AbuseIPDB ≥25/75、ipquery ≥65/90、proxycheck ≥75/90 分别为中度/重度；ipapi.is 滥用标记为中度。中度最高 49，重度最高 29。IPsum 的底层名单数不是独立来源票数；规则未经标注样本校准。',

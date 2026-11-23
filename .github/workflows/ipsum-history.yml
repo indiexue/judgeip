@@ -1,0 +1,43 @@
+# Daily: merge today's IPsum feed into data/ipsum-history.tsv and commit it.
+# The push triggers Cloudflare Workers Builds, which also refreshes the same-day IPsum index (it expires after 72 hours).
+name: IPsum history
+
+on:
+  schedule:
+    # IPsum publishes around 02:00 UTC
+    - cron: '20 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ipsum-history
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Merge today's feed
+        run: node --experimental-strip-types scripts/update-ipsum-history.ts
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- data/ipsum-history.tsv; then
+            echo "No change"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/ipsum-history.tsv
+          git commit -m "chore: update IPsum history $(date -u +%F)"
+          git pull --rebase
+          git push

@@ -1,7 +1,7 @@
 import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
-import { checkPublicReputation, type ReputationCheck } from './reputation-feeds';
+import { checkPublicReputation, checkReputationHistory, type ReputationCheck } from './reputation-feeds';
 import { CACHE_COMPLETE_MINUTES, CACHE_PARTIAL_SECONDS, CACHE_MAX_ENTRIES } from './data-sources';
 import {
   SCORE_BASE,
@@ -949,7 +949,7 @@ async function runLookup(
   }`;
 
   const onSrc = streamOpts?.onSource;
-  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, publicReputation] = await Promise.all([
+  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory]] = await Promise.all([
     fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300).then((r) => {
       onSrc?.({ id: 'ipwhois', label: 'ipwho.is', status: r?.success === true ? 'ok' : 'fail' });
       return r;
@@ -993,9 +993,9 @@ async function runLookup(
           { Key: keys.abuseIpdbKey }
         )
       : Promise.resolve(null),
-    checkPublicReputation(parsed.normalized).then((check) => {
-      onSrc?.({ id: 'ipsum', label: 'IPsum', status: check.status === 'unavailable' ? 'fail' : 'ok' });
-      return check;
+    Promise.all([checkPublicReputation(parsed.normalized), checkReputationHistory(parsed.normalized)]).then((checks) => {
+      onSrc?.({ id: 'ipsum', label: 'IPsum', status: checks[0].status === 'unavailable' ? 'fail' : 'ok' });
+      return checks;
     }),
   ]);
 
@@ -1203,9 +1203,11 @@ async function runLookup(
   const queryRisk = typeof ipQuery?.risk?.risk_score === 'number' && ipQuery.risk.risk_score >= 0 && ipQuery.risk.risk_score <= 100 ? ipQuery.risk.risk_score : -1;
   const proxyRisk = typeof pcEntry?.risk === 'number' && pcEntry.risk >= 0 && pcEntry.risk <= 100 ? pcEntry.risk : -1;
   const aggregateCount = publicReputation.status === 'listed' ? publicReputation.count || 1 : 0;
+  // 当天不在名单里、但近 30 天曾被 ≥2 个名单收录：比当天命中低一档，≥5 个名单按中度，其余按轻度
+  const pastLists = aggregateCount === 0 && reputationHistory.status === 'listed' ? reputationHistory.maxLists || 2 : 0;
   const severeRisk = hasCompromised || abuseScore >= 75 || queryRisk >= 90 || proxyRisk >= 90 || aggregateCount >= 5;
-  const moderateRisk = hasScanner || abuseScore >= 25 || ipapiIs?.is_abuser === true || queryRisk >= 65 || proxyRisk >= 75 || aggregateCount >= 3;
-  const mildRisk = vulnsCount > 0 || dnsblListed.length > 0 || aggregateCount > 0;
+  const moderateRisk = hasScanner || abuseScore >= 25 || ipapiIs?.is_abuser === true || queryRisk >= 65 || proxyRisk >= 75 || aggregateCount >= 3 || pastLists >= 5;
+  const mildRisk = vulnsCount > 0 || dnsblListed.length > 0 || aggregateCount > 0 || pastLists > 0;
   const reputationSeverity = severeRisk ? 'severe' : moderateRisk ? 'moderate' : mildRisk ? 'mild' : 'none';
   const threatFound = reputationSeverity !== 'none';
   const publicKnown = publicReputation.status === 'listed' || publicReputation.status === 'not_listed';
@@ -1219,6 +1221,7 @@ async function runLookup(
   const checkedAt = new Date().toISOString();
   const reputationChecks: ReputationCheck[] = [
     publicReputation,
+    ...(parsed.version === 4 && reputationHistory.status !== 'unavailable' ? [reputationHistory] : []),
     ...(parsed.version === 4 ? [
       { source: 'DNSBL ×4', checkedAt, status: dnsblListed.length ? 'listed' : dnsblComplete ? 'not_listed' : 'unavailable' } as ReputationCheck,
       { source: 'Shodan InternetDB', checkedAt, status: !shodan ? 'unavailable' : hasCompromised || hasScanner ? 'listed' : 'not_listed' } as ReputationCheck,
@@ -1232,6 +1235,7 @@ async function runLookup(
   const threatLabel = dnsblListed.length
     ? `命中黑名单 (${dnsblListed.join(', ')})`
     : aggregateCount > 0 ? '公开信誉名单命中'
+      : pastLists > 0 ? `近 30 天曾被 ${pastLists} 个名单收录`
       : abuseScore >= 25 ? `滥用举报 (${abuseScore}%)`
         : hasScanner ? '扫描活动记录'
           : hasCompromised || moderateRisk || severeRisk ? '存在风险记录'
@@ -1317,6 +1321,9 @@ async function runLookup(
         ...dnsblChecks.flatMap((c) => (c.query ? ev(c.name, c.query, c.answer || '无响应') : [])),
         ...ev('IPsum', 'status / aggregate count', `${publicReputation.status} / ${aggregateCount}`),
         ...ev('IPsum', 'updatedAt', publicReputation.updatedAt),
+        ...(reputationHistory.status === 'listed'
+          ? ev('IPsum 30-day history', 'last_seen / max_lists', `${reputationHistory.lastSeen} / ${reputationHistory.maxLists}`)
+          : []),
         ...(typeof pcEntry?.risk === 'number' ? ev('proxycheck.io', 'risk', `${pcEntry.risk} / 100`) : []),
         ...(typeof ipQuery?.risk?.risk_score === 'number' ? ev('ipquery.io', 'risk_score', `${ipQuery.risk.risk_score} / 100`) : []),
         ...(abuseData ? ev('AbuseIPDB', 'abuseConfidenceScore', `${abuseData.abuseConfidenceScore}% (${abuseData.totalReports || 0} reports)`) : []),

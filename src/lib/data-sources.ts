@@ -22,7 +22,7 @@ export const REPORT_SOURCES: DataSource[] = [
     name: 'IPsum', url: 'https://github.com/stamparm/ipsum',
     provides: { zh: 'IPv4 聚合信誉名单、底层名单计数与更新时间（不是独立票数）；Unlicense', en: 'Aggregated IPv4 reputation, underlying list count and update timestamp (not independent votes); Unlicense' },
     scope: { zh: 'IPv4；未列入不代表无滥用', en: 'IPv4; absence does not prove no abuse' },
-    freshness: { zh: '部署构建时编译索引，仅供服务端查询、不对外分发；超过 72 小时记为未获取，需重新构建更新；不使用 KV', en: 'Compiled at deployment for server-side lookups only and not redistributed; snapshots older than 72 hours are unavailable and require a rebuild; no KV' },
+    freshness: { zh: '每天定时抓取并重新部署；当天索引超过 72 小时记为未获取。另保留近 30 天被 ≥2 份名单收录的历史，该历史文件在公开仓库中', en: 'Fetched daily with a redeploy; a same-day index older than 72 hours is unavailable. A 30-day history of addresses listed by at least 2 lists is also kept, in the public repository' },
     timeoutMs: 2800,
   },
   {
