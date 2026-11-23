@@ -44,7 +44,7 @@ export const SAMPLE_REPORT: HomeIpLookupResult = {
       tone: 'leak',
       evidence: [
         { source: 'ipwho.is', field: 'connection.asn', value: '15169' },
-        { source: 'ip-api.com', field: 'hosting', value: 'true' },
+        { source: 'ipquery.io', field: 'risk.is_datacenter', value: 'true' },
       ],
     },
     {
@@ -64,7 +64,7 @@ export const SAMPLE_REPORT: HomeIpLookupResult = {
       status: '公开代理',
       delta: -24,
       tone: 'leak',
-      evidence: [{ source: 'ip-api.com', field: 'proxy', value: 'true' }],
+      evidence: [{ source: 'ipquery.io', field: 'risk.is_proxy', value: 'true' }],
     },
     {
       key: 'reputation',

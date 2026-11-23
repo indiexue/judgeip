@@ -27,9 +27,10 @@ export const POST: APIRoute = async ({ request }) => {
     return reply({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, 400);
   }
 
+  const clientIp = extractVisitorIp(request);
   const ctx: McpContext = {
-    clientIp: extractVisitorIp(request),
-    lookup: (ip) => lookupIpFull(ip, null, false),
+    clientIp,
+    lookup: (ip) => lookupIpFull(ip, null, false, null, { visitorIp: clientIp }),
   };
 
   if (Array.isArray(body)) {

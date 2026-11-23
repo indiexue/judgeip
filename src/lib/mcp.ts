@@ -6,7 +6,7 @@ import type { HomeIpLookupResult } from './ipcx-lookup';
 import type { Lang } from './i18n';
 import { parseIp } from './ip-utils';
 import { localizeLookup } from './lookup-en';
-import { rateLimit } from './rate-limit';
+import { RATE_LIMITS, rateLimit } from './rate-limit';
 import { SCORE_BASE, SCORE_GRADES, SCORE_MAX, SCORE_MIN, SCORE_RULES, formatDelta } from './score-rules';
 import { renderCompareText, renderTextReport } from './text-report';
 
@@ -126,6 +126,8 @@ async function callTool(name: string, args: Record<string, unknown>, ctx: McpCon
 
   try {
     const infos = (await Promise.all(ips.map((ip) => ctx.lookup(ip)))).map((info) => localizeLookup(info, lang));
+    const limited = infos.find((info) => info.lookupStatus === 'limited');
+    if (limited) return textResult(`Rate limit reached (${RATE_LIMITS.lookup} fresh lookups per minute across judgeip.com). Try again in ${limited.retryAfter || 60} seconds.`, true);
     return textResult(name === 'check_ip' ? renderTextReport(infos[0], lang) : renderCompareText(infos, lang));
   } catch {
     return textResult('Lookup failed. Try again later.', true);

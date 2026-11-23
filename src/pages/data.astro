@@ -74,8 +74,8 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
       <div class="prose prose--page">
         <p>
           {t(
-            `家庭宽带、数据中心、CDN、移动网络这些类型由本站判定，不直接照搬某个数据库。判定顺序：先查随代码发布的 ASN 表（目前 ${asnCount} 个常见 ASN，覆盖主要云厂商、CDN、运营商和商业 VPN），再匹配运营商名称里的关键词，最后参考 ipwho.is 和 ip-api.com 的 hosting / mobile 标记。`,
-            `Residential, data center, CDN and mobile are decided by this site rather than copied from one database. In order: an ASN table shipped with the code (currently ${asnCount} common ASNs covering major clouds, CDNs, carriers and commercial VPNs), then keywords in the operator name, then the hosting / mobile flags from ipwho.is and ip-api.com.`,
+            `家庭宽带、数据中心、CDN、移动网络这些类型由本站判定，不直接照搬某个数据库。判定顺序：先查随代码发布的 ASN 表（目前 ${asnCount} 个常见 ASN，覆盖主要云厂商、CDN、运营商和商业 VPN），再匹配运营商名称里的关键词，最后参考 ipwho.is、ipquery.io 和 proxycheck.io 的 hosting / mobile 标记。`,
+            `Residential, data center, CDN and mobile are decided by this site rather than copied from one database. In order: an ASN table shipped with the code (currently ${asnCount} common ASNs covering major clouds, CDNs, carriers and commercial VPNs), then keywords in the operator name, then the hosting / mobile flags from ipwho.is, ipquery.io and proxycheck.io.`,
           )}
         </p>
         <p>

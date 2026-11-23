@@ -11,6 +11,8 @@ interface Props {
   extraCss?: string[];
   extraJs?: string[];
   wideWrap?: boolean;
+  /* 查询结果页设为 true，不进搜索索引 */
+  noindex?: boolean;
 }
 
 const {
@@ -23,7 +25,14 @@ const {
   extraCss = [],
   extraJs = [],
   wideWrap = true,
+  noindex = false,
 } = Astro.props;
+
+/* 页面大多带有访客自己的 IP 和请求信息，HTML 一律不进共享缓存 */
+if (!Astro.response.headers.has('Cache-Control')) Astro.response.headers.set('Cache-Control', 'private, no-store');
+/* 只让工具页和说明页参与收录；查询结果和任何带参数的地址（?ip=、Whois ?q= 等）都不索引 */
+const hideFromIndex = noindex || Astro.url.search !== '';
+if (hideFromIndex) Astro.response.headers.set('X-Robots-Tag', 'noindex');
 
 const lang: Lang = getLang(Astro.locals);
 const en = lang === 'en';
@@ -165,7 +174,7 @@ const footCols = [
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="keywords" content={t('IP查询,IP纯净度检测,本机IP,原生IP,ASN查询,DNS泄露检测,WebRTC泄露,Whois查询,JudgeIP', 'IP lookup,IP reputation,my IP,residential IP,ASN lookup,DNS leak test,WebRTC leak,Whois,JudgeIP')} />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="robots" content={hideFromIndex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'} />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="alternate" hreflang="zh-CN" href={zhUrl} />
     <link rel="alternate" hreflang="en" href={enUrl} />

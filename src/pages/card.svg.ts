@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   const masked = url.searchParams.get('mask') === '1';
 
   const cfMeta = (request as Request & { cf?: Record<string, unknown> }).cf || null;
-  const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
+  const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp, null, { visitorIp }), lang);
 
   const displayIp = masked
     ? info.ip.includes(':')
@@ -64,7 +64,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
     status: 200,
     headers: {
       'Content-Type': 'image/svg+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=600',
+      // 访客自己的卡片和受限时的基础卡片不缓存
+      'Cache-Control': targetIp === visitorIp || info.lookupStatus === 'limited' ? 'private, no-store' : 'public, max-age=600',
     },
   });
 };

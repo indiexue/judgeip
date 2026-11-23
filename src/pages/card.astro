@@ -21,7 +21,7 @@ if (rawIp && !parsed) {
 }
 const targetIp = parsed ? parsed.normalized : visitorIp;
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
-const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
+const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp, null, { visitorIp }), lang);
 
 const scoreColor = info.score === null ? '#a1a1aa' : info.scoreTone === 'good' ? '#4ade80' : info.scoreTone === 'warn' ? '#facc15' : '#f87171';
 const nativeText = info.isBogon ? t('保留地址', 'Reserved') : info.isNative === null ? t('未知', 'Unknown') : info.isNative ? t('原生 IP', 'Native IP') : t('广播 IP', 'Geo-announced IP');
@@ -36,8 +36,8 @@ const markdownSnippet = `[![JudgeIP ${info.ip}](${imageUrl})](${shareReportUrl})
 ---
 
 <IpcxLayout
-  title={t(`IP 信息分享卡片 (${info.ip}) · JudgeIP`, `IP share card (${info.ip}) · JudgeIP`)}
-  description={t(`生成并下载 ${info.ip} 的 IP 评分与网络信息卡片。`, `Create and download an IP score and network information card for ${info.ip}.`)}
+  title={t('IP 信息分享卡片 · JudgeIP', 'IP share card · JudgeIP')}
+  description={t('生成并下载 IP 评分与网络信息卡片。', 'Create and download an IP score and network information card.')}
   canonicalPath="/card"
   bodyClass="page-card"
   currentLabel={t('IP 信息卡片', 'IP card')}

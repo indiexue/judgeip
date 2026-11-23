@@ -36,8 +36,7 @@ const CORE_ROUTES = [
 ];
 
 export const GET: APIRoute = async () => {
-  const now = new Date().toISOString();
-  /* 每个页面中英文各一条，用 xhtml:link 互相标注另一种语言 */
+  /* 每个页面中英文各一条，用 xhtml:link 互相标注另一种语言。没有可靠的内容更新时间，所以不写 lastmod */
   const urls = CORE_ROUTES.flatMap((path) => {
     const zh = `https://judgeip.com${path}`;
     const en = `https://judgeip.com${localePath(path, 'en')}`;
@@ -47,7 +46,6 @@ export const GET: APIRoute = async () => {
     return [zh, en].map(
       (loc) => `  <url>
     <loc>${loc}</loc>${alternates}
-    <lastmod>${now}</lastmod>
     <changefreq>daily</changefreq>
     <priority>${path === '/' ? '1.0' : '0.8'}</priority>
   </url>`

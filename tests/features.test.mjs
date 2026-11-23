@@ -22,8 +22,7 @@ async function withFetch(fetcher, fn) {
 /* 一个数据齐全的上游；overrides 按 URL 片段替换其中某个来源的应答 */
 function upstream(overrides = {}) {
   const base = {
-    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' } },
-    'ip-api.com': { status: 'success', countryCode: 'US', continentCode: 'NA', as: 'AS7922 Comcast', isp: 'Comcast Cable', proxy: false, hosting: false, mobile: false },
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
     'abuseipdb.com': { data: { abuseConfidenceScore: 0, totalReports: 0 } },
     'judgeip.com/assets/data/ipsum.bin': () => new Response(ipsumFixture),
     internetdb: { ports: [], tags: [], vulns: [], hostnames: [] },
@@ -55,12 +54,12 @@ const sum = (info) => info.scoreBase + info.factors.reduce((n, f) => n + f.delta
 const factor = (info, key) => info.factors.find((f) => f.key === key);
 
 test('score factors add up to the displayed score for every network and risk combination', async () => {
-  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' } }, 'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS16509 Amazon.com', isp: 'Amazon', proxy: false, hosting: true, mobile: false }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
+  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
   const cases = [
     ['residential', {}, 95, {}],
     ['hosting', hosting, 62, { network: -33 }],
     ['non-native', { 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } } }, 83, { native: -12 }],
-    ['proxy flag', { 'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS7922 Comcast', isp: 'Comcast Cable', proxy: true, hosting: false, mobile: false } }, 71, { proxy: -24 }],
+    ['proxy flag', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } }, 71, { proxy: -24 }],
     ['blocklisted', { 'dns-query': (url) => url.includes('spamcop') ? { Status: 0, Answer: [{ type: 1, data: '127.0.0.2' }] } : { Status: 3, Authority: [{ type: 6 }] } }, 77, { reputation: -18 }],
     ['many ports', { internetdb: { ports: [21, 22, 25, 80, 110, 143, 443], tags: [], vulns: [], hostnames: [] } }, 90, { ports: -5 }],
     ['hosting + non-native + proxy + CVE + ports', { ...hosting, 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } }, internetdb: { ports: [21, 22, 25, 80, 110, 143, 443, 1080], tags: ['vpn'], vulns: ['CVE-2024-0001'], hostnames: [] } }, 5, { network: -33, native: -12, proxy: -24, reputation: -18, ports: -5, clamp: 2 }],
@@ -81,13 +80,13 @@ test('each factor carries the raw upstream data it was judged on', async () => {
   });
   const has = (key, source, field, value) => factor(info, key).evidence.some((e) => e.source === source && e.field === field && e.value === value);
   assert.ok(has('network', 'ipwho.is', 'connection.asn', '7922'));
-  assert.ok(has('network', 'ip-api.com', 'hosting', 'false'));
+  assert.ok(has('network', 'ipwho.is', 'security.hosting', 'false'));
   assert.ok(factor(info, 'network').evidence.some((e) => e.field === 'AS7922'));
   assert.ok(has('native', 'RIPEstat whois', 'NetRange', '73.0.0.0 - 73.255.255.255'));
   assert.ok(has('native', 'RIPEstat whois', 'Country', 'US'));
   assert.equal(factor(info, 'native').evidence.some((e) => e.field === 'Comment'), false);
   assert.ok(has('native', 'ipwho.is', 'country_code', 'US'));
-  assert.ok(has('proxy', 'ip-api.com', 'proxy', 'false'));
+  assert.ok(has('proxy', 'ipwho.is', 'security.proxy', 'false'));
   assert.ok(has('proxy', 'Shodan InternetDB', 'tags', 'vpn'));
   assert.ok(has('proxy', 'Shodan InternetDB', '代理特征端口', '1080'));
   assert.ok(has('reputation', 'DroneBL', '1.88.162.73.dnsbl.dronebl.org', 'A 127.0.0.3'));
@@ -141,7 +140,7 @@ test('an IP without a Shodan record is scored as having no open ports', async ()
 test('the text report repeats the score, grade and breakdown from the lookup', async () => {
   const { renderTextReport } = await loadTs('../src/lib/text-report.ts');
   const info = await lookup('73.162.88.1', {
-    'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS7922 Comcast', isp: 'Comcast Cable', proxy: true, hosting: false, mobile: false },
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } },
     internetdb: { ports: [22, 443], tags: [], vulns: [], hostnames: [] },
   });
   const zh = renderTextReport(info, 'zh');
@@ -454,7 +453,7 @@ test('scenario weights add up to 100 and the levels follow the published rule', 
 
 test('scenario verdicts come from the same lookup fields the home page shows', async () => {
   const { scoreScenario } = await loadTs('../src/lib/scenario-profiles.ts');
-  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' } }, 'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS16509 Amazon.com', isp: 'Amazon', proxy: false, hosting: true, mobile: false }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
+  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
   const home = await lookup('73.162.88.1');
   for (const id of ['native-ip', 'residential-ip', 'tiktok-ip']) assert.deepEqual([scoreScenario(id, home, 'zh').total, scoreScenario(id, home, 'zh').level], [100, 'pass'], id);
   const cloud = await lookup('73.162.88.1', hosting);
@@ -486,7 +485,7 @@ test('a compare column carries the same score, factors and labels as the lookup'
   const { compareColumn, COMPARE_FIELDS } = await loadTs('../src/lib/compare.ts');
   const { formatDelta, SCORE_BASE } = await loadTs('../src/lib/score-rules.ts');
   const fields = COMPARE_FIELDS.map((row) => row.field).sort();
-  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' } }, 'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS16509 Amazon.com', isp: 'Amazon', proxy: false, hosting: true, mobile: false }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
+  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
 
   const home = await lookup('73.162.88.1');
   const column = compareColumn(home, 'zh');
@@ -555,8 +554,7 @@ test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat who
 test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flags, Dual-ISP, and Plan B optional keys score accurately', async () => {
   // 1. 154.12.35.2 (AS979 NetLab Global) + proxycheck VPN flag -> scores 65 (95 - 6 business - 24 VPN), never null!
   const netlab = await lookup('154.12.35.2', {
-    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 979, isp: 'NetLab Global', org: 'NetLab Global' }, timezone: { id: 'America/Los_Angeles' } },
-    'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS979 NetLab Global', isp: 'NetLab Global', org: 'NetLab Global', proxy: false, hosting: false, mobile: false },
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 979, isp: 'NetLab Global', org: 'NetLab Global' }, timezone: { id: 'America/Los_Angeles' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
     'proxycheck.io': { status: 'ok', '154.12.35.2': { asn: 'AS979', provider: 'NetLab Global', proxy: 'yes', type: 'VPN', risk: 66 } },
     internetdb: { ports: [111, 443, 2080], tags: [], vulns: [], hostnames: [] },
   });
@@ -572,7 +570,6 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
   // 2. Unlisted ASN classified via PeeringDB + clean ipquery -> business 89 (95 - 6)
   const regional = await lookup('154.16.10.25', {
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 64555, isp: 'Acme Regional Net', org: 'Acme Corp' } },
-    'ip-api.com': { status: 'success', countryCode: 'US', as: 'AS64555 Acme', isp: 'Acme Regional Net', org: 'Acme Corp', proxy: false, hosting: false, mobile: false },
     'peeringdb.com': { data: [{ name: 'ACME-NET', info_type: 'Enterprise' }] },
     'ipquery.io': { ip: '154.16.10.25', isp: { asn: 'AS64555', org: 'Acme Corp', isp: 'Acme Regional Net' }, location: { country_code: 'US' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
   });

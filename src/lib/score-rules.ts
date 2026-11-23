@@ -63,10 +63,10 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: '家庭宽带、教育网', en: 'Residential broadband, education' }, delta: 0 },
     ],
     basis: {
-      zh: '综合本站 ASN 库、PeeringDB 自治系统登记类型、运营商名称关键词，以及 ipwho.is、ip-api.com、ipquery.io、proxycheck.io（及可选 ipapi.is）的多源标记交叉判定。既非机房又无家宽证据的商业或专线自治系统归为商业网络。同时满足 ASN 与登记机构均为电信宽带运营商时，标记为「双 ISP」。',
-      en: 'Cross-classified from the curated ASN table, PeeringDB network type, operator keywords, and hosting / mobile flags from ipwho.is, ip-api.com, ipquery.io and proxycheck.io (plus optional ipapi.is). Registered networks that are neither hosting nor consumer broadband are classified as business networks. When both the origin ASN and the range registrant are consumer carriers, Dual ISP is shown.',
+      zh: '综合本站 ASN 库、PeeringDB 自治系统登记类型、运营商名称关键词，以及 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的多源标记交叉判定。既非机房又无家宽证据的商业或专线自治系统归为商业网络。同时满足 ASN 与登记机构均为电信宽带运营商时，标记为「双 ISP」。',
+      en: 'Cross-classified from the curated ASN table, PeeringDB network type, operator keywords, and hosting / mobile flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is). Registered networks that are neither hosting nor consumer broadband are classified as business networks. When both the origin ASN and the range registrant are consumer carriers, Dual ISP is shown.',
     },
-    sources: [{ zh: 'JudgeIP ASN 表', en: 'JudgeIP ASN table' }, 'PeeringDB', 'ipwho.is', 'ip-api.com', 'ipquery.io', 'proxycheck.io'],
+    sources: [{ zh: 'JudgeIP ASN 表', en: 'JudgeIP ASN table' }, 'PeeringDB', 'ipwho.is', 'ipquery.io', 'proxycheck.io'],
   },
   {
     key: 'native',
@@ -79,7 +79,7 @@ export const SCORE_RULES: ScoreRule[] = [
       zh: '注册国家取自 RIR WHOIS / RDAP 记录里的国家字段，定位国家取自多源地理库。两者相同记为原生 IP。',
       en: 'The registered country comes from RIR WHOIS / RDAP records; the geolocated country comes from geolocation databases. Matching values count as a native IP.',
     },
-    sources: ['RIPEstat whois', 'RDAP', 'ipwho.is', 'ip-api.com', 'ipquery.io'],
+    sources: ['RIPEstat whois', 'RDAP', 'ipwho.is', 'ipquery.io'],
   },
   {
     key: 'proxy',
@@ -88,10 +88,10 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: '任一来源标记为代理、VPN 或 Tor，或开放了代理特征端口', en: 'Any source flags proxy, VPN or Tor, or a typical proxy port is open' }, delta: SCORE_DELTAS.proxy },
     ],
     basis: {
-      zh: '综合 ipwho.is、ip-api.com、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、8080 等代理特征端口，以及 ASN 是否属于商业 VPN 骨干网。',
-      en: 'Combines proxy / vpn / tor flags from ipwho.is, ip-api.com, ipquery.io and proxycheck.io (plus optional ipapi.is), Shodan vpn / tor tags, open proxy ports such as 1080, 3128 and 8080, and commercial VPN ASNs.',
+      zh: '综合 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、8080 等代理特征端口，以及 ASN 是否属于商业 VPN 骨干网。',
+      en: 'Combines proxy / vpn / tor flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is), Shodan vpn / tor tags, open proxy ports such as 1080, 3128 and 8080, and commercial VPN ASNs.',
     },
-    sources: ['ipwho.is', 'ip-api.com', 'ipquery.io', 'proxycheck.io', 'Shodan InternetDB'],
+    sources: ['ipwho.is', 'ipquery.io', 'proxycheck.io', 'Shodan InternetDB'],
   },
   {
     key: 'reputation',

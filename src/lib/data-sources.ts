@@ -22,7 +22,7 @@ export const REPORT_SOURCES: DataSource[] = [
     name: 'IPsum', url: 'https://github.com/stamparm/ipsum',
     provides: { zh: 'IPv4 聚合信誉名单、底层名单计数与更新时间（不是独立票数）；Unlicense', en: 'Aggregated IPv4 reputation, underlying list count and update timestamp (not independent votes); Unlicense' },
     scope: { zh: 'IPv4；未列入不代表无滥用', en: 'IPv4; absence does not prove no abuse' },
-    freshness: { zh: '部署构建时编译索引；超过 72 小时记为未获取，需重新构建更新；不使用 KV', en: 'Compiled at deployment; snapshots older than 72 hours are unavailable and require a rebuild; no KV' },
+    freshness: { zh: '部署构建时编译索引，仅供服务端查询、不对外分发；超过 72 小时记为未获取，需重新构建更新；不使用 KV', en: 'Compiled at deployment for server-side lookups only and not redistributed; snapshots older than 72 hours are unavailable and require a rebuild; no KV' },
     timeoutMs: 2800,
   },
   {
@@ -35,14 +35,6 @@ export const REPORT_SOURCES: DataSource[] = [
     name: 'ipwho.is',
     url: 'https://ipwho.is',
     provides: { zh: '国家、地区、城市、经纬度、时区、ASN 与运营商，以及 proxy / vpn / tor / hosting 标记', en: 'Country, region, city, coordinates, time zone, ASN and operator, plus proxy / vpn / tor / hosting flags' },
-    scope: { zh: 'IPv4、IPv6', en: 'IPv4, IPv6' },
-    freshness: { zh: '由对方维护，更新频率未公开', en: 'Maintained upstream; update frequency not published' },
-    timeoutMs: 2300,
-  },
-  {
-    name: 'ip-api.com',
-    url: 'https://ip-api.com',
-    provides: { zh: '国家、地区、城市、时区、ISP / 组织 / AS，以及 mobile / proxy / hosting 标记', en: 'Country, region, city, time zone, ISP / organisation / AS, plus mobile / proxy / hosting flags' },
     scope: { zh: 'IPv4、IPv6', en: 'IPv4, IPv6' },
     freshness: { zh: '由对方维护，更新频率未公开', en: 'Maintained upstream; update frequency not published' },
     timeoutMs: 2300,

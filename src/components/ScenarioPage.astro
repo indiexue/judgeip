@@ -5,7 +5,7 @@ import IpcxLayout from '../layouts/IpcxLayout.astro';
 import IpQueryForm from './IpQueryForm.astro';
 import { getLang, localePath } from '../lib/i18n';
 import { lookupIpFull } from '../lib/ipcx-lookup';
-import { localizeLookup } from '../lib/lookup-en';
+import { limitedNotice, localizeLookup } from '../lib/lookup-en';
 import { resolveQueryTarget } from '../lib/query-target';
 import { SCENARIO_FAIL_BELOW, scenarioById, scoreScenario, type ScenarioId, type ScenarioLevel, type ScenarioStatus } from '../lib/scenario-profiles';
 import { locationText, operatorText, scoreText } from '../lib/text-report';
@@ -28,7 +28,7 @@ const href = (path: string) => localePath(path, lang);
 
 const scenario = scenarioById(id);
 const target = resolveQueryTarget(Astro.request, Astro.url, lang);
-const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf), lang);
+const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf, null, { visitorIp: target.visitorIp }), lang);
 const result = scoreScenario(id, info, lang);
 
 const TONE: Record<ScenarioLevel, string> = { pass: 'is-good', warn: 'is-warn', fail: 'is-bad', unknown: 'is-warn' };
@@ -65,7 +65,7 @@ if (info.isBogon) {
     <p class="hero__lede">{lede}</p>
   </section>
 
-  <IpQueryForm action={href(scenario.path)} value={target.queryValue} error={target.errorMsg} />
+  <IpQueryForm action={href(scenario.path)} value={target.queryValue} error={target.errorMsg || limitedNotice(info, lang)} />
 
   <div class="probe">
     <div class={`verdict ${TONE[result.level]}`}>

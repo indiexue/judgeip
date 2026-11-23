@@ -1,5 +1,6 @@
 import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
+import { rateLimit } from './rate-limit';
 import { checkPublicReputation, type ReputationCheck } from './reputation-feeds';
 import { CACHE_COMPLETE_MINUTES, CACHE_PARTIAL_SECONDS, CACHE_MAX_ENTRIES } from './data-sources';
 import {
@@ -67,6 +68,8 @@ export interface LookupSourceEvent {
 export interface LookupStreamOptions {
   bypassCache?: boolean;
   onSource?: (event: LookupSourceEvent) => void;
+  /* 发起查询的访客 IP。设置后，未命中缓存的全量查询计入该访客的 lookup 预算，超出时只返回基础信息 */
+  visitorIp?: string;
 }
 
 export interface HomeIpLookupResult {
@@ -102,7 +105,10 @@ export interface HomeIpLookupResult {
   reputationCoverage: ReputationCoverage;
   reputationChecks: ReputationCheck[];
   scoringVersion: string;
-  lookupStatus: 'complete' | 'partial' | 'unavailable';
+  /* limited：访客查询过于频繁，本次没有请求上游，只有基础信息 */
+  lookupStatus: 'complete' | 'partial' | 'unavailable' | 'limited';
+  /* lookupStatus 为 limited 时，距离可以重新查询的秒数 */
+  retryAfter?: number;
   portsKnown: boolean;
   scoreBase: number;
   factors: ScoreFactor[];
@@ -250,11 +256,46 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
   }
 }
 
-async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record<string, string>): Promise<T | null> {
+/*
+ * 免费上游的失败冷却，按主机名、在当前边缘节点内存里记录。
+ * 对方返回 429 时按 Retry-After 暂停（最长 5 分钟）；连续 3 次超时或 5xx 暂停 1 分钟。
+ * 冷却期间直接当作没查到，页面显示该来源未获取，不再继续消耗对方额度。
+ */
+const upstreamHealth = new Map<string, { failures: number; coolUntil: number }>();
+const COOLDOWN_FAILURES = 3;
+const COOLDOWN_MS = 60 * 1000;
+const MAX_COOLDOWN_MS = 5 * 60 * 1000;
+
+function upstreamCooling(host: string, now = Date.now()): boolean {
+  return (upstreamHealth.get(host)?.coolUntil || 0) > now;
+}
+
+function recordUpstream(host: string, res: Response | null, now = Date.now()): void {
+  if (res && res.status !== 429 && res.status < 500) {
+    upstreamHealth.delete(host);
+    return;
+  }
+  const entry = upstreamHealth.get(host) || { failures: 0, coolUntil: 0 };
+  entry.failures += 1;
+  if (res?.status === 429) {
+    const retry = Number(res.headers.get('retry-after'));
+    entry.coolUntil = now + Math.min(MAX_COOLDOWN_MS, Number.isFinite(retry) && retry > 0 ? retry * 1000 : COOLDOWN_MS);
+  } else if (entry.failures >= COOLDOWN_FAILURES) {
+    entry.coolUntil = now + COOLDOWN_MS;
+    entry.failures = 0;
+  }
+  upstreamHealth.set(host, entry);
+}
+
+/* 带冷却的上游请求；冷却中或请求失败返回 null */
+async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Record<string, string>): Promise<Response | null> {
+  const host = new URL(url).hostname;
+  if (upstreamCooling(host)) return null;
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  let res: Response | null = null;
   try {
-    const res = await fetch(url, {
+    res = await fetch(url, {
       signal: ctl.signal,
       headers: {
         Accept: 'application/json',
@@ -262,31 +303,34 @@ async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record
         ...(extraHeaders || {}),
       },
     });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
+    return res;
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
+    recordUpstream(host, res);
+  }
+}
+
+async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record<string, string>): Promise<T | null> {
+  const res = await fetchUpstream(url, timeoutMs, extraHeaders);
+  if (!res?.ok) return null;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return null;
   }
 }
 
 /* InternetDB 对没有扫描记录的 IP 返回 404，这是明确答复，按空记录处理；超时和其他状态码才算没查到 */
 async function fetchShodan<T>(ipv4: string): Promise<T | null> {
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 2000);
+  const res = await fetchUpstream(`https://internetdb.shodan.io/${encodeURIComponent(ipv4)}`, 2000);
+  if (res?.status === 404) return { ports: [], tags: [], vulns: [], hostnames: [], noRecord: true } as T;
+  if (!res?.ok) return null;
   try {
-    const res = await fetch(`https://internetdb.shodan.io/${encodeURIComponent(ipv4)}`, {
-      signal: ctl.signal,
-      headers: { Accept: 'application/json', 'User-Agent': 'JudgeIP/1.0 (+https://judgeip.com)' },
-    });
-    if (res.status === 404) return { ports: [], tags: [], vulns: [], hostnames: [], noRecord: true } as T;
-    if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -555,10 +599,82 @@ function buildSceneFitMatrix(hasThreat: boolean | null): SceneFitItem[] {
 }
 
 const memCache = new Map<string, { exp: number; data: HomeIpLookupResult }>();
+/* 同一个 IP 正在查询时，后来的请求共享这次结果，不重复请求上游 */
+const inflight = new Map<string, Promise<HomeIpLookupResult>>();
+
+const LIMITED_LABEL = '查询过于频繁，稍后重试';
+
+/* 访客超出 lookup 预算时的结果：不请求任何上游，只给出 IP 本身和（查看本机时）Cloudflare 随请求附带的归属，其余项明确为未获取 */
+function limitedLookup(parsed: NonNullable<ReturnType<typeof parseIp>>, cf: Record<string, unknown> | null, retryAfter: number): HomeIpLookupResult {
+  const countryCode = String(cf?.country || '').toUpperCase();
+  const asn = cf?.asn ? Number(cf.asn) || null : null;
+  const isp = (cf?.asOrganization as string) || '—';
+  const timezone = (cf?.timezone as string) || '—';
+  const city = (cf?.city as string) || '—';
+  const region = (cf?.region as string) || '—';
+  return {
+    ip: parsed.normalized,
+    version: parsed.version,
+    isBogon: false,
+    ipTypeLabel: '未知',
+    ipTypeTone: 'gray',
+    usageType: 'unknown',
+    isDualIsp: false,
+    isp,
+    org: isp,
+    asn,
+    asnCode: asn ? `AS${asn}` : '—',
+    domain: '—',
+    rirName: '—',
+    rirCountry: '',
+    isNative: null,
+    isDatacenter: null,
+    hasThreat: null,
+    threatLabel: LIMITED_LABEL,
+    isProxy: null,
+    proxyLabel: LIMITED_LABEL,
+    score: null,
+    grade: '—',
+    scoreTone: 'muted',
+    scoreConfidence: 'none',
+    reputationCoverage: 'unavailable',
+    reputationChecks: [],
+    scoringVersion: '2026-11-23',
+    lookupStatus: 'limited',
+    retryAfter,
+    portsKnown: false,
+    scoreBase: SCORE_BASE,
+    factors: [],
+    bgpPrefix: '—',
+    rpkiStatus: 'unknown',
+    rpkiLabel: 'RPKI 状态未知',
+    ptrRecord: '—',
+    openPorts: [],
+    proxyPorts: [],
+    vulnsCount: 0,
+    dnsblListed: [],
+    dnsblTotal: DNSBL_ZONES.length,
+    dnsblChecks: [],
+    abuseEmail: '—',
+    scenes: [],
+    riskChecks: [],
+    countryCode,
+    countryZh: countryCode ? countryCodeToZh(countryCode, countryCode) : '未知',
+    flagEmoji: isoToFlag(countryCode),
+    region,
+    city,
+    regionEn: region,
+    cityEn: city,
+    latitude: null,
+    longitude: null,
+    timezone,
+    localTimeHm: formatLocalTime(timezone),
+    continentZh: CONTINENT_ZH[String(cf?.continent || '').toUpperCase()] || '未知',
+  };
+}
 
 export const STREAM_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'ipwhois', label: 'ipwho.is' },
-  { id: 'ipapi', label: 'ip-api.com' },
   { id: 'ipquery', label: 'ipquery.io' },
   { id: 'proxycheck', label: 'proxycheck.io' },
   { id: 'rir', label: 'RIR / RDAP' },
@@ -571,6 +687,28 @@ export const STREAM_SOURCES: Array<{ id: string; label: string }> = [
 ];
 
 export async function lookupIpFull(
+  rawIp: string,
+  cfMeta?: Record<string, unknown> | null,
+  isSelf = false,
+  optionalKeys?: OptionalIntelKeys | null,
+  streamOpts?: LookupStreamOptions,
+): Promise<HomeIpLookupResult> {
+  // 访客自己的查询带有 Cloudflare 信息，流式查询要逐源回报进度，这两类不合流
+  const parsed = parseIp(rawIp);
+  const shareable = parsed && !parsed.isBogon && !isSelf && !optionalKeys && !streamOpts?.onSource && !streamOpts?.bypassCache;
+  if (!shareable) return runLookup(rawIp, cfMeta, isSelf, optionalKeys, streamOpts);
+  const pending = inflight.get(parsed.normalized);
+  if (pending) {
+    const shared = await pending;
+    // 发起者超出了自己的预算，不代表后来者也超出
+    return shared.lookupStatus === 'limited' ? runLookup(rawIp, cfMeta, isSelf, optionalKeys, streamOpts) : shared;
+  }
+  const task = runLookup(rawIp, cfMeta, isSelf, optionalKeys, streamOpts).finally(() => inflight.delete(parsed.normalized));
+  inflight.set(parsed.normalized, task);
+  return task;
+}
+
+async function runLookup(
   rawIp: string,
   cfMeta?: Record<string, unknown> | null,
   isSelf = false,
@@ -657,6 +795,14 @@ export async function lookupIpFull(
     return { ...cached.data, localTimeHm: formatLocalTime(cached.data.timezone) };
   }
 
+  if (streamOpts?.visitorIp) {
+    const rate = rateLimit('lookup', streamOpts.visitorIp);
+    if (!rate.ok) {
+      for (const src of STREAM_SOURCES) streamOpts.onSource?.({ id: src.id, label: src.label, status: 'skip' });
+      return limitedLookup(parsed, isSelf ? cfMeta || null : null, rate.resetIn);
+    }
+  }
+
   const keys = await resolveOptionalKeys(optionalKeys);
 
   interface IpWhoResp {
@@ -671,24 +817,6 @@ export async function lookupIpFull(
     connection?: { asn?: number; org?: string; isp?: string; domain?: string };
     timezone?: { id?: string };
     security?: { proxy?: boolean; vpn?: boolean; tor?: boolean; hosting?: boolean };
-  }
-
-  interface IpApiResp {
-    status?: string;
-    continentCode?: string;
-    countryCode?: string;
-    country?: string;
-    regionName?: string;
-    city?: string;
-    lat?: number;
-    lon?: number;
-    timezone?: string;
-    isp?: string;
-    org?: string;
-    as?: string;
-    mobile?: boolean;
-    proxy?: boolean;
-    hosting?: boolean;
   }
 
   interface IpQueryResp {
@@ -766,16 +894,9 @@ export async function lookupIpFull(
   }`;
 
   const onSrc = streamOpts?.onSource;
-  const [ipWhoRaw, ipApiRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, publicReputation] = await Promise.all([
+  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, publicReputation] = await Promise.all([
     fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300).then((r) => {
       onSrc?.({ id: 'ipwhois', label: 'ipwho.is', status: r?.success === true ? 'ok' : 'fail' });
-      return r;
-    }),
-    fetchJson<IpApiResp>(
-      `http://ip-api.com/json/${encodeURIComponent(parsed.normalized)}?lang=zh-CN&fields=status,continentCode,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as,mobile,proxy,hosting`,
-      2300
-    ).then((r) => {
-      onSrc?.({ id: 'ipapi', label: 'ip-api.com', status: r?.status === 'success' ? 'ok' : 'fail' });
       return r;
     }),
     fetchJson<IpQueryResp>(`https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`, 2200).then((r) => {
@@ -825,7 +946,6 @@ export async function lookupIpFull(
 
   // 严格校验各上游返回：空对象（如测试桩默认返回）或错误状态不采信
   const ipWho = ipWhoRaw?.success === true ? ipWhoRaw : null;
-  const ipApi = ipApiRaw?.status === 'success' ? ipApiRaw : null;
   const ipQuery = ipQueryRaw && ipQueryRaw.ip && (ipQueryRaw.isp || ipQueryRaw.risk || ipQueryRaw.location) ? ipQueryRaw : null;
   const pcEntry: ProxyCheckEntry | null =
     proxyCheckRaw && (proxyCheckRaw.status === 'ok' || proxyCheckRaw.status === 'warning')
@@ -848,28 +968,26 @@ export async function lookupIpFull(
   const countryCode = (
     (cf?.country as string)
     || ipWho?.country_code
-    || ipApi?.countryCode
     || ipQuery?.location?.country_code
     || pcEntry?.isocode
     || ipapiIs?.location?.country_code
     || ''
   ).toUpperCase();
-  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || ipApi?.continentCode || '').toUpperCase();
-  const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipApi?.country || ipQuery?.location?.country || pcEntry?.country || countryCode);
+  const continentCode = ((cf?.continent as string) || ipWho?.continent_code || '').toUpperCase();
+  const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipQuery?.location?.country || pcEntry?.country || countryCode);
   const flagEmoji = isoToFlag(countryCode);
-  const region = ipApi?.regionName || ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || (cf?.region as string) || '—';
-  const city = ipApi?.city || ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || (cf?.city as string) || '—';
+  const region = ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || (cf?.region as string) || '—';
+  const city = ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || (cf?.city as string) || '—';
   const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
-  const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region, ipApi?.regionName);
-  const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, cf?.city, ipApi?.city);
-  const latitude = ipWho?.latitude ?? ipApi?.lat ?? ipQuery?.location?.latitude ?? pcEntry?.latitude ?? ipapiIs?.location?.latitude ?? (cf?.latitude ? Number(cf.latitude) : null);
-  const longitude = ipWho?.longitude ?? ipApi?.lon ?? ipQuery?.location?.longitude ?? pcEntry?.longitude ?? ipapiIs?.location?.longitude ?? (cf?.longitude ? Number(cf.longitude) : null);
-  const timezone = ipWho?.timezone?.id || ipApi?.timezone || ipQuery?.location?.timezone || pcEntry?.timezone || ipapiIs?.location?.timezone || (cf?.timezone as string) || '—';
+  const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region);
+  const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, cf?.city);
+  const latitude = ipWho?.latitude ?? ipQuery?.location?.latitude ?? pcEntry?.latitude ?? ipapiIs?.location?.latitude ?? (cf?.latitude ? Number(cf.latitude) : null);
+  const longitude = ipWho?.longitude ?? ipQuery?.location?.longitude ?? pcEntry?.longitude ?? ipapiIs?.location?.longitude ?? (cf?.longitude ? Number(cf.longitude) : null);
+  const timezone = ipWho?.timezone?.id || ipQuery?.location?.timezone || pcEntry?.timezone || ipapiIs?.location?.timezone || (cf?.timezone as string) || '—';
 
   const parseAsnStr = (s?: string) => (s ? Number((s.match(/(\d+)/) || [])[1]) || null : null);
   const asn = (cf?.asn ? Number(cf.asn) : null)
     || ipWho?.connection?.asn
-    || parseAsnStr(ipApi?.as)
     || ipapiIs?.asn?.asn
     || parseAsnStr(ipQuery?.isp?.asn)
     || parseAsnStr(pcEntry?.asn)
@@ -886,7 +1004,6 @@ export async function lookupIpFull(
   });
 
   const isp = ipWho?.connection?.isp
-    || ipApi?.isp
     || ipQuery?.isp?.isp
     || pcEntry?.provider
     || ipapiIs?.company?.name
@@ -895,8 +1012,7 @@ export async function lookupIpFull(
     || profile?.name
     || peeringDb?.name
     || '未知';
-  const org = ipApi?.org
-    || ipWho?.connection?.org
+  const org = ipWho?.connection?.org
     || ipQuery?.isp?.org
     || pcEntry?.organisation
     || ipapiIs?.asn?.org
@@ -921,15 +1037,13 @@ export async function lookupIpFull(
 
   const upstreamHosting = Boolean(
     ipWho?.security?.hosting
-    || ipApi?.hosting
     || ipQuery?.risk?.is_datacenter
     || ipapiIs?.is_datacenter
     || pcTypeLow === 'hosting'
     || ipapiCompanyType.toLowerCase() === 'hosting'
   );
   const upstreamMobile = Boolean(
-    ipApi?.mobile
-    || ipQuery?.risk?.is_mobile
+    ipQuery?.risk?.is_mobile
     || ipapiIs?.is_mobile
     || pcTypeLow === 'wireless'
   );
@@ -997,15 +1111,13 @@ export async function lookupIpFull(
     isTor
     || isVpn
     || ipWho?.security?.proxy
-    || ipApi?.proxy
     || ipQuery?.risk?.is_proxy
     || ipapiIs?.is_proxy
     || pcEntry?.proxy === 'yes'
     || proxyPorts.length > 0
   );
   const securityKnown = Boolean(
-    (ipApi && typeof ipApi.proxy === 'boolean')
-    || (ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean'))
+    (ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean'))
     || (ipQuery?.risk && typeof ipQuery.risk.is_proxy === 'boolean')
     || (pcEntry && (pcEntry.proxy === 'yes' || pcEntry.proxy === 'no'))
     || (ipapiIs && typeof ipapiIs.is_proxy === 'boolean')
@@ -1089,11 +1201,6 @@ export async function lookupIpFull(
         ...ev('ipwho.is', 'connection.asn', ipWho?.connection?.asn),
         ...ev('ipwho.is', 'connection.isp', ipWho?.connection?.isp),
         ...ev('ipwho.is', 'security.hosting', flag(ipWho?.security?.hosting)),
-        ...ev('ip-api.com', 'as', ipApi?.as),
-        ...ev('ip-api.com', 'isp', ipApi?.isp),
-        ...ev('ip-api.com', 'org', ipApi?.org),
-        ...ev('ip-api.com', 'hosting', flag(ipApi?.hosting)),
-        ...ev('ip-api.com', 'mobile', flag(ipApi?.mobile)),
         ...ev('ipquery.io', 'risk.is_datacenter', flag(ipQuery?.risk?.is_datacenter)),
         ...ev('proxycheck.io', 'type', pcEntry?.type),
         ...(peeringDb ? ev('PeeringDB', 'info_type', `${peeringDb.infoType} (${peeringDb.name})`) : []),
@@ -1111,7 +1218,6 @@ export async function lookupIpFull(
         ...routing.whoisLines,
         ...ev('Cloudflare', 'request.cf.country', cf?.country),
         ...ev('ipwho.is', 'country_code', ipWho?.country_code),
-        ...ev('ip-api.com', 'countryCode', ipApi?.countryCode),
         ...ev('ipquery.io', 'location.country_code', ipQuery?.location?.country_code),
       ],
     },
@@ -1125,7 +1231,6 @@ export async function lookupIpFull(
         ...ev('ipwho.is', 'security.proxy', flag(ipWho?.security?.proxy)),
         ...ev('ipwho.is', 'security.vpn', flag(ipWho?.security?.vpn)),
         ...ev('ipwho.is', 'security.tor', flag(ipWho?.security?.tor)),
-        ...ev('ip-api.com', 'proxy', flag(ipApi?.proxy)),
         ...ev('ipquery.io', 'risk.is_vpn / is_proxy', ipQuery?.risk ? `${Boolean(ipQuery.risk.is_vpn)} / ${Boolean(ipQuery.risk.is_proxy)}` : ''),
         ...ev('proxycheck.io', 'proxy / type', pcEntry ? `${pcEntry.proxy || 'no'}${pcEntry.type ? ` (${pcEntry.type})` : ''}` : ''),
         ...(ipapiIs ? ev('ipapi.is', 'is_vpn / is_proxy', `${Boolean(ipapiIs.is_vpn)} / ${Boolean(ipapiIs.is_proxy)}`) : []),

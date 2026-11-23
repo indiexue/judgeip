@@ -17,13 +17,14 @@ if (!parsed) {
 const visitorIp = extractVisitorIp(Astro.request);
 const cfMeta = (Astro.request as Request & { cf?: Record<string, unknown> }).cf || null;
 const isVisitor = parsed.normalized === visitorIp;
-const info = localizeLookup(await lookupIpFull(parsed.normalized, cfMeta, isVisitor), lang);
+const info = localizeLookup(await lookupIpFull(parsed.normalized, cfMeta, isVisitor, null, { visitorIp }), lang);
 
 const title = pick(lang, `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`, `${info.ip}: owner, network type and threat data · JudgeIP`);
 const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`, `Location, ISP, ASN, network type, threat and proxy data for ${info.ip}.`);
 ---
 
 <IpcxLayout
+  noindex
   title={title}
   description={description}
   canonicalPath={`/ip/${info.ip}`}

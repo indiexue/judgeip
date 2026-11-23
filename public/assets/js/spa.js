@@ -72,6 +72,9 @@
     return urlObj.pathname + urlObj.search;
   }
 
+  /* 这些页面渲染时会向多个上游查询 IP，悬停预加载会白白消耗免费额度，只在点击时请求 */
+  var LOOKUP_ROUTE = /^(?:\/en)?(?:\/(?:ip\/.*|platforms|card|native-ip|residential-ip|tiktok-ip)?)?\/?$/;
+
   function shouldInterceptLink(anchor) {
     if (!anchor || anchor.nodeName !== 'A') return false;
     if (anchor.hasAttribute('download') || anchor.hasAttribute('data-no-spa')) return false;
@@ -140,6 +143,7 @@
     } catch (e) {
       return;
     }
+    if (LOOKUP_ROUTE.test(urlObj.pathname)) return;
     var key = normalizeKey(urlObj);
     if (key === normalizeKey(window.location)) return;
     if (getCached(key) || inflightPrefetch.has(key)) return;

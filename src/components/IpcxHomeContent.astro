@@ -2,6 +2,7 @@
 import { STREAM_SOURCES, type HomeIpLookupResult } from '../lib/ipcx-lookup';
 import { getLang, localePath } from '../lib/i18n';
 import { formatDelta } from '../lib/score-rules';
+import { limitedNotice } from '../lib/lookup-en';
 
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
@@ -14,7 +15,8 @@ interface Props {
   errorMsg?: string;
 }
 
-const { info, isSelf, queryValue = '', errorMsg = '' } = Astro.props;
+const { info, isSelf, queryValue = '', errorMsg: queryError = '' } = Astro.props;
+const errorMsg = queryError || limitedNotice(info, lang);
 const encodedIp = encodeURIComponent(info.ip);
 
 function scoreRiskTier(score: number | null) {
@@ -23,7 +25,9 @@ function scoreRiskTier(score: number | null) {
       cls: 'muted',
       badge: 'gray',
       label: t('暂未评分', 'No score'),
-      desc: info.version === 6
+      desc: info.lookupStatus === 'limited'
+        ? t('查询过于频繁，本次未请求数据源', 'Too many lookups; data sources were not queried')
+        : info.version === 6
         ? t('端口与黑名单数据仅覆盖 IPv4，暂不出综合分', 'Port and blocklist feeds cover IPv4 only')
         : t('部分公开数据源未及时返回，暂不出分', 'Some upstream sources did not respond in time'),
     };

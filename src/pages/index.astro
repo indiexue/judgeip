@@ -35,10 +35,11 @@ if (rawQuery) {
 }
 
 const isSelf = targetIp === visitorIp && !rawQuery;
-const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp), lang);
+const info = localizeLookup(await lookupIpFull(targetIp, cfMeta, targetIp === visitorIp, null, { visitorIp }), lang);
 
-const title = pick(lang, `${info.ip} 的 IP 归属与威胁情报查询 · JudgeIP`, `${info.ip}: owner, network type and threat data · JudgeIP`);
-const description = pick(lang, `${info.ip} 的 IP 归属地、ISP、ASN、网络类型、威胁情报与代理情报查询结果。`, `Location, ISP, ASN, network type, threat and proxy data for ${info.ip}.`);
+// 标题和分享文案固定，不带访客或抓取方的 IP
+const title = pick(lang, 'JudgeIP · 本机 IP 查询：归属地、网络类型与风险证据', 'JudgeIP · What is my IP: location, network type and risk evidence');
+const description = pick(lang, '查看本机或任意 IP 的归属地、ISP、ASN、网络类型、代理标记与黑名单记录，每项结论附数据来源。', 'Check the location, ISP, ASN, network type, proxy flags and blocklist records of your IP or any IP, with the source behind each result.');
 ---
 
 <IpcxLayout

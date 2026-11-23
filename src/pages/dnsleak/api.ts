@@ -41,9 +41,10 @@ export const POST: APIRoute = async ({ request, url }) => {
       resolvers?: Array<{ ip?: string; queries?: number; ecs?: string }>;
     };
 
-    const visitorIp = parseIp(body.clientIp)?.normalized || extractVisitorIp(request);
+    const requester = extractVisitorIp(request);
+    const visitorIp = parseIp(body.clientIp)?.normalized || requester;
     const cf = (request as Request & { cf?: Record<string, unknown> }).cf || null;
-    const clientInfo = localizeLookup(await lookupIpFull(visitorIp, cf, true), lang);
+    const clientInfo = localizeLookup(await lookupIpFull(visitorIp, cf, true, null, { visitorIp: requester }), lang);
 
     const rawResolvers = Array.isArray(body.resolvers) ? body.resolvers.slice(0, 12) : [];
     const enriched = await Promise.all(
@@ -51,7 +52,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         const parsed = parseIp(item.ip || '');
         if (!parsed) return null;
         try {
-          const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), lang);
+          const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false, null, { visitorIp: requester }), lang);
           const provider = (info.asn && PUBLIC_DNS_PROVIDERS[info.asn]) || '';
           let resolverType = info.isDatacenter === null ? 'unknown' : 'hosting';
           if (provider && /(Google|Cloudflare|Quad9|OpenDNS|阿里公共|DNSPod|百度公共)/.test(provider)) {

@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
 import { localizeLookup } from '../../lib/lookup-en';
-import { rateHeaders, rateLimit } from '../../lib/rate-limit';
+import { lookupLimitedResponse, rateHeaders, rateLimit } from '../../lib/rate-limit';
 
 const JSON_TYPE = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -26,7 +26,8 @@ export const GET: APIRoute = async ({ url, request }) => {
 
   try {
     const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'zh';
-    const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), lang);
+    const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false, null, { visitorIp }), lang);
+    if (info.lookupStatus === 'limited') return lookupLimitedResponse(info.retryAfter, rateHeaders(rate));
     return new Response(JSON.stringify({ ok: true, info }), {
       status: 200,
       headers: {

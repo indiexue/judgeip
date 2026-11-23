@@ -118,6 +118,7 @@ const LABELS: Record<string, string> = {
   关键信誉数据缺失: 'Key reputation evidence unavailable',
   风险安全上限: 'Risk safety cap',
   '重度风险上限 29': 'Severe risk cap: 29',
+  '查询过于频繁，稍后重试': 'Too many lookups; try again later',
   '中度风险上限 49': 'Moderate risk cap: 49',
   未触发风险上限: 'No risk cap triggered',
   '发现风险，谨慎使用': 'Risk detected; use caution',
@@ -168,6 +169,15 @@ export function countryNameEn(cc: string, fallback = ''): string {
   } catch {
     return fallback || up;
   }
+}
+
+/* 超出查询预算时页面顶部的提示；其他情况返回空串 */
+export function limitedNotice(info: HomeIpLookupResult, lang: Lang): string {
+  if (info.lookupStatus !== 'limited') return '';
+  const retry = info.retryAfter || 60;
+  return lang === 'en'
+    ? `Too many lookups from your network. Only basic details are shown; refresh in ${retry}s for the full report.`
+    : `查询过于频繁，本次只显示基础信息，请在 ${retry} 秒后刷新查看完整报告。`;
 }
 
 export function localizeLookup(info: HomeIpLookupResult, lang: Lang): HomeIpLookupResult {

@@ -558,6 +558,10 @@ return '<div class="scene-card is-' + esc(sc.tone) + '">' +
       if (!finalMsg || !finalMsg.ok || !finalMsg.info) {
         throw { status: 500 };
       }
+      // 超出查询预算时服务端没有请求上游，保留页面上现有的结果，只提示稍后再试
+      if (finalMsg.info.lookupStatus === 'limited') {
+        throw { status: 429, data: { retryAfter: finalMsg.info.retryAfter } };
+      }
       // 命中节点内存缓存时（< 280ms），给 280ms 最小过场让全绿徽标与满格进度条平滑呈现，避免生硬闪烁
       var elapsed = Date.now() - startedAt;
       var waitMs = elapsed < 280 ? 280 - elapsed : 0;
@@ -584,7 +588,10 @@ return '<div class="scene-card is-' + esc(sc.tone) + '">' +
             : '「' + trimmed.slice(0, 60) + '」不是有效的 IPv4 或 IPv6 地址。'
         );
       } else if (err && err.status === 429) {
-        showError(T('查询请求过于频繁，请稍后再试。', 'Too many lookup requests. Please try again in a moment.'));
+        var retry = err.data && Number(err.data.retryAfter);
+        showError(retry > 0
+          ? T('查询请求过于频繁，请在 ' + retry + ' 秒后再试。', 'Too many lookup requests. Try again in ' + retry + 's.')
+          : T('查询请求过于频繁，请稍后再试。', 'Too many lookup requests. Please try again in a moment.'));
       } else {
         showError(T('聚合查询未完成，请点击重新聚合或稍后再试。', 'Lookup did not complete. Please retry in a moment.'));
       }

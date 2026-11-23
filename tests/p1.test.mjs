@@ -135,8 +135,7 @@ test('Turnstile never trusts success or unrecognized errors on non-2xx responses
 
 function completeUpstream(url) {
   const str = String(url);
-  if (str.includes('ipwho.is')) return json({ success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' } });
-  if (str.includes('ip-api.com')) return json({ status: 'success', countryCode: 'US', continentCode: 'NA', as: 'AS7922 Comcast', isp: 'Comcast Cable', proxy: false });
+  if (str.includes('ipwho.is')) return json({ success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' }, security: { proxy: false, vpn: false, tor: false, hosting: false } });
   if (str.includes('internetdb')) return json({ ports: [], tags: [], vulns: [], hostnames: [] });
   if (str.includes('whois/data')) return json({ data: { authorities: ['ARIN'], records: [[{ key: 'country', value: 'US' }]] } });
   if (str.includes('network-info')) return json({ data: { prefix: '73.162.0.0/16', asns: ['7922'] } });

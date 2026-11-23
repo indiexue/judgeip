@@ -80,7 +80,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
         return new Response(`${wait}\n`, { status: 429, headers: { ...TEXT_HEADERS, ...rateHeaders(rate) } });
       }
       try {
-        const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false), outLang);
+        const info = localizeLookup(await lookupIpFull(parsed.normalized, null, false, null, { visitorIp: extractVisitorIp(request) }), outLang);
+        if (info.lookupStatus === 'limited') {
+          const retry = info.retryAfter || 60;
+          const wait = outLang === 'en' ? `Too many lookups. Try again in ${retry}s.` : `查询过于频繁，请在 ${retry} 秒后重试。`;
+          return new Response(`${wait}\n`, { status: 429, headers: { ...TEXT_HEADERS, 'Retry-After': String(retry) } });
+        }
         return new Response(renderTextReport(info, outLang), { status: 200, headers: { ...TEXT_HEADERS, ...rateHeaders(rate) } });
       } catch {
         return new Response(outLang === 'en' ? 'Lookup failed. Try again later.\n' : '查询失败，请稍后重试。\n', { status: 502, headers: TEXT_HEADERS });

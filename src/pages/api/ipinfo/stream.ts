@@ -57,6 +57,7 @@ export const GET: APIRoute = async ({ url, request }) => {
       try {
         const rawInfo = await lookupIpFull(parsed.normalized, cfMeta, isSelf, null, {
           bypassCache: fresh,
+          visitorIp,
           onSource(ev) {
             send({
               type: 'source',

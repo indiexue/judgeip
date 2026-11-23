@@ -93,18 +93,20 @@ test('status APIs distinguish invalid payloads, maintenance and outages', async 
 });
 
 test('localized geography uses English source fields without mutating the cache', async () => {
+  const requests = [];
   await withFetch(async (url) => {
+    requests.push(String(url));
     if (String(url).includes('ipwho.is')) { assert.match(String(url), /lang=en/); return json({ success: true, country_code: 'US', region: 'Virginia', city: 'Ashburn' }); }
-    if (String(url).includes('ip-api.com')) return json({ status: 'success', countryCode: 'US', regionName: '弗吉尼亚州', city: '阿什本' });
     return json({});
   }, async () => {
     const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
     const source = await lookupIpFull('8.8.8.8');
     const en = localizeLookup(source, 'en');
-    assert.equal(source.region, '弗吉尼亚州');
+    assert.equal(source.region, 'Virginia');
+    assert.ok(requests.every((u) => u.startsWith('https://')), 'lookup must not send the IP over plain HTTP');
     assert.equal(en.region, 'Virginia');
     assert.equal(en.city, 'Ashburn');
-    assert.equal((await lookupIpFull('8.8.8.8')).city, '阿什本');
+    assert.equal((await lookupIpFull('8.8.8.8')).city, 'Ashburn');
     assert.equal(localizeLookup({ ...source, regionEn: undefined, cityEn: undefined }, 'en').city, '—');
   });
 });

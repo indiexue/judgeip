@@ -3,7 +3,7 @@ import IpcxLayout from '../layouts/IpcxLayout.astro';
 import IpQueryForm from '../components/IpQueryForm.astro';
 import { getLang, localePath } from '../lib/i18n';
 import { lookupIpFull } from '../lib/ipcx-lookup';
-import { localizeLookup } from '../lib/lookup-en';
+import { limitedNotice, localizeLookup } from '../lib/lookup-en';
 import { LEVEL_LABELS, PLATFORMS, PLATFORM_CATEGORIES, REQUIREMENT_LABELS, judgePlatforms, type PlatformLevel } from '../lib/platforms';
 import { resolveQueryTarget } from '../lib/query-target';
 import { nativeText, scoreText } from '../lib/text-report';
@@ -15,7 +15,7 @@ const href = (path: string) => localePath(path, lang);
 const sep = en ? ', ' : '、';
 
 const target = resolveQueryTarget(Astro.request, Astro.url, lang);
-const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf), lang);
+const info = localizeLookup(await lookupIpFull(target.targetIp, target.cfMeta, target.isSelf, null, { visitorIp: target.visitorIp }), lang);
 const verdicts = new Map(judgePlatforms(info, lang).map((v) => [v.id, v]));
 
 const TAG: Record<PlatformLevel, string> = { pass: 'tag--ok', warn: 'tag--warn', fail: 'tag--leak', unknown: 'tag--muted' };
@@ -60,7 +60,7 @@ if (info.isBogon) {
     </p>
   </section>
 
-  <IpQueryForm action={href('/platforms')} value={target.queryValue} error={target.errorMsg} />
+  <IpQueryForm action={href('/platforms')} value={target.queryValue} error={target.errorMsg || limitedNotice(info, lang)} />
 
   <div class="probe" id="platforms" data-visible-ip={info.ip} data-level-labels={JSON.stringify(Object.fromEntries(LEVELS.map((level) => [level, LEVEL_LABELS[level][lang]])))}>
     <!-- 4-Card KPI Summary Strip (ipfinal style) -->

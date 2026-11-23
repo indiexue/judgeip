@@ -101,8 +101,9 @@ const fields = [
 
 const limits = [
   { scope: 'GET /<ip>', limit: RATE_LIMITS.report, unit: t('次请求', 'requests') },
-  { scope: 'GET /api/ipinfo', limit: RATE_LIMITS.api, unit: t('次请求', 'requests') },
+  { scope: 'GET /api/ipinfo, /api/v1/verdict', limit: RATE_LIMITS.api, unit: t('次请求', 'requests') },
   { scope: 'POST /mcp', limit: RATE_LIMITS.mcp, unit: t('个 IP 查询', 'IP lookups') },
+  { scope: t('全站共享查询额度', 'Shared lookup allowance'), limit: RATE_LIMITS.lookup, unit: t('次未命中缓存的查询（网页、接口、命令行、MCP 合计）', 'uncached lookups (web pages, APIs, command line and MCP combined)') },
 ];
 
 const toolNotes: Record<string, string> = {
@@ -269,8 +270,8 @@ const toolArgs = (tool: (typeof MCP_TOOLS)[number]) => Object.keys(tool.inputSch
       </div>
       <p class="group__lede">
         {t(
-          '超过后返回 429，响应头 Retry-After 给出还要等多少秒；正常响应带 RateLimit-Limit、RateLimit-Remaining 和 RateLimit-Reset。MCP 超限时不返回 429，而是在工具结果里说明。IPv6 来源按 /64 计数。',
-          'Over the limit the response is 429 with a Retry-After header giving the seconds to wait; normal responses carry RateLimit-Limit, RateLimit-Remaining and RateLimit-Reset. MCP reports the limit in the tool result instead of a 429. IPv6 sources are counted per /64.',
+          '超过后返回 429，响应头 Retry-After 给出还要等多少秒；正常响应带 RateLimit-Limit、RateLimit-Remaining 和 RateLimit-Reset。MCP 超限时不返回 429，而是在工具结果里说明。共享查询额度只计真正向上游发起的查询，命中缓存的不计；网页超出时只显示基础信息。IPv6 来源按 /64 计数。计数保存在各边缘节点内存里，是防刷的软限制，不是精确配额。',
+          'Over the limit the response is 429 with a Retry-After header giving the seconds to wait; normal responses carry RateLimit-Limit, RateLimit-Remaining and RateLimit-Reset. MCP reports the limit in the tool result instead of a 429. The shared lookup allowance counts only lookups that reach upstream sources, not cache hits; web pages over it show basic details only. IPv6 sources are counted per /64. Counters live in each edge node\'s memory, so this is a soft anti-abuse limit, not an exact quota.',
         )}
       </p>
       <p class="group__lede">

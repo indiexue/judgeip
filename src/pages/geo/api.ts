@@ -3,6 +3,7 @@ import { extractVisitorIp, parseIp } from '../../lib/ip-utils';
 import { lookupIpFull } from '../../lib/ipcx-lookup';
 import { localizeLookup } from '../../lib/lookup-en';
 import { getLang } from '../../lib/i18n';
+import { lookupLimitedResponse, rateLimit } from '../../lib/rate-limit';
 
 async function fetchJsonSafe(url: string, timeoutMs = 3500): Promise<{ status: number; data: any } | null> {
   const ctl = new AbortController();
@@ -43,7 +44,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
     const cf = (request as Request & { cf?: Record<string, unknown> }).cf || null;
     try {
       const lang = url.searchParams.get('lang') === 'en' ? 'en' : getLang(locals);
-      const info = localizeLookup(await lookupIpFull(ip, cf, true), lang);
+      const info = localizeLookup(await lookupIpFull(ip, cf, true, null, { visitorIp: ip }), lang);
       return new Response(
         JSON.stringify({
           ok: true,
@@ -81,6 +82,10 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });
   }
+
+  // 每次会请求四家定位库，和全量查询共用同一份访客预算
+  const rate = rateLimit('lookup', extractVisitorIp(request));
+  if (!rate.ok) return lookupLimitedResponse(rate.resetIn);
 
   const targetIp = parsed.normalized;
   const onlyParam = url.searchParams.get('only');
@@ -155,7 +160,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'public, max-age=1800',
+        'Cache-Control': 'private, max-age=1800',
       },
     }
   );
