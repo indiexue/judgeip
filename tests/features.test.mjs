@@ -557,6 +557,7 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 979, isp: 'NetLab Global', org: 'NetLab Global' }, timezone: { id: 'America/Los_Angeles' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
     'proxycheck.io': { status: 'ok', '154.12.35.2': { asn: 'AS979', provider: 'NetLab Global', proxy: 'yes', type: 'VPN', risk: 66 } },
     internetdb: { ports: [111, 443, 2080], tags: [], vulns: [], hostnames: [] },
+    'network-info': { data: { prefix: '154.12.32.0/20', asns: ['979'] } },
   });
   assert.equal(netlab.usageType, 'business');
   assert.equal(netlab.ipTypeLabel, '商业网络');
@@ -571,6 +572,7 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
   const regional = await lookup('154.16.10.25', {
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 64555, isp: 'Acme Regional Net', org: 'Acme Corp' } },
     'peeringdb.com': { data: [{ name: 'ACME-NET', info_type: 'Enterprise' }] },
+    'network-info': { data: { prefix: '154.16.0.0/16', asns: ['64555'] } },
     'ipquery.io': { ip: '154.16.10.25', isp: { asn: 'AS64555', org: 'Acme Corp', isp: 'Acme Regional Net' }, location: { country_code: 'US' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
   });
   assert.equal(regional.usageType, 'business');

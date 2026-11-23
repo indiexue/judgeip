@@ -94,6 +94,7 @@ export interface HomeIpLookupResult {
   domain: string;
   rirName: string;
   rirCountry: string;
+  registrantCountry?: string;
   isNative: boolean | null;
   isDatacenter: boolean | null;
   hasThreat: boolean | null;
@@ -361,26 +362,33 @@ async function fetchShodan<T>(ipv4: string): Promise<T | null> {
 }
 
 /* PeeringDB 按 ASN 缓存（节点内 6 小时有效，避免重复请求） */
-const peeringDbCache = new Map<number, { exp: number; infoType: string; name: string }>();
+type PeeringDbNetwork = { infoType: string; name: string } | 'not_listed';
+const peeringDbCache = new Map<number, { exp: number; network: PeeringDbNetwork }>();
 
-async function fetchPeeringDbType(asn: number | null): Promise<{ infoType: string; name: string } | null> {
-  if (!asn || KNOWN_ASN_PROFILES[asn]) return null;
+async function fetchPeeringDbType(asn: number): Promise<PeeringDbNetwork | null> {
   const hit = peeringDbCache.get(asn);
-  if (hit && hit.exp > Date.now()) return { infoType: hit.infoType, name: hit.name };
-  const resp = await fetchJson<{ data?: Array<{ name?: string; info_type?: string }> }>(
-    `https://www.peeringdb.com/api/net?asn=${asn}`,
-    1600,
-  );
-  const net = Array.isArray(resp?.data) ? resp.data[0] : undefined;
-  const infoType = String(net?.info_type || '').trim();
-  const name = String(net?.name || '').trim();
-  if (!infoType) return null;
+  if (hit && hit.exp > Date.now()) return hit.network;
+  const res = await fetchUpstream(`https://www.peeringdb.com/api/net?asn=${asn}`, 1600);
+  if (!res || (!res.ok && res.status !== 404)) return null;
+  let body: { data?: Array<{ name?: string; info_type?: string }>; meta?: { error?: string } } | null;
+  try {
+    body = await res.json();
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(body?.data)) return null;
+  const net = body.data[0];
+  const notListed = body.data.length === 0 && (res.ok || body.meta?.error === 'Entity not found');
+  const network = notListed ? 'not_listed' : res.ok && net
+    ? { infoType: String(net.info_type || '').trim(), name: String(net.name || '').trim() }
+    : null;
+  if (!network) return null;
   if (peeringDbCache.size > 600) {
     const first = peeringDbCache.keys().next().value;
     if (first !== undefined) peeringDbCache.delete(first);
   }
-  peeringDbCache.set(asn, { exp: Date.now() + 6 * 3600 * 1000, infoType, name });
-  return { infoType, name };
+  peeringDbCache.set(asn, { exp: Date.now() + (network === 'not_listed' ? 1 : 6) * 3600 * 1000, network });
+  return network;
 }
 
 /* ASN 的 RDAP 登记方与注册日期，按 ASN 缓存 6 小时。从 RIPE 入口查，别家的 ASN 会被转到对应 RIR */
@@ -586,6 +594,7 @@ async function fetchRirAndRouting(
   rirCountry?: string;
   bgpPrefix?: string;
   bgpAsn?: number;
+  originAsn?: number;
   rpkiStatus?: 'valid' | 'invalid' | 'not_found' | 'unknown';
   ptrRecord?: string;
   abuseEmail?: string;
@@ -658,7 +667,9 @@ async function fetchRirAndRouting(
   }
 
   const bgpPrefix = netResp?.data?.prefix || '';
-  const bgpAsn = netResp?.data?.asns?.[0] ? Number(netResp.data.asns[0]) : undefined;
+  const bgpAsns = [...new Set((netResp?.data?.asns || []).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0))];
+  const bgpAsn = bgpAsns[0];
+  const originAsn = bgpAsns.length === 1 ? bgpAsn : undefined;
 
   // 第二轮并发：地址段的 RDAP 记录（取登记机构和所在国家）与 RPKI。
   // RDAP 同时为 RIPEstat whois 没给 country 的情况兜底；RIPEstat RIR 分配表只在 RDAP 也没给国家时使用。
@@ -714,7 +725,7 @@ async function fetchRirAndRouting(
     onSource?.({ id: 'rpki', label: 'RPKI ROA', status: 'skip' });
   }
 
-  return { rirName, rirCountry, bgpPrefix, bgpAsn, rpkiStatus, ptrRecord, abuseEmail, registrant, whoisLines };
+  return { rirName, rirCountry, bgpPrefix, bgpAsn, originAsn, rpkiStatus, ptrRecord, abuseEmail, registrant, whoisLines };
 }
 
 const DNS_RCODES: Record<number, string> = { 0: 'NOERROR', 2: 'SERVFAIL', 3: 'NXDOMAIN', 5: 'REFUSED' };
@@ -1215,7 +1226,9 @@ async function runLookup(
   const timezone = ipWho?.timezone?.id || ipQuery?.location?.timezone || pcEntry?.timezone || ipapiIs?.location?.timezone || (cf?.timezone as string) || '—';
 
   const parseAsnStr = (s?: string) => (s ? Number((s.match(/(\d+)/) || [])[1]) || null : null);
-  const asn = (cf?.asn ? Number(cf.asn) : null)
+  // BGP 只有一个源 ASN 时以它为准：上游库的 ASN 可能还是转租前的旧记录
+  const asn = routing.originAsn
+    || (cf?.asn ? Number(cf.asn) : null)
     || ipWho?.connection?.asn
     || ipapiIs?.asn?.asn
     || parseAsnStr(ipQuery?.isp?.asn)
@@ -1224,12 +1237,14 @@ async function runLookup(
     || null;
   const profile = asn ? KNOWN_ASN_PROFILES[asn] : undefined;
 
-  // 若 ASN 不在内置 160+ 表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型，同时查 ASN 的 RDAP 登记方
-  const [peeringDb, asnHolder] = asn && !profile ? await Promise.all([fetchPeeringDbType(asn), fetchAsnHolder(asn)]) : [null, null];
+  // 若 ASN 不在内置表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型，同时查 ASN 的 RDAP 登记方
+  // PeeringDB 返回 'not_listed' 表示确认未登记，null 表示没查到结果（超时或报错），两者不能混用
+  const [peeringDbResult, asnHolder] = asn && !profile ? await Promise.all([fetchPeeringDbType(asn), fetchAsnHolder(asn)]) : [null, null];
+  const peeringDb = peeringDbResult && peeringDbResult !== 'not_listed' && peeringDbResult.infoType ? peeringDbResult : null;
   onSrc?.({
     id: 'peeringdb',
     label: 'PeeringDB / ASN',
-    status: profile || peeringDb ? 'ok' : asn ? 'skip' : 'fail',
+    status: profile || peeringDbResult ? 'ok' : asn ? 'fail' : 'skip',
   });
 
   const isp = ipWho?.connection?.isp
@@ -1285,7 +1300,7 @@ async function runLookup(
   const asnAgeDays = asnHolder?.registeredAt ? (Date.now() - Date.parse(asnHolder.registeredAt)) / 86400000 : null;
   const youngAsn = asnAgeDays !== null && asnAgeDays < 730;
   const leasedRange = !profile && Boolean(registrant && asnHolder)
-    && sameOrganization(registrant?.name || '', asnHolder?.name || '') === false && (youngAsn || !peeringDb);
+    && sameOrganization(registrant?.name || '', asnHolder?.name || '') === false && (youngAsn || peeringDbResult === 'not_listed');
 
   const hasOperatorIdentity = Boolean(asn || (isp !== '未知' && isp !== '—'));
   const classified: UsageType | 'unknown' = hasOperatorIdentity
@@ -1646,6 +1661,7 @@ async function runLookup(
     domain: domain || '—',
     rirName,
     rirCountry,
+    registrantCountry: registrant?.country || undefined,
     isNative,
     isDatacenter,
     hasThreat,

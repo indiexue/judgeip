@@ -113,3 +113,40 @@ test('failed sources report why, and an exhausted free quota pauses the source',
   assert.equal(calls['proxycheck.io'], 1, 'no further requests once the quota is gone');
   assert.match(second.proxycheck.detail, /^cooldown \(denied: /);
 });
+
+test('an established ASN is only treated as leasing when PeeringDB confirms it is not listed', async () => {
+  const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+  const established = (ip, asn, peeringdb) => leasedRange(ip, {
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn, isp: 'WS Telecom Inc', org: 'WS Telecom Inc' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
+    'network-info': { data: { prefix: '91.108.216.0/22', asns: [String(asn)] } },
+    [`rdap.db.ripe.net/autnum/${asn}`]: { entities: [org('WS Telecom Inc', 'Sheridan\nUNITED STATES')], events: [{ eventAction: 'registration', eventDate: '2010-03-01T00:00:00Z' }] },
+    peeringdb: peeringdb,
+  });
+  const failed = await withFetch(upstream(established('91.108.219.240', 4200001, () => json({}, 503))), () => lookupIpFull('91.108.219.240'));
+  assert.notEqual(failed.factors.find((f) => f.key === 'network').status, '商业网络（租用地址段）', 'a PeeringDB outage is not evidence');
+
+  const missing = await withFetch(upstream(established('91.108.219.241', 4200002, { data: [] })), () => lookupIpFull('91.108.219.241'));
+  assert.equal(missing.factors.find((f) => f.key === 'network').status, '商业网络（租用地址段）');
+});
+
+test('a single BGP origin ASN wins over a stale upstream ASN', async () => {
+  const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+  const ip = '91.108.219.242';
+  const info = await withFetch(upstream(leasedRange(ip, {
+    'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable', org: 'Comcast Cable' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
+  })), () => lookupIpFull(ip));
+  assert.equal(info.asn, 213541);
+  assert.equal(info.usageType, 'business');
+  assert.equal(info.registrantCountry, 'LV');
+});
+
+test('curated ASN table entries are keyed by their own ASN', async () => {
+  const { KNOWN_ASN_PROFILES } = await loadTs('../src/lib/asn-intelligence.ts');
+  const types = new Set(['residential', 'mobile', 'hosting', 'business', 'education', 'cdn', 'reserved']);
+  for (const [key, profile] of Object.entries(KNOWN_ASN_PROFILES)) {
+    assert.equal(Number(key), profile.asn, `AS${key}`);
+    assert.ok(types.has(profile.type), `AS${key} type`);
+    assert.match(profile.registeredCountry, /^[A-Z]{2}$/, `AS${key} country`);
+  }
+  assert.ok(Object.keys(KNOWN_ASN_PROFILES).length >= 240);
+});
