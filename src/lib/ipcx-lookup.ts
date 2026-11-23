@@ -63,6 +63,8 @@ export interface LookupSourceEvent {
   id: string;
   label: string;
   status: 'ok' | 'skip' | 'fail';
+  /* 失败原因，例如 HTTP 429、timeout、cooldown 或上游返回的错误信息 */
+  detail?: string;
 }
 
 export interface LookupStreamOptions {
@@ -259,25 +261,31 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
 
 /*
  * 免费上游的失败冷却，按主机名、在当前边缘节点内存里记录。
- * 对方返回 429 时按 Retry-After 暂停（最长 5 分钟）；连续 3 次超时或 5xx 暂停 1 分钟。
+ * 对方返回 429 时按 Retry-After 暂停（最长 5 分钟）；连续 3 次超时、401/403 或 5xx 暂停 1 分钟；额度用尽暂停 15 分钟。
  * 冷却期间直接当作没查到，页面显示该来源未获取，不再继续消耗对方额度。
  */
-const upstreamHealth = new Map<string, { failures: number; coolUntil: number }>();
+const upstreamHealth = new Map<string, { failures: number; coolUntil: number; reason: string }>();
 const COOLDOWN_FAILURES = 3;
 const COOLDOWN_MS = 60 * 1000;
 const MAX_COOLDOWN_MS = 5 * 60 * 1000;
+/* 免费额度用完（proxycheck 返回 denied、ipwho.is 返回 limit）时暂停更久，额度一般按天或按月恢复 */
+const QUOTA_COOLDOWN_MS = 15 * 60 * 1000;
 
 function upstreamCooling(host: string, now = Date.now()): boolean {
   return (upstreamHealth.get(host)?.coolUntil || 0) > now;
 }
 
-function recordUpstream(host: string, res: Response | null, now = Date.now()): void {
-  if (res && res.status !== 429 && res.status < 500) {
+/* 401 / 403 / 429 / 5xx 和超时都算失败；其余 4xx（如 InternetDB 的 404）是正常答复 */
+const FAILED_STATUS = new Set([401, 403, 429]);
+
+function recordUpstream(host: string, res: Response | null, reason: string, now = Date.now()): void {
+  if (res && !FAILED_STATUS.has(res.status) && res.status < 500) {
     upstreamHealth.delete(host);
     return;
   }
-  const entry = upstreamHealth.get(host) || { failures: 0, coolUntil: 0 };
+  const entry = upstreamHealth.get(host) || { failures: 0, coolUntil: 0, reason };
   entry.failures += 1;
+  entry.reason = reason;
   if (res?.status === 429) {
     const retry = Number(res.headers.get('retry-after'));
     entry.coolUntil = now + Math.min(MAX_COOLDOWN_MS, Number.isFinite(retry) && retry > 0 ? retry * 1000 : COOLDOWN_MS);
@@ -288,6 +296,20 @@ function recordUpstream(host: string, res: Response | null, now = Date.now()): v
   upstreamHealth.set(host, entry);
 }
 
+/* 上游以 200 返回额度用尽等错误时由调用方标记，按额度冷却处理 */
+function pauseUpstream(url: string, reason: string, now = Date.now()): void {
+  upstreamHealth.set(new URL(url).hostname, { failures: 0, coolUntil: now + QUOTA_COOLDOWN_MS, reason });
+}
+
+/* 最近一次失败的原因，冷却中会标明，供流式进度和排查使用 */
+function upstreamFailure(url: string, now = Date.now()): string {
+  const entry = upstreamHealth.get(new URL(url).hostname);
+  if (!entry) return '';
+  return entry.coolUntil > now ? `cooldown (${entry.reason})` : entry.reason;
+}
+
+const QUOTA_MESSAGE = /limit|exhaust|quota|denied|too many/i;
+
 /* 带冷却的上游请求；冷却中或请求失败返回 null */
 async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Record<string, string>): Promise<Response | null> {
   const host = new URL(url).hostname;
@@ -295,6 +317,7 @@ async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Reco
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   let res: Response | null = null;
+  let reason = 'timeout';
   try {
     res = await fetch(url, {
       signal: ctl.signal,
@@ -304,12 +327,14 @@ async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Reco
         ...(extraHeaders || {}),
       },
     });
+    reason = `HTTP ${res.status}`;
     return res;
-  } catch {
+  } catch (err) {
+    if (!ctl.signal.aborted) reason = `network: ${String((err as Error)?.message || err).slice(0, 80)}`;
     return null;
   } finally {
     clearTimeout(timer);
-    recordUpstream(host, res);
+    recordUpstream(host, res, reason);
   }
 }
 
@@ -356,6 +381,30 @@ async function fetchPeeringDbType(asn: number | null): Promise<{ infoType: strin
   }
   peeringDbCache.set(asn, { exp: Date.now() + 6 * 3600 * 1000, infoType, name });
   return { infoType, name };
+}
+
+/* ASN 的 RDAP 登记方与注册日期，按 ASN 缓存 6 小时。从 RIPE 入口查，别家的 ASN 会被转到对应 RIR */
+const asnHolderCache = new Map<number, { exp: number; holder: AsnHolder | null }>();
+
+export interface AsnHolder { name: string; country: string; registeredAt: string }
+
+async function fetchAsnHolder(asn: number | null): Promise<AsnHolder | null> {
+  if (!asn || KNOWN_ASN_PROFILES[asn]) return null;
+  const hit = asnHolderCache.get(asn);
+  if (hit && hit.exp > Date.now()) return hit.holder;
+  const rdap = await fetchJson<{ entities?: RdapEntity[]; events?: Array<{ eventAction?: string; eventDate?: string }> }>(
+    `https://rdap.db.ripe.net/autnum/${asn}`,
+    2400,
+  );
+  if (!rdap) return null;
+  const party = rdapRegistrant(rdap);
+  const holder = party ? { ...party, registeredAt: rdapRegisteredAt(rdap) } : null;
+  if (asnHolderCache.size > 600) {
+    const first = asnHolderCache.keys().next().value;
+    if (first !== undefined) asnHolderCache.delete(first);
+  }
+  asnHolderCache.set(asn, { exp: Date.now() + 6 * 3600 * 1000, holder });
+  return holder;
 }
 
 const ARIN_COUNTRY_NAMES: Record<string, string> = {
@@ -423,6 +472,112 @@ function parseRdapFallback(rdap: {
   return { rirName, rirCountry, lines };
 }
 
+/* 各 RIR 的 RDAP 入口；查到别家的资源时对方会 301/303 转过去，fetch 自动跟随 */
+const RDAP_BASES: Record<string, string> = {
+  'RIPE NCC': 'https://rdap.db.ripe.net',
+  ARIN: 'https://rdap.arin.net/registry',
+  APNIC: 'https://rdap.apnic.net',
+  LACNIC: 'https://rdap.lacnic.net/rdap',
+  AFRINIC: 'https://rdap.afrinic.net/rdap',
+};
+
+type RdapEntity = {
+  roles?: string[];
+  vcardArray?: [string, Array<[string, Record<string, unknown>, string, unknown]>];
+};
+
+export interface RegistryParty {
+  name: string;
+  country: string;
+}
+
+let regionNames: Intl.DisplayNames | null = null;
+let countryNameIndex: Map<string, string> | null = null;
+
+function isRegionCode(code: string): boolean {
+  if (!/^[A-Z]{2}$/.test(code) || code === 'EU') return false;
+  try {
+    regionNames ||= new Intl.DisplayNames(['en'], { type: 'region' });
+    return regionNames.of(code) !== code;
+  } catch {
+    return false;
+  }
+}
+
+/* 英文国家名 → ISO 代码，用 Intl 现生成，不另外维护名单 */
+function countryFromName(text: string): string {
+  if (!countryNameIndex) {
+    countryNameIndex = new Map(Object.entries(ARIN_COUNTRY_NAMES));
+    for (let a = 65; a <= 90; a += 1) {
+      for (let b = 65; b <= 90; b += 1) {
+        const code = String.fromCharCode(a, b);
+        if (isRegionCode(code)) countryNameIndex.set(String(regionNames?.of(code)).toUpperCase(), code);
+      }
+    }
+    countryNameIndex.set('UNITED STATES OF AMERICA', 'US');
+    countryNameIndex.set('RUSSIAN FEDERATION', 'RU');
+    countryNameIndex.set('UK', 'GB');
+  }
+  return countryNameIndex.get(text.trim().toUpperCase()) || '';
+}
+
+/* 从 vCard 地址里认国家：cc 参数、最后一行的国家名或两位代码、欧洲常见的「LV-2010」式邮编前缀 */
+function vcardCountry(entity: RdapEntity): string {
+  for (const prop of entity.vcardArray?.[1] || []) {
+    if (prop[0] !== 'adr') continue;
+    const params = prop[1] || {};
+    const cc = String(params.cc || '').trim().toUpperCase();
+    if (isRegionCode(cc)) return cc;
+    const label = String(params.label || '');
+    const last = label.split(/\r?\n|,/).map((l) => l.trim()).filter(Boolean).pop() || '';
+    if (isRegionCode(last.toUpperCase()) && last.length === 2) return last.toUpperCase();
+    const byName = countryFromName(last);
+    if (byName) return byName;
+    const postal = label.match(/\b([A-Z]{2})-\d{3,6}\b/);
+    if (postal && isRegionCode(postal[1])) return postal[1];
+  }
+  return '';
+}
+
+function vcardText(entity: RdapEntity, key: string): string {
+  const prop = (entity.vcardArray?.[1] || []).find((p) => p[0] === key);
+  return typeof prop?.[3] === 'string' ? prop[3].trim() : '';
+}
+
+/* 取 RDAP 对象的登记机构：优先 kind=org 的 registrant，名字取 fn */
+export function rdapRegistrant(rdap: { entities?: RdapEntity[] } | null): RegistryParty | null {
+  const registrants = (rdap?.entities || []).filter((e) => e?.roles?.includes('registrant') && vcardText(e, 'fn'));
+  // RIPE 记录里 mnt-by 等维护者也挂在 registrant 下（kind=individual），只认机构；没有 kind 时按机构看
+  const entity = registrants.find((e) => vcardText(e, 'kind') === 'org') || registrants.find((e) => !vcardText(e, 'kind'));
+  if (!entity) return null;
+  return { name: vcardText(entity, 'fn').slice(0, 120), country: vcardCountry(entity) };
+}
+
+function rdapRegisteredAt(rdap: { events?: Array<{ eventAction?: string; eventDate?: string }> } | null): string {
+  const date = rdap?.events?.find((e) => e?.eventAction === 'registration')?.eventDate || '';
+  return Number.isFinite(Date.parse(date)) ? new Date(date).toISOString().slice(0, 10) : '';
+}
+
+/* 机构名里不区分身份的通用词，比较地址段登记方和 ASN 持有方是否同一家时去掉 */
+const GENERIC_ORG_WORDS = new Set([
+  'inc', 'llc', 'ltd', 'limited', 'co', 'corp', 'corporation', 'company', 'gmbh', 'ag', 'sa', 'sas', 'srl', 'bv', 'oy', 'ab', 'as', 'sia', 'uab', 'ooo', 'plc', 'pte', 'pty', 'kk', 'the', 'of', 'and', 'de', 'la', 'le', 'du', 'del', 'di', 'da', 'und', 'et', 'y',
+  'telecom', 'telecommunications', 'telecommunication', 'telekom', 'communications', 'communication', 'network', 'networks', 'net', 'internet', 'services', 'service', 'solutions', 'group', 'holding', 'holdings', 'global', 'international', 'technologies', 'technology', 'tech', 'digital', 'data', 'cloud', 'online', 'ip', 'isp', 'broadband', 'cable', 'systems', 'media', 'mobile', 'wireless',
+]);
+
+function orgTokens(name: string): Set<string> {
+  return new Set(name.toLowerCase().replace(/[^a-z0-9\u00c0-\u024f]+/g, ' ').split(' ')
+    .filter((w) => w.length >= 2 && !GENERIC_ORG_WORDS.has(w) && !/^as\d+$/.test(w)));
+}
+
+/* 两个机构名有共同的特征词即视为同一家；任一方没有特征词时无法判断，返回 null */
+export function sameOrganization(a: string, b: string): boolean | null {
+  const ta = orgTokens(a);
+  const tb = orgTokens(b);
+  if (!ta.size || !tb.size) return null;
+  for (const w of ta) if (tb.has(w)) return true;
+  return false;
+}
+
 async function fetchRirAndRouting(
   ip: string,
   onSource?: (ev: LookupSourceEvent) => void,
@@ -434,6 +589,7 @@ async function fetchRirAndRouting(
   rpkiStatus?: 'valid' | 'invalid' | 'not_found' | 'unknown';
   ptrRecord?: string;
   abuseEmail?: string;
+  registrant?: RegistryParty | null;
   whoisLines: FactorEvidence[];
 }> {
   interface RipeWhois {
@@ -501,28 +657,43 @@ async function fetchRirAndRouting(
     }
   }
 
-  // RIPEstat whois 偶发超时或未给 country 时，并发用 RDAP 与 RIPEstat RIR 分配表兜底
+  const bgpPrefix = netResp?.data?.prefix || '';
+  const bgpAsn = netResp?.data?.asns?.[0] ? Number(netResp.data.asns[0]) : undefined;
+
+  // 第二轮并发：地址段的 RDAP 记录（取登记机构和所在国家）与 RPKI。
+  // RDAP 同时为 RIPEstat whois 没给 country 的情况兜底；RIPEstat RIR 分配表只在 RDAP 也没给国家时使用。
+  const rdapBase = RDAP_BASES[rirName] || RDAP_BASES['RIPE NCC'];
+  type RdapIp = Parameters<typeof parseRdapFallback>[0] & { entities?: RdapEntity[] };
+  const [rdapRaw, rpkiResp] = await Promise.all([
+    fetchJson<RdapIp>(`${rdapBase}/ip/${encodeURIComponent(ip)}`, 2600),
+    bgpPrefix && bgpAsn
+      ? fetchJson<RipeRpki>(`https://stat.ripe.net/data/rpki-validation/data.json?resource=${bgpAsn}&prefix=${encodeURIComponent(bgpPrefix)}`, 1600)
+      : Promise.resolve(null),
+  ]);
+
+  const registrant = rdapRegistrant(rdapRaw);
+  if (registrant && whoisLines.length < 12) {
+    whoisLines.push({ source: 'RDAP', field: 'registrant', value: `${registrant.name}${registrant.country ? ` (${registrant.country})` : ''}` });
+  }
+
   if (!rirCountry) {
-    const [rdapRaw, rirAlloc] = await Promise.all([
-      fetchJson<Parameters<typeof parseRdapFallback>[0]>(`https://rdap.org/ip/${encodeURIComponent(ip)}`, 2600),
-      fetchJson<RipeRir>(`https://stat.ripe.net/data/rir/data.json?resource=${encodeURIComponent(ip)}&lod=2`, 2200),
-    ]);
     const fromRdap = parseRdapFallback(rdapRaw);
     if (fromRdap.rirCountry) {
       rirCountry = fromRdap.rirCountry;
       if (!rirName && fromRdap.rirName) rirName = fromRdap.rirName;
       for (const line of fromRdap.lines) {
-        if (whoisLines.length < 10) whoisLines.push(line);
+        if (whoisLines.length < 12) whoisLines.push(line);
       }
     } else {
+      const rirAlloc = await fetchJson<RipeRir>(`https://stat.ripe.net/data/rir/data.json?resource=${encodeURIComponent(ip)}&lod=2`, 2200);
       const alloc = rirAlloc?.data?.rirs?.find((r) => r?.country && /^[a-zA-Z]{2}$/.test(r.country) && r.country.toUpperCase() !== 'EU');
       if (alloc?.country) {
         rirCountry = alloc.country.toUpperCase();
         if (!rirName && alloc.rir) rirName = alloc.rir === 'RIPE' ? 'RIPE NCC' : alloc.rir;
-        if (alloc.resource && whoisLines.length < 10) {
+        if (alloc.resource && whoisLines.length < 12) {
           whoisLines.push({ source: 'RIPEstat rir', field: 'resource', value: alloc.resource });
         }
-        if (whoisLines.length < 10) {
+        if (whoisLines.length < 12) {
           whoisLines.push({ source: 'RIPEstat rir', field: 'country', value: rirCountry });
         }
       }
@@ -530,16 +701,10 @@ async function fetchRirAndRouting(
   }
   onSource?.({ id: 'rir', label: 'RIR / RDAP', status: rirCountry || rirName ? 'ok' : 'fail' });
 
-  const bgpPrefix = netResp?.data?.prefix || '';
-  const bgpAsn = netResp?.data?.asns?.[0] ? Number(netResp.data.asns[0]) : undefined;
   const ptrRecord = rdnsResp?.data?.result?.[0] || '';
 
   let rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown' = 'unknown';
   if (bgpPrefix && bgpAsn) {
-    const rpkiResp = await fetchJson<RipeRpki>(
-      `https://stat.ripe.net/data/rpki-validation/data.json?resource=${bgpAsn}&prefix=${encodeURIComponent(bgpPrefix)}`,
-      1600
-    );
     const st = (rpkiResp?.data?.status || '').toLowerCase();
     if (st === 'valid') rpkiStatus = 'valid';
     else if (st.startsWith('invalid')) rpkiStatus = 'invalid';
@@ -549,7 +714,7 @@ async function fetchRirAndRouting(
     onSource?.({ id: 'rpki', label: 'RPKI ROA', status: 'skip' });
   }
 
-  return { rirName, rirCountry, bgpPrefix, bgpAsn, rpkiStatus, ptrRecord, abuseEmail, whoisLines };
+  return { rirName, rirCountry, bgpPrefix, bgpAsn, rpkiStatus, ptrRecord, abuseEmail, registrant, whoisLines };
 }
 
 const DNS_RCODES: Record<number, string> = { 0: 'NOERROR', 2: 'SERVFAIL', 3: 'NXDOMAIN', 5: 'REFUSED' };
@@ -862,6 +1027,7 @@ async function runLookup(
 
   interface IpWhoResp {
     success?: boolean;
+    message?: string;
     continent_code?: string;
     country_code?: string;
     country?: string;
@@ -948,18 +1114,26 @@ async function runLookup(
     keys.proxycheckKey ? `&key=${encodeURIComponent(keys.proxycheckKey)}` : ''
   }`;
 
+  const ipWhoUrl = `https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`;
+  const ipQueryUrl = `https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`;
   const onSrc = streamOpts?.onSource;
   const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory]] = await Promise.all([
-    fetchJson<IpWhoResp>(`https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`, 2300).then((r) => {
-      onSrc?.({ id: 'ipwhois', label: 'ipwho.is', status: r?.success === true ? 'ok' : 'fail' });
+    fetchJson<IpWhoResp>(ipWhoUrl, 2300).then((r) => {
+      const ok = r?.success === true;
+      const message = r && !ok ? String(r.message || 'success: false') : '';
+      if (message && QUOTA_MESSAGE.test(message)) pauseUpstream(ipWhoUrl, message.slice(0, 80));
+      onSrc?.({ id: 'ipwhois', label: 'ipwho.is', status: ok ? 'ok' : 'fail', ...(ok ? {} : { detail: message.slice(0, 120) || upstreamFailure(ipWhoUrl) }) });
       return r;
     }),
-    fetchJson<IpQueryResp>(`https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`, 2200).then((r) => {
-      onSrc?.({ id: 'ipquery', label: 'ipquery.io', status: r?.ip ? 'ok' : 'fail' });
+    fetchJson<IpQueryResp>(ipQueryUrl, 2200).then((r) => {
+      onSrc?.({ id: 'ipquery', label: 'ipquery.io', status: r?.ip ? 'ok' : 'fail', ...(r?.ip ? {} : { detail: upstreamFailure(ipQueryUrl) }) });
       return r;
     }),
     fetchJson<Record<string, unknown>>(proxyCheckUrl, 2200).then((r) => {
-      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: r && (r.status === 'ok' || r.status === 'warning') ? 'ok' : 'fail' });
+      const ok = Boolean(r && (r.status === 'ok' || r.status === 'warning'));
+      const message = r && !ok ? `${String(r.status || '')}: ${String(r.message || '')}` : '';
+      if (!ok && (r?.status === 'denied' || QUOTA_MESSAGE.test(String(r?.message || '')))) pauseUpstream(proxyCheckUrl, message.slice(0, 80));
+      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: ok ? 'ok' : 'fail', ...(ok ? {} : { detail: message.slice(0, 120) || upstreamFailure(proxyCheckUrl) }) });
       return r;
     }),
     parsed.version === 4
@@ -1050,8 +1224,8 @@ async function runLookup(
     || null;
   const profile = asn ? KNOWN_ASN_PROFILES[asn] : undefined;
 
-  // 若 ASN 不在内置 160+ 表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型
-  const peeringDb = asn && !profile ? await fetchPeeringDbType(asn) : null;
+  // 若 ASN 不在内置 160+ 表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型，同时查 ASN 的 RDAP 登记方
+  const [peeringDb, asnHolder] = asn && !profile ? await Promise.all([fetchPeeringDbType(asn), fetchAsnHolder(asn)]) : [null, null];
   onSrc?.({
     id: 'peeringdb',
     label: 'PeeringDB / ASN',
@@ -1105,10 +1279,19 @@ async function runLookup(
   const upstreamTypeHint = ipapiCompanyType || ipapiAsnType
     || (pcTypeLow === 'isp' || pcTypeLow === 'residential' ? 'isp' : pcTypeLow === 'business' ? 'business' : '');
 
+  // 租用地址段：地址段登记方和宣告它的 ASN 不是同一家，且 ASN 注册不满两年或没有 PeeringDB 登记。
+  // 这类段多是转租给代理、VPN 或机房使用的，不能凭运营商名字里的 Telecom 判成家庭宽带。内置 ASN 表里的运营商不做这项判断。
+  const registrant = routing.registrant || null;
+  const asnAgeDays = asnHolder?.registeredAt ? (Date.now() - Date.parse(asnHolder.registeredAt)) / 86400000 : null;
+  const youngAsn = asnAgeDays !== null && asnAgeDays < 730;
+  const leasedRange = !profile && Boolean(registrant && asnHolder)
+    && sameOrganization(registrant?.name || '', asnHolder?.name || '') === false && (youngAsn || !peeringDb);
+
   const hasOperatorIdentity = Boolean(asn || (isp !== '未知' && isp !== '—'));
-  const usage: UsageType | 'unknown' = hasOperatorIdentity
+  const classified: UsageType | 'unknown' = hasOperatorIdentity
     ? classifyIspAndAsn(asn, `${isp} ${org}`, upstreamHosting, upstreamMobile, peeringDb?.infoType, upstreamTypeHint)
     : 'unknown';
+  const usage: UsageType | 'unknown' = leasedRange && (classified === 'residential' || classified === 'mobile') ? 'business' : classified;
 
   const networkKnown = usage !== 'unknown' && hasOperatorIdentity;
   const isDatacenter = networkKnown ? usage === 'hosting' || usage === 'cdn' : null;
@@ -1138,7 +1321,11 @@ async function runLookup(
 
   const rirName = routing.rirName || '—';
   const rirCountry = (routing.rirCountry || ipapiIs?.asn?.country || '').toUpperCase();
-  const isNative = countryCode && rirCountry ? usage !== 'cdn' && rirCountry === countryCode : null;
+  // 广播 IP：地址段的国家字段写成了定位国家，但登记机构在别国（如拉脱维亚公司登记、标成美国的段）。
+  // 内置 ASN 表里的家宽和移动运营商不做这项判断，跨国运营商的子公司段常由总部登记。
+  const verifiedCarrier = profile?.type === 'residential' || profile?.type === 'mobile';
+  const registrantAbroad = !verifiedCarrier && Boolean(registrant?.country && countryCode) && registrant?.country !== countryCode;
+  const isNative = countryCode && rirCountry ? usage !== 'cdn' && rirCountry === countryCode && !registrantAbroad : null;
 
   const tags = (shodan?.tags || []).map((t) => t.toLowerCase());
   const vulnsCount = shodan?.vulns?.length || 0;
@@ -1254,7 +1441,7 @@ async function runLookup(
   const networkDelta = !networkKnown ? 0
     : usage === 'hosting' ? SCORE_DELTAS.hosting
       : usage === 'cdn' ? SCORE_DELTAS.cdn
-        : usage === 'business' ? SCORE_DELTAS.business
+        : usage === 'business' ? SCORE_DELTAS.business + (leasedRange ? SCORE_DELTAS.leased : 0)
           : usage === 'mobile' ? SCORE_DELTAS.mobile : 0;
   const nativeDelta = isNative === false && usage !== 'cdn' ? SCORE_DELTAS.nonNative : 0;
   const proxyDelta = isProxy ? SCORE_DELTAS.proxy : 0;
@@ -1265,7 +1452,7 @@ async function runLookup(
     {
       key: 'network',
       label: '网络类型',
-      status: ipTypeLabel,
+      status: leasedRange && usage === 'business' ? '商业网络（租用地址段）' : ipTypeLabel,
       delta: networkDelta,
       tone: !networkKnown ? 'muted' : usage === 'hosting' ? 'leak' : usage === 'cdn' || usage === 'business' ? 'warn' : 'ok',
       evidence: [
@@ -1278,12 +1465,14 @@ async function runLookup(
         ...(peeringDb ? ev('PeeringDB', 'info_type', `${peeringDb.infoType} (${peeringDb.name})`) : []),
         ...(ipapiIs ? ev('ipapi.is', 'company.type / asn.type', `${ipapiCompanyType || '—'} / ${ipapiAsnType || '—'}`) : []),
         ...(profile ? ev('JudgeIP ASN 表', `AS${profile.asn}`, `${profile.type} · ${profile.name}`) : []),
+        ...(leasedRange ? ev('RDAP', 'registrant / ASN holder', `${registrant?.name} ≠ ${asnHolder?.name}${youngAsn ? ` · ASN registered ${asnHolder?.registeredAt}` : ' · not in PeeringDB'}`) : []),
       ],
     },
     {
       key: 'native',
       label: '原生 IP',
-      status: isNative === null ? '查询未完成' : usage === 'cdn' ? 'CDN 不计此项' : isNative ? '注册地与定位一致' : '注册地与定位不一致',
+      status: isNative === null ? '查询未完成' : usage === 'cdn' ? 'CDN 不计此项' : isNative ? '注册地与定位一致'
+        : registrantAbroad && rirCountry === countryCode ? `登记机构在 ${registrant?.country}，与定位不一致` : '注册地与定位不一致',
       delta: nativeDelta,
       tone: isNative === null || usage === 'cdn' ? 'muted' : isNative ? 'ok' : 'warn',
       evidence: [
@@ -1291,6 +1480,7 @@ async function runLookup(
         ...ev('Cloudflare', 'request.cf.country', cf?.country),
         ...ev('ipwho.is', 'country_code', ipWho?.country_code),
         ...ev('ipquery.io', 'location.country_code', ipQuery?.location?.country_code),
+        ...(asnHolder && asn ? ev('RDAP', `AS${asn} registrant`, `${asnHolder.name}${asnHolder.country ? ` (${asnHolder.country})` : ''}${asnHolder.registeredAt ? ` · registered ${asnHolder.registeredAt}` : ''}`) : []),
       ],
     },
     {

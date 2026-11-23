@@ -525,7 +525,7 @@ test('a compare column carries the same score, factors and labels as the lookup'
 test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat whois times out', async () => {
   const fromRdap = await lookup('73.162.88.1', {
     'whois/data': () => json({}, 504),
-    'rdap.org/ip/': {
+    'rdap.db.ripe.net/ip/': {
       port43: 'whois.arin.net',
       name: 'BAYAREA-CPE-43',
       startAddress: '73.162.0.0',
@@ -542,7 +542,7 @@ test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat who
 
   const fromRirAlloc = await lookup('73.162.88.1', {
     'whois/data': () => json({}, 504),
-    'rdap.org/ip/': () => json({}, 502),
+    'rdap.db.ripe.net/ip/': () => json({}, 502),
     'rir/data': { data: { rirs: [{ rir: 'ARIN', country: 'US', resource: '73.0.0.0/8' }] } },
   });
   assert.equal(fromRirAlloc.lookupStatus, 'complete');

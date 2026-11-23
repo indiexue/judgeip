@@ -64,6 +64,7 @@ export const GET: APIRoute = async ({ url, request }) => {
               id: ev.id,
               label: ev.label,
               status: ev.status,
+              ...(ev.detail ? { detail: ev.detail } : {}),
               elapsedMs: Date.now() - startedAt,
             });
           },
