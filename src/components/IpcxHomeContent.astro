@@ -32,52 +32,17 @@ function scoreRiskTier(score: number | null) {
         : t('部分公开数据源未及时返回，暂不出分', 'Some upstream sources did not respond in time'),
     };
   }
-  if (score >= 90) {
-    return {
-      cls: 'excellent',
-      badge: 'green',
-      label: t('已查风险较少', 'Few observed risks'),
-      desc: t('仅反映已查来源，不能保证平台放行', 'Checked sources only; platform acceptance is not guaranteed'),
-    };
-  }
-  if (score >= 80) {
-    return {
-      cls: 'good',
-      badge: 'green',
-      label: t('纯净', 'Clean'),
-      desc: t('已查信号有限，不代表没有滥用记录', 'Limited observed signals do not rule out abuse'),
-    };
-  }
-  if (score >= 68) {
-    return {
-      cls: 'ok',
-      badge: 'green',
-      label: t('正常', 'Normal'),
-      desc: t('规则参考分，请结合信誉覆盖与原始证据', 'Rule-based estimate; review coverage and raw evidence'),
-    };
-  }
-  if (score >= 50) {
-    return {
-      cls: 'warn',
-      badge: 'amber',
-      label: t('低风险', 'Low risk'),
-      desc: t('信誉证据可能不足，或存在网络与风险标记', 'Reputation evidence may be limited, or risk flags were found'),
-    };
-  }
-  if (score >= 30) {
-    return {
-      cls: 'bad',
-      badge: 'danger',
-      label: t('中风险', 'Medium risk'),
-      desc: t('已查风险或证据缺口较大，使用前需核实', 'Risk flags or material evidence gaps; verify before use'),
-    };
-  }
-  return {
-    cls: 'danger',
-    badge: 'danger',
-    label: t('高风险', 'High risk'),
-    desc: t('已查证据触发高风险规则，建议核对来源', 'Observed evidence triggered high-risk rules; review the sources'),
-  };
+  // 分级名称描述适用程度，说明写出最主要的扣分项，避免名称与说明互相矛盾
+  const top = info.factors.filter((f) => f.delta < 0 && f.key !== 'clamp').sort((a, b) => a.delta - b.delta)[0];
+  const desc = top
+    ? t(`主要扣分：${top.status}（${top.delta}）`, `Main deduction: ${top.status} (${top.delta})`)
+    : t('已查来源未见扣分项，不保证平台放行', 'No deductions in checked sources; platform acceptance is not guaranteed');
+  if (score >= 90) return { cls: 'excellent', badge: 'green', label: t('优', 'Excellent'), desc };
+  if (score >= 80) return { cls: 'good', badge: 'green', label: t('良好', 'Good'), desc };
+  if (score >= 68) return { cls: 'ok', badge: 'green', label: t('一般', 'Fair'), desc };
+  if (score >= 50) return { cls: 'warn', badge: 'amber', label: t('受限', 'Restricted'), desc };
+  if (score >= 30) return { cls: 'bad', badge: 'danger', label: t('风险较高', 'Elevated risk'), desc };
+  return { cls: 'danger', badge: 'danger', label: t('高风险', 'High risk'), desc };
 }
 
 const tier = info.score !== null && info.reputationCoverage !== 'complete' && info.hasThreat !== true
@@ -221,10 +186,10 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
           {info.score !== null
             ? `${t('等级', 'Grade')} ${info.grade} · ${
                 info.scoreConfidence === 'high'
-                  ? t('证据覆盖 高', 'Coverage high')
+                  ? t('置信度 高', 'Confidence high')
                   : info.scoreConfidence === 'medium'
-                    ? t('证据覆盖 中', 'Coverage medium')
-                    : t('证据覆盖 低', 'Coverage low')
+                    ? t('置信度 中', 'Confidence medium')
+                    : t('置信度 低', 'Confidence low')
               }`
             : info.isBogon ? t('内网保留', 'Reserved') : t('数据源不可达', 'Unavailable')}
         </span>
@@ -264,11 +229,11 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         </div>
         <div class="spectrum__labels">
           <span>{t('高风险', 'High')}</span>
-          <span>{t('中风险', 'Med')}</span>
-          <span>{t('低风险', 'Low')}</span>
-          <span>{t('正常', 'OK')}</span>
-          <span>{t('纯净', 'Clean')}</span>
-          <span>{t('极净', 'Best')}</span>
+          <span>{t('风险较高', 'Elevated')}</span>
+          <span>{t('受限', 'Restricted')}</span>
+          <span>{t('一般', 'Fair')}</span>
+          <span>{t('良好', 'Good')}</span>
+          <span>{t('优', 'Excellent')}</span>
         </div>
       </div>
 

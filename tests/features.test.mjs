@@ -644,8 +644,10 @@ test('missing reputation is capped and cannot imply a clean verdict or platform 
     assert.equal(info.hasThreat, null);
     assert.equal(info.threatLabel, '威胁数据不完整');
     assert.equal(sum(info), info.score);
-    assert.ok(info.reputationChecks.some((c) => c.source === 'AbuseIPDB' && c.status === 'not_configured'));
-    assert.ok(info.scenes.every((s) => s.status === '证据不足，待验证' && s.tone !== 'ok'));
+    // 未配置的付费来源不列为缺失项
+    assert.equal(info.reputationChecks.some((c) => c.source === 'AbuseIPDB'), false);
+    assert.ok(info.scenes.every((s) => s.tone !== 'ok'));
+    assert.ok(info.scenes.some((s) => s.note === '信誉数据不完整，建议实测'));
     assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(info, 'en'))), false);
     const v6 = await lookupIpFull('2001:4860:4860::8888', null, false, {});
     assert.equal(v6.reputationCoverage, 'unavailable');
@@ -667,7 +669,8 @@ test('moderate and severe behavior evidence overrides residential identity witho
     assert.equal(info.score, expected);
     assert.equal(factor(info, 'reputation').delta, delta);
     assert.equal(sum(info), info.score);
-    assert.ok(info.scenes.every((s) => s.tone === 'leak'));
+    const strict = ['ecommerce', 'payment', 'ads', 'social'];
+    assert.ok(info.scenes.every((s) => (reports >= 75 || strict.includes(s.key) ? s.tone === 'leak' : s.tone === 'warn')));
   }
 });
 
@@ -693,4 +696,56 @@ test('legacy verdict API shares the evidence engine and never publishes a fraud 
     assert.equal(report.scoreBase + report.factors.reduce((sum, f) => sum + f.delta, 0), report.score);
     assert.ok(report.platforms.every((item) => item.status === 'warn'));
   });
+});
+
+/* 只用免费来源（不配置任何密钥）的查询 */
+async function freeLookup(ip, overrides) {
+  return withFetch(upstream(overrides), async () => {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    return lookupIpFull(ip, null, false, {});
+  });
+}
+const riskFeeds = { 'proxycheck.io': (url) => ({ status: 'ok', [url.split('/v2/')[1].split('?')[0]]: { proxy: 'no', type: 'Residential', risk: 0 } }) };
+
+test('free sources alone give complete reputation coverage and a clean verdict', async () => {
+  const info = await freeLookup('73.162.88.1', riskFeeds);
+  assert.equal(info.reputationCoverage, 'complete');
+  assert.equal(info.hasThreat, false);
+  assert.equal(info.scoreConfidence, 'high');
+  assert.equal(info.score, 95);
+  assert.equal(sum(info), info.score);
+  assert.equal(info.reputationChecks.some((c) => c.status === 'not_configured'), false);
+  assert.ok(info.scenes.every((s) => s.tone === 'ok'));
+});
+
+test('a proxycheck VPN flag alone does not mark a data center IP as VPN; on broadband it still counts', async () => {
+  const pcVpn = { 'proxycheck.io': (url) => ({ status: 'ok', [url.split('/v2/')[1].split('?')[0]]: { proxy: 'yes', type: 'VPN', risk: 33 } }) };
+  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
+  const cloud = await freeLookup('3.5.140.2', { ...hosting, ...pcVpn });
+  assert.equal(cloud.isProxy, false);
+  assert.equal(cloud.proxyLabel, '已查来源未见代理');
+  const broadband = await freeLookup('73.162.88.1', pcVpn);
+  assert.equal(broadband.isProxy, true);
+  assert.equal(broadband.proxyLabel, 'VPN 节点');
+});
+
+test('web and panel ports are not treated as proxy ports', async () => {
+  const info = await freeLookup('73.162.88.1', { ...riskFeeds, internetdb: { ports: [80, 443, 2083, 2087, 8080, 8888], tags: [], vulns: [], hostnames: [] } });
+  assert.equal(info.isProxy, false);
+  assert.deepEqual(info.proxyPorts, []);
+});
+
+test('scene verdicts follow network type, proxy status and region', async () => {
+  const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
+  const dc = await freeLookup('3.5.140.2', { ...hosting, ...riskFeeds });
+  const scene = (info, key) => info.scenes.find((s) => s.key === key);
+  assert.equal(scene(dc, 'streaming').tone, 'leak');
+  assert.equal(scene(dc, 'ecommerce').tone, 'leak');
+  assert.equal(scene(dc, 'ai').tone, 'warn');
+  assert.equal(scene(dc, 'gaming').tone, 'ok');
+  assert.ok(new Set(dc.scenes.map((s) => s.tone)).size > 1, 'scenes must not all share one verdict');
+
+  const hk = await freeLookup('112.120.1.1', { ...riskFeeds, 'ipwho.is': { success: true, country_code: 'HK', continent_code: 'AS', connection: { asn: 4760, isp: 'HKT Limited' }, security: { proxy: false, vpn: false, tor: false, hosting: false } }, 'whois/data': { data: { authorities: ['APNIC'], records: [[{ key: 'country', value: 'HK' }]] } } });
+  assert.equal(scene(hk, 'ai').tone, 'leak');
+  assert.equal(scene(hk, 'ai').note, '所在地区不在官方支持范围');
 });

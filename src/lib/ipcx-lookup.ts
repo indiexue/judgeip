@@ -189,7 +189,8 @@ const DNSBL_ZONES: Array<{ zone: string; name: string }> = [
 
 const WHOIS_EVIDENCE_KEYS = new Set(['inetnum', 'inet6num', 'netrange', 'cidr', 'netname', 'country', 'org-name', 'orgname', 'organization', 'source']);
 
-const PROXY_PORTS_SET = new Set([1080, 1081, 3128, 8080, 8118, 8388, 8888, 9050, 10808, 2053, 2083, 2087, 51820]);
+/* 只保留代理软件专用的默认端口；8080、8888、2053、2083、2087 等也是常见的网页和面板端口，单凭它们不能判为代理 */
+const PROXY_PORTS_SET = new Set([1080, 1081, 3128, 8118, 8388, 9050, 10808]);
 
 export function isoToFlag(cc: string): string {
   if (!/^[A-Za-z]{2}$/.test(cc || '')) return '';
@@ -590,12 +591,66 @@ export async function checkIpv4Dnsbl(
   }));
 }
 
-function buildSceneFitMatrix(hasThreat: boolean | null): SceneFitItem[] {
-  const status = hasThreat === true ? '发现风险，谨慎使用' : hasThreat === null ? '证据不足，待验证' : '未见明显风险，待实测';
+/* AI 服务官方不支持的地区（以 OpenAI、Anthropic 公布的支持地区为准取交集） */
+const AI_UNSUPPORTED = new Set(['CN', 'HK', 'MO', 'RU', 'BY', 'IR', 'KP', 'SY', 'CU']);
+
+interface SceneInput {
+  usage: UsageType | 'unknown';
+  isTor: boolean;
+  isVpn: boolean;
+  isProxy: boolean | null;
+  isNative: boolean | null;
+  reputationSeverity: 'none' | 'mild' | 'moderate' | 'severe';
+  reputationComplete: boolean;
+  countryCode: string;
+}
+
+type SceneTone = SceneFitItem['tone'];
+const SCENE_STATUS: Record<SceneTone, string> = { ok: '适合', warn: '需注意', leak: '不建议' };
+
+/*
+ * 按已查到的网络类型、代理、原生 IP 与信誉记录逐场景给出参考结论。每张卡只写最主要的一条依据；
+ * 规则是对常见平台风控做法的归纳，不是平台实测或成功率。
+ */
+function buildSceneFitMatrix(input: SceneInput): SceneFitItem[] {
+  const { usage, isTor, isVpn, isProxy, isNative, reputationSeverity, reputationComplete, countryCode } = input;
+  const hosting = usage === 'hosting' || usage === 'cdn';
+  const consumer = usage === 'residential' || usage === 'mobile' || usage === 'education';
+  const proxied = isProxy === true;
+
+  const judge = (key: string): [SceneTone, string] => {
+    if (isTor) return ['leak', 'Tor 出口普遍被拦截或要求验证'];
+    if (reputationSeverity === 'severe') return ['leak', '有较重的滥用记录'];
+    const strict = key === 'ecommerce' || key === 'payment' || key === 'ads' || key === 'social';
+    if (reputationSeverity === 'moderate') return strict ? ['leak', '有滥用或扫描记录'] : ['warn', '有滥用或扫描记录'];
+    if (key === 'ai' && AI_UNSUPPORTED.has(countryCode)) return ['leak', '所在地区不在官方支持范围'];
+
+    let verdict: [SceneTone, string];
+    if (usage === 'unknown') verdict = ['warn', '网络类型未知'];
+    else if (key === 'gaming') verdict = isVpn ? ['warn', 'VPN 出口可能被反作弊限制'] : ['ok', '网络类型对联机影响不大'];
+    else if (proxied) verdict = key === 'ai' || key === 'streaming' ? ['warn', '代理 / VPN 出口，可能被识别'] : ['leak', '代理 / VPN 出口，容易触发风控'];
+    else if (hosting) {
+      verdict = key === 'ai' ? ['warn', '机房 IP，网页端可能频繁验证']
+        : key === 'payment' || key === 'crypto' ? ['warn', '机房 IP，可能需要额外验证']
+          : key === 'streaming' ? ['leak', '机房 IP，多数平台限制或只给自制内容']
+            : ['leak', '机房 IP，容易触发风控'];
+    } else if (usage === 'business') verdict = ['warn', '商业网络，平台对其判断不一'];
+    else if (consumer && isNative === false) verdict = ['warn', '注册地与定位不一致，可能被识别为其他地区'];
+    else if (consumer && isNative === true) verdict = ['ok', '原生家宽或移动网络'];
+    else verdict = ['warn', '原生状态未知'];
+
+    if (verdict[0] === 'ok' && reputationSeverity === 'mild') return ['warn', '有黑名单或漏洞记录'];
+    if (verdict[0] === 'ok' && !reputationComplete) return ['warn', '信誉数据不完整，建议实测'];
+    return verdict;
+  };
+
   return [
     ['ecommerce', '跨境电商'], ['payment', '跨境支付'], ['ai', 'AI 应用'], ['social', '社媒运营'],
     ['ads', '广告投放'], ['streaming', '流媒体解锁'], ['gaming', '游戏联机'], ['crypto', '加密货币'],
-  ].map(([key, label]) => ({ key, label, status, tone: hasThreat === true ? 'leak' : 'warn', note: '基于已查证据的规则参考，非平台实测或成功率' }));
+  ].map(([key, label]) => {
+    const [tone, note] = judge(key);
+    return { key, label, status: SCENE_STATUS[tone], tone, note };
+  });
 }
 
 const memCache = new Map<string, { exp: number; data: HomeIpLookupResult }>();
@@ -1099,11 +1154,15 @@ async function runLookup(
     || pcTypeLow === 'tor'
     || tags.includes('tor')
   );
+  // proxycheck 的免费接口会把大量云主机整段标成 VPN。机房地址只有它一家这样标时不采信，
+  // 机房本身已按网络类型扣分；家宽、移动等网络上的同一标记仍然有效（多为住宅代理）。
+  const hostingNetwork = usage === 'hosting' || usage === 'cdn';
+  const pcFlag = pcEntry?.proxy === 'yes' && !hostingNetwork;
   const isVpn = Boolean(
     ipWho?.security?.vpn
     || ipQuery?.risk?.is_vpn
     || ipapiIs?.is_vpn
-    || pcTypeLow === 'vpn'
+    || (pcFlag && pcTypeLow === 'vpn')
     || tags.includes('vpn')
     || (profile && profile.riskModifier <= -60)
   );
@@ -1113,8 +1172,8 @@ async function runLookup(
     || ipWho?.security?.proxy
     || ipQuery?.risk?.is_proxy
     || ipapiIs?.is_proxy
-    || pcEntry?.proxy === 'yes'
-    || proxyPorts.length > 0
+    || pcFlag
+    || (proxyPorts.length > 0 && usage !== 'cdn')
   );
   const securityKnown = Boolean(
     (ipWho?.security && ['proxy', 'vpn', 'tor'].every((k) => typeof ipWho.security?.[k as 'proxy' | 'vpn' | 'tor'] === 'boolean'))
@@ -1151,13 +1210,22 @@ async function runLookup(
   const threatFound = reputationSeverity !== 'none';
   const publicKnown = publicReputation.status === 'listed' || publicReputation.status === 'not_listed';
   const abuseKnown = Boolean(abuseData || (ipapiIs && typeof ipapiIs.is_abuser === 'boolean'));
-  const reputationCoverage: ReputationCoverage = publicKnown && abuseKnown ? 'complete'
-    : publicKnown || abuseKnown ? 'limited' : 'unavailable';
+  const riskScoreKnown = queryRisk >= 0 || proxyRisk >= 0;
+  // 免费来源齐全即视为信誉证据齐全：IPv4 需 IPsum、四个 DNSBL、Shodan 都有答复，外加至少一个风险分；
+  // IPv6 没有这类公开名单，只能做到「有限」。AbuseIPDB / ipapi.is 只在配置了密钥时作为补充，不是必需项。
+  const freeReputationKnown = parsed.version === 4 && publicKnown && dnsblComplete && Boolean(shodan) && riskScoreKnown;
+  const reputationCoverage: ReputationCoverage = freeReputationKnown || (publicKnown && abuseKnown) ? 'complete'
+    : publicKnown || abuseKnown || riskScoreKnown || dnsblAnswered > 0 ? 'limited' : 'unavailable';
   const checkedAt = new Date().toISOString();
   const reputationChecks: ReputationCheck[] = [
     publicReputation,
-    { source: 'AbuseIPDB', checkedAt, status: !keys.abuseIpdbKey ? 'not_configured' : !abuseData ? 'unavailable' : abuseScore >= 25 ? 'listed' : 'not_listed' },
-    { source: 'ipapi.is', checkedAt, status: !keys.ipapiIsKey ? 'not_configured' : !ipapiIs || typeof ipapiIs.is_abuser !== 'boolean' ? 'unavailable' : ipapiIs.is_abuser ? 'listed' : 'not_listed' },
+    ...(parsed.version === 4 ? [
+      { source: 'DNSBL ×4', checkedAt, status: dnsblListed.length ? 'listed' : dnsblComplete ? 'not_listed' : 'unavailable' } as ReputationCheck,
+      { source: 'Shodan InternetDB', checkedAt, status: !shodan ? 'unavailable' : hasCompromised || hasScanner ? 'listed' : 'not_listed' } as ReputationCheck,
+    ] : []),
+    { source: 'proxycheck.io / ipquery.io risk', checkedAt, status: !riskScoreKnown ? 'unavailable' : Math.max(queryRisk, proxyRisk) >= 65 ? 'listed' : 'not_listed' },
+    ...(keys.abuseIpdbKey ? [{ source: 'AbuseIPDB', checkedAt, status: !abuseData ? 'unavailable' : abuseScore >= 25 ? 'listed' : 'not_listed' } as ReputationCheck] : []),
+    ...(keys.ipapiIsKey ? [{ source: 'ipapi.is', checkedAt, status: !ipapiIs || typeof ipapiIs.is_abuser !== 'boolean' ? 'unavailable' : ipapiIs.is_abuser ? 'listed' : 'not_listed' } as ReputationCheck] : []),
   ];
   const hasThreat = threatFound ? true : reputationCoverage === 'complete' && Boolean(shodan) && dnsblComplete ? false : null;
 
@@ -1326,7 +1394,7 @@ async function runLookup(
   const rpkiStatus = routing.rpkiStatus || 'unknown';
   const rpkiLabel = rpkiStatus === 'valid' ? 'RPKI 有效 (Valid)' : rpkiStatus === 'invalid' ? 'RPKI 异常 (Invalid)' : rpkiStatus === 'not_found' ? '未签发 ROA' : 'RPKI 状态未知';
 
-  const scenes = score !== null ? buildSceneFitMatrix(isProxy === true ? true : hasThreat) : [];
+  const scenes = score !== null ? buildSceneFitMatrix({ usage, isTor, isVpn, isProxy, isNative, reputationSeverity, reputationComplete: reputationCoverage === 'complete', countryCode }) : [];
 
   const riskChecks: RiskCheckItem[] = [
     {

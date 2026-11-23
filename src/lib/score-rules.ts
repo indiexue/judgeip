@@ -85,11 +85,11 @@ export const SCORE_RULES: ScoreRule[] = [
     key: 'proxy',
     label: { zh: '代理 / VPN / Tor', en: 'Proxy / VPN / Tor' },
     rows: [
-      { when: { zh: '任一来源标记为代理、VPN 或 Tor，或开放了代理特征端口', en: 'Any source flags proxy, VPN or Tor, or a typical proxy port is open' }, delta: SCORE_DELTAS.proxy },
+      { when: { zh: '任一来源标记为代理、VPN 或 Tor，或开放了代理软件专用端口（机房地址仅 proxycheck 一家标记时不计）', en: 'Any source flags proxy, VPN or Tor, or a proxy-software port is open (a proxycheck-only flag on a data center address is not counted)' }, delta: SCORE_DELTAS.proxy },
     ],
     basis: {
-      zh: '综合 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、8080 等代理特征端口，以及 ASN 是否属于商业 VPN 骨干网。',
-      en: 'Combines proxy / vpn / tor flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is), Shodan vpn / tor tags, open proxy ports such as 1080, 3128 and 8080, and commercial VPN ASNs.',
+      zh: '综合 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、9050 等代理软件专用端口，以及 ASN 是否属于商业 VPN 骨干网。',
+      en: 'Combines proxy / vpn / tor flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is), Shodan vpn / tor tags, open proxy-software ports such as 1080, 3128 and 9050, and commercial VPN ASNs.',
     },
     sources: ['ipwho.is', 'ipquery.io', 'proxycheck.io', 'Shodan InternetDB'],
   },

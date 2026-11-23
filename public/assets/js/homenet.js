@@ -269,7 +269,7 @@
       .catch(function () {});
   }
 
-  function scoreRiskTier(score, version) {
+  function scoreRiskTier(score, version, factors) {
     if (typeof score !== 'number') {
       return {
         cls: 'muted',
@@ -280,12 +280,17 @@
           : T('部分公开数据源未及时返回，暂不出分', 'Some upstream sources did not respond in time')
       };
     }
-    if (score >= 90) return { cls: 'excellent', badge: 'green', label: T('已查风险较少', 'Few observed risks'), desc: T('仅反映已查来源，不能保证平台放行', 'Checked sources only; platform acceptance is not guaranteed') };
-    if (score >= 80) return { cls: 'good', badge: 'green', label: T('纯净', 'Clean'), desc: T('已查信号有限，不代表没有滥用记录', 'Limited observed signals do not rule out abuse') };
-    if (score >= 68) return { cls: 'ok', badge: 'green', label: T('正常', 'Normal'), desc: T('规则参考分，请结合信誉覆盖与原始证据', 'Rule-based estimate; review coverage and raw evidence') };
-    if (score >= 50) return { cls: 'warn', badge: 'amber', label: T('低风险', 'Low risk'), desc: T('信誉证据可能不足，或存在网络与风险标记', 'Reputation evidence may be limited, or risk flags were found') };
-    if (score >= 30) return { cls: 'bad', badge: 'danger', label: T('中风险', 'Medium risk'), desc: T('已查风险或证据缺口较大，使用前需核实', 'Risk flags or material evidence gaps; verify before use') };
-    return { cls: 'danger', badge: 'danger', label: T('高风险', 'High risk'), desc: T('已查证据触发高风险规则，建议核对来源', 'Observed evidence triggered high-risk rules; review the sources') };
+    // 分级名称描述适用程度，说明写出最主要的扣分项（与服务端渲染一致）
+    var top = (factors || []).filter(function (f) { return f.delta < 0 && f.key !== 'clamp'; }).sort(function (a, b) { return a.delta - b.delta; })[0];
+    var desc = top
+      ? T('主要扣分：' + top.status + '（' + top.delta + '）', 'Main deduction: ' + top.status + ' (' + top.delta + ')')
+      : T('已查来源未见扣分项，不保证平台放行', 'No deductions in checked sources; platform acceptance is not guaranteed');
+    if (score >= 90) return { cls: 'excellent', badge: 'green', label: T('优', 'Excellent'), desc: desc };
+    if (score >= 80) return { cls: 'good', badge: 'green', label: T('良好', 'Good'), desc: desc };
+    if (score >= 68) return { cls: 'ok', badge: 'green', label: T('一般', 'Fair'), desc: desc };
+    if (score >= 50) return { cls: 'warn', badge: 'amber', label: T('受限', 'Restricted'), desc: desc };
+    if (score >= 30) return { cls: 'bad', badge: 'danger', label: T('风险较高', 'Elevated risk'), desc: desc };
+    return { cls: 'danger', badge: 'danger', label: T('高风险', 'High risk'), desc: desc };
   }
 
   function promoteIpv4ToMainCard(v4) {
@@ -349,7 +354,7 @@
 
         var tier = typeof info.score === 'number' && info.reputationCoverage !== 'complete' && info.hasThreat !== true
           ? { cls: 'muted', badge: 'gray', label: T('信誉证据不足', 'Limited reputation evidence'), desc: T('分数受证据上限限制；不代表已发现滥用，也不能判为纯净', 'Score capped for missing evidence; neither proof of abuse nor a clean verdict') }
-          : scoreRiskTier(info.score, info.version);
+          : scoreRiskTier(info.score, info.version, info.factors);
         var scoreEl = document.querySelector('[data-field="score"]');
         if (scoreEl) {
           scoreEl.className = 'hero-score__main is-' + tier.cls;
@@ -362,9 +367,9 @@
         }
         var gradeEl = document.querySelector('[data-field="gradeBadge"]');
         if (gradeEl) {
-          var confText = info.scoreConfidence === 'high' ? T('证据覆盖 高', 'Coverage high')
-            : info.scoreConfidence === 'medium' ? T('证据覆盖 中', 'Coverage medium')
-              : T('证据覆盖 低', 'Coverage low');
+          var confText = info.scoreConfidence === 'high' ? T('置信度 高', 'Confidence high')
+            : info.scoreConfidence === 'medium' ? T('置信度 中', 'Confidence medium')
+              : T('置信度 低', 'Confidence low');
           gradeEl.className = 'badge badge--' + (info.scoreConfidence === 'high' ? 'green' : typeof info.score === 'number' ? 'amber' : 'gray');
           gradeEl.textContent = typeof info.score === 'number' ? T('等级 ', 'Grade ') + info.grade + ' · ' + confText : T('数据源不可达', 'Unavailable');
         }

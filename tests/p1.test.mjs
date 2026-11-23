@@ -172,8 +172,9 @@ test('basic feeds without reputation are capped and known threats remain visible
     const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
     const info = await lookupIpFull('73.162.88.1');
     assert.equal(info.lookupStatus, 'partial');
-    assert.equal(info.score, 59);
-    assert.equal(info.reputationCoverage, 'unavailable');
+    // 只有 DNSBL 答复、没有 IPsum 和风险分：信誉覆盖有限，上限 79
+    assert.equal(info.score, 79);
+    assert.equal(info.reputationCoverage, 'limited');
     assert.equal(info.isProxy, false);
     assert.equal(info.rpkiStatus, 'valid');
   });
