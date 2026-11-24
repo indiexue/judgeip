@@ -1650,6 +1650,7 @@ async function runLookup(
         ...ev('proxycheck.io', 'type', pcEntry?.type),
         ...(peeringDb ? ev('PeeringDB', 'info_type', `${peeringDb.infoType} (${peeringDb.name})`) : []),
         ...(ipapiIs ? ev('ipapi.is', 'company.type / asn.type', `${ipapiCompanyType || '—'} / ${ipapiAsnType || '—'}`) : []),
+        ...ev('ipapi.is', 'is_datacenter', flag(ipapiIs?.is_datacenter)),
         ...(profile ? ev('JudgeIP ASN 表', `AS${profile.asn}`, `${profile.type} · ${profile.name}`) : []),
         ...(leasedRange ? ev('RDAP', 'registrant / ASN holder', `${registrant?.name} ≠ ${asnHolder?.name}${youngAsn ? ` · ASN registered ${asnHolder?.registeredAt}` : ' · not in PeeringDB'}`) : []),
       ],

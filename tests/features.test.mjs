@@ -608,6 +608,7 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
     assert.equal(factor(enriched, 'reputation').delta, -65);
     assert.equal(factor(enriched, 'safety').delta, -1);
     assert.ok(factor(enriched, 'reputation').evidence.some((e) => e.source === 'AbuseIPDB'));
+    assert.ok(factor(enriched, 'network').evidence.some((e) => e.source === 'ipapi.is' && e.field === 'is_datacenter' && e.value === 'false'));
     assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(enriched, 'en'))), false);
   });
 });
