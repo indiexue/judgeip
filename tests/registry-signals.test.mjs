@@ -150,3 +150,22 @@ test('curated ASN table entries are keyed by their own ASN', async () => {
   }
   assert.ok(Object.keys(KNOWN_ASN_PROFILES).length >= 240);
 });
+
+test('reverse DNS tells a missing PTR apart from a failed lookup', async () => {
+  const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+  const ptr = async (ip, rdns) => withFetch(upstream(leasedRange(ip, { 'reverse-dns-ip': rdns })), () => lookupIpFull(ip));
+
+  const found = await ptr('91.108.219.250', { data: { result: ['host.example.net'], error: '' } });
+  assert.equal(found.ptrStatus, 'found');
+  assert.equal(found.ptrRecord, 'host.example.net');
+
+  const none = await ptr('91.108.219.251', { data: { result: null, error: "Domain name doesn't exist (NXDOMAIN): 251.219.108.91.in-addr.arpa. (PTR)" } });
+  assert.equal(none.ptrStatus, 'none');
+  assert.equal(none.ptrRecord, '—');
+
+  const failed = await ptr('91.108.219.252', () => json({}, 504));
+  assert.equal(failed.ptrStatus, 'failed');
+
+  const servfail = await ptr('91.108.219.253', { data: { result: null, error: 'Server failure (SERVFAIL)' } });
+  assert.equal(servfail.ptrStatus, 'failed');
+});

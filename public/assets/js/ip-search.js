@@ -28,6 +28,13 @@
   var activeController = null;
   var elapsedTimer = null;
 
+  function ptrCell(info, cls) {
+    if (info.ptrStatus === 'found' || (!info.ptrStatus && info.ptrRecord && info.ptrRecord !== '—')) {
+      return '<span class="' + (cls || 'mono') + '">' + esc(info.ptrRecord) + '</span>';
+    }
+    return '<span class="geo__note">' + (info.ptrStatus === 'none' ? T('未设置', 'Not set') : T('查询失败', 'Lookup failed')) + '</span>';
+  }
+
   function esc(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -249,12 +256,7 @@
     setFieldHtml('threat', '<span class="badge badge--' + (info.hasThreat === null ? 'gray' : info.hasThreat ? 'danger' : 'green') + '">' + esc(info.threatLabel) + '</span>');
     setFieldHtml('proxy', '<span class="badge badge--' + (info.isProxy === null ? 'gray' : info.isProxy ? 'amber' : 'green') + '">' + esc(info.proxyLabel) + '</span>');
 
-    var ptrRow = document.querySelector('[data-ptr-row]');
-    if (ptrRow) {
-      var hasPtr = !!(info.ptrRecord && info.ptrRecord !== '—');
-      ptrRow.hidden = !hasPtr;
-      if (hasPtr) setFieldText('heroPtr', info.ptrRecord);
-    }
+    setFieldHtml('heroPtr', ptrCell(info, 'current__host mono'));
 
     var tier = typeof info.score === 'number' && info.reputationCoverage !== 'complete' && info.hasThreat !== true
           ? { cls: 'muted', badge: 'gray', label: T('信誉证据不足', 'Limited reputation evidence'), desc: T('分数受证据上限限制；不代表已发现滥用，也不能判为纯净', 'Score capped for missing evidence; neither proof of abuse nor a clean verdict') }
@@ -390,7 +392,7 @@ return '<div class="scene-card is-' + esc(sc.tone) + '">' +
       rtHtml +=
         '<div class="row"><span class="row__label">' + T('BGP 路由前缀', 'BGP prefix') + '</span><span class="row__value">' + bgpCell + '</span></div>' +
         '<div class="row"><span class="row__label">' + T('RPKI 路由授权', 'RPKI') + '</span><span class="row__value"><span class="tag tag--' + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +
-        '<div class="row"><span class="row__label">' + T('反向解析 (PTR)', 'Reverse DNS (PTR)') + '</span><span class="row__value"><span class="mono">' + esc(info.ptrRecord || '—') + '</span></span></div>' +
+        '<div class="row"><span class="row__label">' + T('反向解析 (PTR)', 'Reverse DNS (PTR)') + '</span><span class="row__value">' + ptrCell(info) + '</span></div>' +
         '<div class="row"><span class="row__label">' + T('公网开放端口', 'Open ports') + '</span><span class="row__value">' + portsCell + '</span></div>';
       setFieldHtml('riskTech', rtHtml);
     }

@@ -196,6 +196,13 @@
     if (el) el.textContent = text;
   }
 
+  function ptrCell(info, cls) {
+    if (info.ptrStatus === 'found' || (!info.ptrStatus && info.ptrRecord && info.ptrRecord !== '—')) {
+      return '<span class="' + (cls || 'mono') + '">' + esc(info.ptrRecord) + '</span>';
+    }
+    return '<span class="geo__note">' + (info.ptrStatus === 'none' ? T('未设置', 'Not set') : T('查询失败', 'Lookup failed')) + '</span>';
+  }
+
   function esc(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -483,7 +490,7 @@ return '<div class="scene-card is-' + esc(sc.tone) + '">' +
           rtHtml +=
             T('<div class="row"><span class="row__label">BGP 路由前缀</span><span class="row__value">', '<div class="row"><span class="row__label">BGP prefix</span><span class="row__value">') + bgpCell + '</span></div>' +
             T('<div class="row"><span class="row__label">RPKI 路由授权</span><span class="row__value"><span class="tag tag--', '<div class="row"><span class="row__label">RPKI</span><span class="row__value"><span class="tag tag--') + rpkiTone + '">' + esc(info.rpkiLabel) + '</span></span></div>' +
-            T('<div class="row"><span class="row__label">反向解析 (PTR)</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Reverse DNS (PTR)</span><span class="row__value"><span class="mono">') + esc(info.ptrRecord || '—') + '</span></span></div>' +
+            T('<div class="row"><span class="row__label">反向解析 (PTR)</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Reverse DNS (PTR)</span><span class="row__value">') + ptrCell(info) + '</span></div>' +
             T('<div class="row"><span class="row__label">开放服务端口</span><span class="row__value">', '<div class="row"><span class="row__label">Open ports</span><span class="row__value">') + portsCell + '</span></div>';
           if (info.abuseEmail && info.abuseEmail !== '—') {
             rtHtml += T('<div class="row"><span class="row__label">滥用举报邮箱</span><span class="row__value"><span class="mono">', '<div class="row"><span class="row__label">Abuse contact</span><span class="row__value"><span class="mono">') + esc(info.abuseEmail) + '</span></span></div>';

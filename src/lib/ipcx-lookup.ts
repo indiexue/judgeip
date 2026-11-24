@@ -121,6 +121,8 @@ export interface HomeIpLookupResult {
   rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown';
   rpkiLabel: string;
   ptrRecord: string;
+  /* found：有反向解析；none：权威应答为不存在；failed：没拿到应答 */
+  ptrStatus: 'found' | 'none' | 'failed';
   openPorts: number[];
   proxyPorts: number[];
   vulnsCount: number;
@@ -597,6 +599,7 @@ async function fetchRirAndRouting(
   originAsn?: number;
   rpkiStatus?: 'valid' | 'invalid' | 'not_found' | 'unknown';
   ptrRecord?: string;
+  ptrStatus?: 'found' | 'none' | 'failed';
   abuseEmail?: string;
   registrant?: RegistryParty | null;
   whoisLines: FactorEvidence[];
@@ -620,7 +623,8 @@ async function fetchRirAndRouting(
   }
   interface RipeReverseDns {
     data?: {
-      result?: string[];
+      result?: string[] | null;
+      error?: string;
     };
   }
   interface RipeRpki {
@@ -713,6 +717,11 @@ async function fetchRirAndRouting(
   onSource?.({ id: 'rir', label: 'RIR / RDAP', status: rirCountry || rirName ? 'ok' : 'fail' });
 
   const ptrRecord = rdnsResp?.data?.result?.[0] || '';
+  // RIPEstat 把 DNS 应答码写在 error 里：NXDOMAIN 或无应答记录才算没设置，超时、SERVFAIL 等算查询失败
+  const rdnsError = rdnsResp?.data?.error || '';
+  const ptrStatus = ptrRecord ? 'found'
+    : rdnsResp?.data && (/NXDOMAIN|no answer|does not contain an answer/i.test(rdnsError) || (!rdnsError && Array.isArray(rdnsResp.data.result))) ? 'none'
+    : 'failed';
 
   let rpkiStatus: 'valid' | 'invalid' | 'not_found' | 'unknown' = 'unknown';
   if (bgpPrefix && bgpAsn) {
@@ -725,7 +734,7 @@ async function fetchRirAndRouting(
     onSource?.({ id: 'rpki', label: 'RPKI ROA', status: 'skip' });
   }
 
-  return { rirName, rirCountry, bgpPrefix, bgpAsn, originAsn, rpkiStatus, ptrRecord, abuseEmail, registrant, whoisLines };
+  return { rirName, rirCountry, bgpPrefix, bgpAsn, originAsn, rpkiStatus, ptrRecord, ptrStatus, abuseEmail, registrant, whoisLines };
 }
 
 const DNS_RCODES: Record<number, string> = { 0: 'NOERROR', 2: 'SERVFAIL', 3: 'NXDOMAIN', 5: 'REFUSED' };
@@ -880,6 +889,7 @@ function limitedLookup(parsed: NonNullable<ReturnType<typeof parseIp>>, cf: Reco
     rpkiStatus: 'unknown',
     rpkiLabel: 'RPKI 状态未知',
     ptrRecord: '—',
+    ptrStatus: 'failed',
     openPorts: [],
     proxyPorts: [],
     vulnsCount: 0,
@@ -989,6 +999,7 @@ async function runLookup(
       rpkiStatus: 'unknown',
       rpkiLabel: '不适用',
       ptrRecord: '—',
+      ptrStatus: 'none',
       openPorts: [],
       proxyPorts: [],
       vulnsCount: 0,
@@ -1347,6 +1358,7 @@ async function runLookup(
   const openPorts = (shodan?.ports || []).slice(0, 16);
   const proxyPorts = openPorts.filter((p) => PROXY_PORTS_SET.has(p));
   const ptrRecord = routing.ptrRecord || shodan?.hostnames?.[0] || '—';
+  const ptrStatus = ptrRecord !== '—' ? 'found' : routing.ptrStatus || 'failed';
 
   const isTor = Boolean(
     ipWho?.security?.tor
@@ -1683,6 +1695,7 @@ async function runLookup(
     rpkiStatus,
     rpkiLabel,
     ptrRecord,
+    ptrStatus,
     openPorts,
     proxyPorts,
     vulnsCount,

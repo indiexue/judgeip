@@ -411,9 +411,13 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         </span>
       </div>
 
-      <div class="hero-meta__row" data-ptr-row hidden={!info.ptrRecord || info.ptrRecord === '—'}>
+      <div class="hero-meta__row">
         <span class="hero-meta__label">PTR</span>
-        <span class="hero-meta__val"><span class="current__host mono" data-field="heroPtr">{info.ptrRecord}</span></span>
+        <span class="hero-meta__val" data-field="heroPtr">
+          {info.ptrStatus === 'found'
+            ? <span class="current__host mono">{info.ptrRecord}</span>
+            : <span class="geo__note">{info.ptrStatus === 'none' ? t('未设置', 'Not set') : t('查询失败', 'Lookup failed')}</span>}
+        </span>
       </div>
       </div>
     </div>
@@ -576,7 +580,11 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
       </div>
       <div class="row">
         <span class="row__label">{t('反向解析 (PTR)', 'Reverse DNS (PTR)')}</span>
-        <span class="row__value"><span class="mono">{info.ptrRecord}</span></span>
+        <span class="row__value">
+          {info.ptrStatus === 'found'
+            ? <span class="mono">{info.ptrRecord}</span>
+            : <span class="geo__note">{info.ptrStatus === 'none' ? t('未设置', 'Not set') : t('查询失败', 'Lookup failed')}</span>}
+        </span>
       </div>
       <div class="row">
         <span class="row__label">{t('公网开放端口', 'Open ports')}</span>
