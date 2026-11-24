@@ -231,3 +231,54 @@ test('a proxy flag from one source costs half of a confirmed one', async () => {
   const confirmed = await lookup('11.0.1.60', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', city: 'Dallas', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } });
   assert.equal(factor(confirmed, 'proxy').delta, -24, 'a VPN exit range confirms the flag');
 });
+
+test('quota-limited upstreams are cached per IP in the Cache API; refresh still reuses valid entries', async () => {
+  const store = new Map();
+  let now = 0;
+  const fakeCache = {
+    match: async (key) => {
+      const entry = store.get(key);
+      return entry && entry.expires > now ? new Response(entry.body) : undefined;
+    },
+    put: async (key, res) => {
+      const ttl = Number(/max-age=(\d+)/.exec(res.headers.get('Cache-Control'))?.[1]);
+      store.set(key, { body: await res.text(), expires: now + ttl });
+    },
+  };
+  const calls = { proxycheck: 0, ip2location: 0, ipapi: 0, abuse: 0 };
+  const previous = globalThis.fetch;
+  const previousCaches = globalThis.caches;
+  globalThis.caches = { open: async () => fakeCache };
+  globalThis.fetch = upstream({
+    'api.ipapi.is': () => { calls.ipapi++; return json({ asn: { asn: 7922 } }); },
+    'api.abuseipdb.com': () => { calls.abuse++; return json({ data: { abuseConfidenceScore: 0 } }); },
+    'proxycheck.io': (url) => { calls.proxycheck++; return json({ status: 'ok', '11.0.9.70': { asn: 'AS7922', provider: 'Comcast Cable', proxy: 'no', type: 'ISP', risk: 0 } }); },
+    'api.ip2location.io': () => { calls.ip2location++; return json({ country_code: 'US', city_name: 'Dallas', zip_code: '75244', is_proxy: false }); },
+  });
+  try {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    const keys = { proxycheckKey: 'p', ip2locationKey: 'k', ipapiIsKey: 'i', abuseIpdbKey: 'a' };
+    // 自查不走进程内的整份结果缓存，这样能看到每次是否真的调用了上游
+    const first = await lookupIpFull('11.0.9.70', null, true, keys);
+    const seen = [];
+    const second = await lookupIpFull('11.0.9.70', null, true, keys, { onSource: (ev) => seen.push(ev) });
+    assert.ok(['proxycheck', 'ip2location'].every((id) => seen.find((ev) => ev.id === id)?.cached === true));
+    assert.deepEqual(calls, { proxycheck: 1, ip2location: 1, ipapi: 1, abuse: 1 });
+    assert.equal(second.postalCode, first.postalCode);
+    assert.ok(factor(second, 'proxy').evidence.some((e) => e.source === 'proxycheck.io'));
+    now = 6 * 3600 - 1;
+    await lookupIpFull('11.0.9.70', null, true, keys, { bypassCache: true });
+    assert.deepEqual(calls, { proxycheck: 1, ip2location: 1, ipapi: 1, abuse: 1 });
+    now++;
+    await lookupIpFull('11.0.9.70', null, true, keys);
+    assert.deepEqual(calls, { proxycheck: 2, ip2location: 2, ipapi: 2, abuse: 2 });
+    // 第二个地址的 proxycheck 响应缺少对应的 IP 条目，不能视为成功并缓存。
+    await lookupIpFull('11.0.9.71', null, true, keys);
+    await lookupIpFull('11.0.9.71', null, true, keys);
+    assert.deepEqual(calls, { proxycheck: 4, ip2location: 3, ipapi: 3, abuse: 3 });
+    assert.ok([...store.keys()].every((k) => k.startsWith('https://judgeip.com/__upstream-cache/') && !/[?&]key=/.test(k)), 'keys never end up in the cache key');
+  } finally {
+    globalThis.fetch = previous;
+    globalThis.caches = previousCaches;
+  }
+});

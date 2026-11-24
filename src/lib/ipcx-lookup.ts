@@ -1,3 +1,4 @@
+import { cachedUpstream } from './edge-cache';
 import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, mapPeeringDbType, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
@@ -69,6 +70,8 @@ export interface LookupSourceEvent {
   status: 'ok' | 'skip' | 'fail';
   /* 失败原因，例如 HTTP 429、timeout、cooldown 或上游返回的错误信息 */
   detail?: string;
+  /* 结果取自按 IP 的上游缓存，这次没有调用上游 */
+  cached?: boolean;
 }
 
 export interface LookupStreamOptions {
@@ -1243,7 +1246,8 @@ async function runLookup(
   const ipWhoUrl = `https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`;
   const ipQueryUrl = `https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`;
   const onSrc = streamOpts?.onSource;
-  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory], rangeChecks, ip2lRaw] = await Promise.all([
+  // 重新聚合只跳过整份报告的缓存，不重复消耗限额上游的额度。
+  const [ipWhoRaw, ipQueryRaw, pcEntry, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory], rangeChecks, ip2lRaw] = await Promise.all([
     fetchJson<IpWhoResp>(ipWhoUrl, 2300).then((r) => {
       const ok = r?.success === true;
       const message = r && !ok ? String(r.message || 'success: false') : '';
@@ -1257,14 +1261,20 @@ async function runLookup(
     }),
     (async () => {
       let message = '';
-      const { value: r, healthId } = await withKeys('proxycheck.io', keys.proxycheckKey, async (key, id) => {
-        const res = await fetchJson<Record<string, unknown>>(proxyCheckUrl(key), 2200, undefined, id);
-        const ok = Boolean(res && (res.status === 'ok' || res.status === 'warning'));
-        message = res && !ok ? `${String(res.status || '')}: ${String(res.message || '')}` : '';
-        if (!ok && (res?.status === 'denied' || QUOTA_MESSAGE.test(String(res?.message || '')))) pauseUpstream(id, message.slice(0, 80));
-        return ok ? res : null;
+      let healthId = 'proxycheck.io';
+      const { value: r, hit } = await cachedUpstream('proxycheck', parsed.normalized, async () => {
+        const out = await withKeys('proxycheck.io', keys.proxycheckKey, async (key, id) => {
+          const res = await fetchJson<Record<string, unknown>>(proxyCheckUrl(key), 2200, undefined, id);
+          const entry = res?.[parsed.normalized];
+          const ok = (res?.status === 'ok' || res?.status === 'warning') && entry && typeof entry === 'object' && !Array.isArray(entry) && Object.keys(entry).length > 0;
+          message = res && !ok ? `${String(res.status || '')}: ${String(res.message || '')}` : '';
+          if (!ok && (res?.status === 'denied' || QUOTA_MESSAGE.test(String(res?.message || '')))) pauseUpstream(id, message.slice(0, 80));
+          return ok ? entry as ProxyCheckEntry : null;
+        });
+        healthId = out.healthId;
+        return out.value;
       });
-      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: r ? 'ok' : 'fail', ...(r ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
+      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: r ? 'ok' : 'fail', ...(hit ? { cached: true } : {}), ...(r ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
       return r;
     })(),
     parsed.version === 4
@@ -1289,20 +1299,20 @@ async function runLookup(
         }),
     // 方案 B 可选增强源：配置了 Key 时并发接入 ipapi.is 与 AbuseIPDB
     keys.ipapiIsKey
-      ? withKeys('api.ipapi.is', keys.ipapiIsKey, async (key, id) => {
+      ? cachedUpstream('ipapi-is', parsed.normalized, () => withKeys('api.ipapi.is', keys.ipapiIsKey, async (key, id) => {
           const res = await fetchJson<IpapiIsResp & { error?: string; message?: string }>(`https://api.ipapi.is/?q=${encodeURIComponent(parsed.normalized)}&key=${encodeURIComponent(key)}`, 2300, undefined, id);
           const error = String(res?.error || res?.message || '');
           if (res && typeof res.asn !== 'object' && QUOTA_MESSAGE.test(error)) pauseUpstream(id, error.slice(0, 80));
-          return res && typeof res.asn === 'object' ? res : null;
-        }).then((r) => r.value)
+          return res?.asn && typeof res.asn === 'object' ? res : null;
+        }).then((r) => r.value)).then((r) => r.value)
       : Promise.resolve(null),
     keys.abuseIpdbKey
-      ? withKeys('api.abuseipdb.com', keys.abuseIpdbKey, (key, id) => fetchJson<AbuseIpdbResp>(
+      ? cachedUpstream('abuseipdb', parsed.normalized, () => withKeys('api.abuseipdb.com', keys.abuseIpdbKey, (key, id) => fetchJson<AbuseIpdbResp>(
           `https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(parsed.normalized)}&maxAgeInDays=90`,
           2300,
           { Key: key },
           id,
-        )).then((r) => r.value)
+        )).then((r) => (typeof r.value?.data?.abuseConfidenceScore === 'number' ? r.value : null))).then((r) => r.value)
       : Promise.resolve(null),
     Promise.all([checkPublicReputation(parsed.normalized), checkReputationHistory(parsed.normalized)]).then((checks) => {
       onSrc?.({ id: 'ipsum', label: 'IPsum', status: checks[0].status === 'unavailable' ? 'fail' : 'ok' });
@@ -1316,13 +1326,18 @@ async function runLookup(
     keys.ip2locationKey
       ? (async () => {
           let message = '';
-          const { value, healthId } = await withKeys('api.ip2location.io', keys.ip2locationKey, async (key, id) => {
-            const res = await fetchJson<Ip2LocationResp>(`https://api.ip2location.io/?key=${encodeURIComponent(key)}&ip=${encodeURIComponent(parsed.normalized)}&format=json`, 2200, undefined, id);
-            message = String(res?.error?.error_message || '');
-            if (message && /key|limit|quota|exceed|credit/i.test(message)) pauseUpstream(id, message.slice(0, 80));
-            return res && res.country_code ? res : null;
+          let healthId = 'api.ip2location.io';
+          const { value, hit } = await cachedUpstream('ip2location', parsed.normalized, async () => {
+            const out = await withKeys('api.ip2location.io', keys.ip2locationKey, async (key, id) => {
+              const res = await fetchJson<Ip2LocationResp>(`https://api.ip2location.io/?key=${encodeURIComponent(key)}&ip=${encodeURIComponent(parsed.normalized)}&format=json`, 2200, undefined, id);
+              message = String(res?.error?.error_message || '');
+              if (message && /key|limit|quota|exceed|credit/i.test(message)) pauseUpstream(id, message.slice(0, 80));
+              return res && res.country_code ? res : null;
+            });
+            healthId = out.healthId;
+            return out.value;
           });
-          onSrc?.({ id: 'ip2location', label: 'IP2Location.io', status: value ? 'ok' : 'fail', ...(value ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
+          onSrc?.({ id: 'ip2location', label: 'IP2Location.io', status: value ? 'ok' : 'fail', ...(hit ? { cached: true } : {}), ...(value ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
           return value;
         })()
       : Promise.resolve(null).then((r) => {
@@ -1334,11 +1349,6 @@ async function runLookup(
   // 严格校验各上游返回：空对象（如测试桩默认返回）或错误状态不采信
   const ipWho = ipWhoRaw?.success === true ? ipWhoRaw : null;
   const ipQuery = ipQueryRaw && ipQueryRaw.ip && (ipQueryRaw.isp || ipQueryRaw.risk || ipQueryRaw.location) ? ipQueryRaw : null;
-  const pcEntry: ProxyCheckEntry | null =
-    proxyCheckRaw && (proxyCheckRaw.status === 'ok' || proxyCheckRaw.status === 'warning')
-      && typeof proxyCheckRaw[parsed.normalized] === 'object' && proxyCheckRaw[parsed.normalized] !== null
-      ? (proxyCheckRaw[parsed.normalized] as ProxyCheckEntry)
-      : null;
   const ipapiIs = ipapiIsRaw && typeof ipapiIsRaw.asn === 'object' && ipapiIsRaw.asn !== null ? ipapiIsRaw : null;
   // 邮编为 "-" 表示该来源没有
   const ip2l = ip2lRaw ? { ...ip2lRaw, zip_code: ip2lRaw.zip_code && ip2lRaw.zip_code !== '-' ? ip2lRaw.zip_code : undefined } : null;
