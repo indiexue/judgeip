@@ -147,3 +147,19 @@ test('a malformed Radar answer is not shown', async () => {
     globalThis.fetch = previous;
   }
 });
+
+test('a self lookup can take the postcode from Cloudflare request data', async () => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = upstream({
+    'ipwho.is': { success: false, message: 'quota' },
+    'ipquery.io': { ip: '11.0.9.30', isp: { asn: 'AS7922', isp: 'Comcast Cable' }, location: { country_code: 'US', city: 'Dallas', zipcode: '' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
+  });
+  try {
+    const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+    const info = await lookupIpFull('11.0.9.30', { asn: 7922, country: 'US', city: 'Dallas', postalCode: '75244' }, true);
+    assert.equal(info.city, 'Dallas');
+    assert.equal(info.postalCode, '75244');
+  } finally {
+    globalThis.fetch = previous;
+  }
+});

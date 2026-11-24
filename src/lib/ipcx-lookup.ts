@@ -939,7 +939,7 @@ function limitedLookup(parsed: NonNullable<ReturnType<typeof parseIp>>, cf: Reco
     city,
     regionEn: region,
     cityEn: city,
-    postalCode: '—',
+    postalCode: (cf?.postalCode as string) || '—',
     asnTraffic: null,
     latitude: null,
     longitude: null,
@@ -1279,6 +1279,8 @@ async function runLookup(
     [ipQuery?.location?.city, ipQuery?.location?.zipcode],
     [pcEntry?.city, pcEntry?.postcode],
     [ipapiIs?.location?.city, ipapiIs?.location?.zip],
+    // 只有查访客自己的出口时才有 Cloudflare 的 request.cf
+    [cf?.city as string | undefined, cf?.postalCode as string | undefined],
   ] as Array<[string | undefined, string | undefined]>).find(([c, zip]) => c === city && zip && /^[\w -]{2,12}$/.test(zip.trim()))?.[1]?.trim() || '—';
   const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
   const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region);
