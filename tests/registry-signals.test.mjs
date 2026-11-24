@@ -169,3 +169,40 @@ test('reverse DNS tells a missing PTR apart from a failed lookup', async () => {
   const servfail = await ptr('91.108.219.253', { data: { result: null, error: 'Server failure (SERVFAIL)' } });
   assert.equal(servfail.ptrStatus, 'failed');
 });
+
+test('several keys are used in turn and a rejected or exhausted key is skipped', async () => {
+  const { lookupIpFull, splitKeys } = await loadTs('../src/lib/ipcx-lookup.ts');
+  assert.deepEqual(splitKeys(' k1, k2\nk3;k1 '), ['k1', 'k2', 'k3']);
+  assert.deepEqual(splitKeys(''), []);
+
+  const used = [];
+  const table = {
+    'proxycheck.io': (url) => {
+      const key = new URL(url).searchParams.get('key');
+      used.push(key);
+      if (key === 'dead') return json({ status: 'denied', message: '1,000 free queries exhausted.' });
+      if (key === 'revoked') return json({ status: 'denied', message: 'Invalid API key' }, 401);
+      const ip = new URL(url).pathname.split('/').pop();
+      return { status: 'ok', [ip]: { asn: 'AS7922', provider: 'Comcast Cable', proxy: 'no', type: 'Residential', risk: 0 } };
+    },
+    'dns-query': { Status: 3, Authority: [{ type: 6 }] },
+  };
+  const run = async (ip) => {
+    const seen = {};
+    const info = await withFetch(upstream(table), () => lookupIpFull(ip, null, false, { proxycheckKey: 'dead,revoked,good' }, { onSource: (e) => { seen[e.id] = e; } }));
+    return { info, event: seen.proxycheck };
+  };
+
+  const first = await run('73.170.9.10');
+  assert.equal(first.event.status, 'ok');
+  assert.deepEqual(used, ['dead', 'revoked', 'good'], 'falls through to the working key');
+
+  used.length = 0;
+  const second = await run('73.170.9.11');
+  assert.equal(second.event.status, 'ok');
+  assert.deepEqual(used, ['good'], 'cooled keys are not tried again');
+
+  const all = await withFetch(upstream({ ...table, 'proxycheck.io': () => json({ status: 'denied', message: 'exhausted' }) }),
+    () => lookupIpFull('73.170.9.12', null, false, { proxycheckKey: 'x1,x2' }, { onSource: () => {} }));
+  assert.equal(JSON.stringify(all).includes('x1'), false, 'keys never appear in the result');
+});

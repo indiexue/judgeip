@@ -54,6 +54,7 @@ export interface ScoreFactor {
   evidence: FactorEvidence[];
 }
 
+/* 每项都可以填多个 Key，用逗号、空格或换行分开，见 splitKeys */
 export interface OptionalIntelKeys {
   ipapiIsKey?: string;
   abuseIpdbKey?: string;
@@ -297,7 +298,11 @@ function recordUpstream(host: string, res: Response | null, reason: string, now 
   const entry = upstreamHealth.get(host) || { failures: 0, coolUntil: 0, reason };
   entry.failures += 1;
   entry.reason = reason;
-  if (res?.status === 429) {
+  if (host.includes('#') && (res?.status === 401 || res?.status === 403)) {
+    // 带 Key 的请求被拒绝，多半是这个 Key 无效或被停用，直接冷却它，下次换别的 Key
+    entry.coolUntil = now + QUOTA_COOLDOWN_MS;
+    entry.failures = 0;
+  } else if (res?.status === 429) {
     const retry = Number(res.headers.get('retry-after'));
     entry.coolUntil = now + Math.min(MAX_COOLDOWN_MS, Number.isFinite(retry) && retry > 0 ? retry * 1000 : COOLDOWN_MS);
   } else if (entry.failures >= COOLDOWN_FAILURES) {
@@ -307,23 +312,64 @@ function recordUpstream(host: string, res: Response | null, reason: string, now 
   upstreamHealth.set(host, entry);
 }
 
-/* 上游以 200 返回额度用尽等错误时由调用方标记，按额度冷却处理 */
+/* 上游以 200 返回额度用尽等错误时由调用方标记，按额度冷却处理。url 也可以直接传 healthId */
 function pauseUpstream(url: string, reason: string, now = Date.now()): void {
-  upstreamHealth.set(new URL(url).hostname, { failures: 0, coolUntil: now + QUOTA_COOLDOWN_MS, reason });
+  upstreamHealth.set(healthIdOf(url), { failures: 0, coolUntil: now + QUOTA_COOLDOWN_MS, reason });
+}
+
+function healthIdOf(urlOrId: string): string {
+  return /^https?:/.test(urlOrId) ? new URL(urlOrId).hostname : urlOrId;
 }
 
 /* 最近一次失败的原因，冷却中会标明，供流式进度和排查使用 */
 function upstreamFailure(url: string, now = Date.now()): string {
-  const entry = upstreamHealth.get(new URL(url).hostname);
+  const entry = upstreamHealth.get(healthIdOf(url));
   if (!entry) return '';
   return entry.coolUntil > now ? `cooldown (${entry.reason})` : entry.reason;
 }
 
 const QUOTA_MESSAGE = /limit|exhaust|quota|denied|too many/i;
 
-/* 带冷却的上游请求；冷却中或请求失败返回 null */
-async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Record<string, string>): Promise<Response | null> {
-  const host = new URL(url).hostname;
+/* 同一个来源可以配多个 Key，用逗号、空格或换行分开。每次查询从下一个 Key 开始轮流用；
+   某个 Key 被拒绝（401/403）或额度用完（429、denied）就单独冷却它，换下一个 Key 重试，最多试 3 个 */
+export function splitKeys(raw?: string | null): string[] {
+  return [...new Set(String(raw || '').split(/[\s,;]+/).map((k) => k.trim()).filter(Boolean))];
+}
+
+const keyRotation = new Map<string, number>();
+const MAX_KEY_ATTEMPTS = 3;
+
+/* 冷却表里不存原始 Key，只存主机名加 Key 的短哈希 */
+function keyHealthId(host: string, key: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 0x01000193);
+  return `${host}#${(h >>> 0).toString(36)}`;
+}
+
+async function withKeys<T>(host: string, rawKeys: string | undefined, attempt: (key: string, healthId: string) => Promise<T | null>): Promise<{ value: T | null; healthId: string }> {
+  const keys = splitKeys(rawKeys);
+  if (!keys.length) return { value: await attempt('', host), healthId: host };
+  const start = keyRotation.get(host) || 0;
+  keyRotation.set(host, (start + 1) % keys.length);
+  let lastId = keyHealthId(host, keys[start % keys.length]);
+  let tries = 0;
+  for (let i = 0; i < keys.length && tries < MAX_KEY_ATTEMPTS; i++) {
+    const key = keys[(start + i) % keys.length];
+    const id = keyHealthId(host, key);
+    if (upstreamCooling(id)) continue;
+    tries += 1;
+    lastId = id;
+    const value = await attempt(key, id);
+    if (value !== null) return { value, healthId: id };
+    // 超时之类不是这个 Key 的问题，换 Key 也没用；只有这个 Key 进了冷却才换下一个
+    if (!upstreamCooling(id)) break;
+  }
+  return { value: null, healthId: lastId };
+}
+
+/* 带冷却的上游请求；冷却中或请求失败返回 null。healthId 默认是主机名，带 Key 的请求按 Key 单独记录冷却 */
+async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Record<string, string>, healthId?: string): Promise<Response | null> {
+  const host = healthId || new URL(url).hostname;
   if (upstreamCooling(host)) return null;
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
@@ -349,8 +395,8 @@ async function fetchUpstream(url: string, timeoutMs: number, extraHeaders?: Reco
   }
 }
 
-async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record<string, string>): Promise<T | null> {
-  const res = await fetchUpstream(url, timeoutMs, extraHeaders);
+async function fetchJson<T>(url: string, timeoutMs = 2400, extraHeaders?: Record<string, string>, healthId?: string): Promise<T | null> {
+  const res = await fetchUpstream(url, timeoutMs, extraHeaders, healthId);
   if (!res?.ok) return null;
   try {
     return (await res.json()) as T;
@@ -376,14 +422,16 @@ async function fetchShodan<T>(ipv4: string): Promise<T | null> {
 export interface AsnTrafficShare { asn: number; human: number; bot: number; dateRange: string }
 const radarCache = new Map<number, { exp: number; share: AsnTrafficShare | null }>();
 
-async function fetchRadarBotShare(asn: number, token: string): Promise<AsnTrafficShare | null> {
+async function fetchRadarBotShare(asn: number, tokens: string): Promise<AsnTrafficShare | null> {
   const hit = radarCache.get(asn);
   if (hit && hit.exp > Date.now()) return hit.share;
-  const resp = await fetchJson<{ success?: boolean; result?: { summary_0?: { human?: string | number; bot?: string | number } } }>(
+  type RadarResp = { success?: boolean; result?: { summary_0?: { human?: string | number; bot?: string | number } } };
+  const { value: resp } = await withKeys('api.cloudflare.com', tokens, (token, id) => fetchJson<RadarResp>(
     `https://api.cloudflare.com/client/v4/radar/http/summary/bot_class?asn=${asn}&dateRange=7d&format=json`,
     2000,
     { Authorization: `Bearer ${token}` },
-  );
+    id,
+  ));
   const human = Number(resp?.result?.summary_0?.human);
   const bot = Number(resp?.result?.summary_0?.bot);
   if (!resp?.success || !Number.isFinite(human) || !Number.isFinite(bot) || human < 0 || bot < 0 || Math.abs(human + bot - 100) > 1) return null;
@@ -1173,8 +1221,8 @@ async function runLookup(
     noRecord?: boolean;
   }
 
-  const proxyCheckUrl = `https://proxycheck.io/v2/${encodeURIComponent(parsed.normalized)}?vpn=1&asn=1&risk=1${
-    keys.proxycheckKey ? `&key=${encodeURIComponent(keys.proxycheckKey)}` : ''
+  const proxyCheckUrl = (key: string) => `https://proxycheck.io/v2/${encodeURIComponent(parsed.normalized)}?vpn=1&asn=1&risk=1${
+    key ? `&key=${encodeURIComponent(key)}` : ''
   }`;
 
   const ipWhoUrl = `https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`;
@@ -1192,13 +1240,18 @@ async function runLookup(
       onSrc?.({ id: 'ipquery', label: 'ipquery.io', status: r?.ip ? 'ok' : 'fail', ...(r?.ip ? {} : { detail: upstreamFailure(ipQueryUrl) }) });
       return r;
     }),
-    fetchJson<Record<string, unknown>>(proxyCheckUrl, 2200).then((r) => {
-      const ok = Boolean(r && (r.status === 'ok' || r.status === 'warning'));
-      const message = r && !ok ? `${String(r.status || '')}: ${String(r.message || '')}` : '';
-      if (!ok && (r?.status === 'denied' || QUOTA_MESSAGE.test(String(r?.message || '')))) pauseUpstream(proxyCheckUrl, message.slice(0, 80));
-      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: ok ? 'ok' : 'fail', ...(ok ? {} : { detail: message.slice(0, 120) || upstreamFailure(proxyCheckUrl) }) });
+    (async () => {
+      let message = '';
+      const { value: r, healthId } = await withKeys('proxycheck.io', keys.proxycheckKey, async (key, id) => {
+        const res = await fetchJson<Record<string, unknown>>(proxyCheckUrl(key), 2200, undefined, id);
+        const ok = Boolean(res && (res.status === 'ok' || res.status === 'warning'));
+        message = res && !ok ? `${String(res.status || '')}: ${String(res.message || '')}` : '';
+        if (!ok && (res?.status === 'denied' || QUOTA_MESSAGE.test(String(res?.message || '')))) pauseUpstream(id, message.slice(0, 80));
+        return ok ? res : null;
+      });
+      onSrc?.({ id: 'proxycheck', label: 'proxycheck.io', status: r ? 'ok' : 'fail', ...(r ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
       return r;
-    }),
+    })(),
     parsed.version === 4
       ? fetchShodan<ShodanResp>(parsed.normalized).then((r) => {
           onSrc?.({ id: 'shodan', label: 'Shodan InternetDB', status: r ? 'ok' : 'fail' });
@@ -1221,14 +1274,20 @@ async function runLookup(
         }),
     // 方案 B 可选增强源：配置了 Key 时并发接入 ipapi.is 与 AbuseIPDB
     keys.ipapiIsKey
-      ? fetchJson<IpapiIsResp>(`https://api.ipapi.is/?q=${encodeURIComponent(parsed.normalized)}&key=${encodeURIComponent(keys.ipapiIsKey)}`, 2300)
+      ? withKeys('api.ipapi.is', keys.ipapiIsKey, async (key, id) => {
+          const res = await fetchJson<IpapiIsResp & { error?: string; message?: string }>(`https://api.ipapi.is/?q=${encodeURIComponent(parsed.normalized)}&key=${encodeURIComponent(key)}`, 2300, undefined, id);
+          const error = String(res?.error || res?.message || '');
+          if (res && typeof res.asn !== 'object' && QUOTA_MESSAGE.test(error)) pauseUpstream(id, error.slice(0, 80));
+          return res && typeof res.asn === 'object' ? res : null;
+        }).then((r) => r.value)
       : Promise.resolve(null),
     keys.abuseIpdbKey
-      ? fetchJson<AbuseIpdbResp>(
+      ? withKeys('api.abuseipdb.com', keys.abuseIpdbKey, (key, id) => fetchJson<AbuseIpdbResp>(
           `https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(parsed.normalized)}&maxAgeInDays=90`,
           2300,
-          { Key: keys.abuseIpdbKey }
-        )
+          { Key: key },
+          id,
+        )).then((r) => r.value)
       : Promise.resolve(null),
     Promise.all([checkPublicReputation(parsed.normalized), checkReputationHistory(parsed.normalized)]).then((checks) => {
       onSrc?.({ id: 'ipsum', label: 'IPsum', status: checks[0].status === 'unavailable' ? 'fail' : 'ok' });
