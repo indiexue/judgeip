@@ -71,7 +71,7 @@ test('a foreign-registered leased range is not native, not residential and not D
   assert.equal(network.delta, -14);
   assert.ok(network.evidence.some((e) => e.field === 'registrant / ASN holder' && /2025-01-21/.test(e.value)));
   assert.equal(native.status, '登记机构在 LV，与定位不一致');
-  assert.equal(native.delta, -12);
+  assert.equal(native.delta, -6);
   assert.ok(native.evidence.some((e) => e.field === 'registrant' && e.value === 'SIA "Singularity Telecom" (LV)'));
 
   const en = localizeLookup(info, 'en');

@@ -2,18 +2,21 @@
  * 首页评分的全部规则。lookupIpFull 按这里的分值计分，/scoring 页面和 curl 文本报告也从这里取数，
  * 页面上公布的规则与实际计分因此是同一份，不会各说各话。
  */
-export const SCORE_BASE = 95;
+export const SCORE_BASE = 98;
 export const SCORE_MIN = 5;
 export const SCORE_MAX = 99;
 
 export const SCORE_DELTAS = {
-  hosting: -33,
+  /* 机房全票时的扣分；赞成票占比低时按比例减轻，最少扣 40% */
+  hosting: -40,
+  hostingMinority: -12,
   cdn: -25,
   business: -6,
   leased: -8,
   mobile: 2,
-  nonNative: -12,
+  nonNative: -6,
   proxy: -24,
+  proxySingle: -12,
   reputation: -18,
   reputationModerate: -40,
   reputationSevere: -65,
@@ -57,7 +60,8 @@ export const SCORE_RULES: ScoreRule[] = [
     key: 'network',
     label: { zh: '网络类型', en: 'Network type' },
     rows: [
-      { when: { zh: '数据中心 / 云主机', en: 'Data center / cloud hosting' }, delta: SCORE_DELTAS.hosting },
+      { when: { zh: '数据中心 / 云主机（按标记机房的来源占比，最少扣 40%）', en: 'Data center / cloud hosting (scaled by the share of sources that say so, at least 40%)' }, delta: SCORE_DELTAS.hosting },
+      { when: { zh: '只有少数来源标记为机房', en: 'Only a minority of sources say data center' }, delta: SCORE_DELTAS.hostingMinority },
       { when: { zh: 'CDN / 任播网络', en: 'CDN / anycast network' }, delta: SCORE_DELTAS.cdn },
       { when: { zh: '商业网络 / 企业专线', en: 'Business / commercial transit' }, delta: SCORE_DELTAS.business },
       { when: { zh: '租用地址段（另加）', en: 'Leased range (additional)' }, delta: SCORE_DELTAS.leased },
@@ -65,8 +69,8 @@ export const SCORE_RULES: ScoreRule[] = [
       { when: { zh: '家庭宽带、教育网', en: 'Residential broadband, education' }, delta: 0 },
     ],
     basis: {
-      zh: '综合本站 ASN 库、PeeringDB 自治系统登记类型、运营商名称关键词，以及 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的多源标记交叉判定。既非机房又无家宽证据的商业或专线自治系统归为商业网络。同时满足 ASN 与登记机构均为电信宽带运营商时，标记为「双 ISP」。地址段的 RDAP 登记方与宣告它的 ASN 不是同一家，且该 ASN 注册不满两年或没有 PeeringDB 登记时，视为租用地址段：按商业网络计，另扣分，不显示家庭宽带或双 ISP。内置 ASN 表里的运营商不做这项判断。',
-      en: 'Cross-classified from the curated ASN table, PeeringDB network type, operator keywords, and hosting / mobile flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is). Registered networks that are neither hosting nor consumer broadband are classified as business networks. When both the origin ASN and the range registrant are consumer carriers, Dual ISP is shown. When the RDAP registrant of the range and the announcing ASN are different organizations and the ASN is under two years old or absent from PeeringDB, the range counts as leased: it is scored as a business network with an extra deduction and never shown as residential or Dual ISP. Operators in the curated ASN table are exempt.',
+      zh: '综合本站 ASN 库、PeeringDB 自治系统登记类型、运营商名称关键词，以及 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的多源标记交叉判定。是否机房按来源投票，每家一票：至少两家、或唯一回答的一家标记为机房才判成机房，扣分随赞成票占比加重；只有一家标记、其余都说不是时只轻扣分。既非机房又无家宽证据的商业或专线自治系统归为商业网络。同时满足 ASN 与登记机构均为电信宽带运营商时，标记为「双 ISP」。地址段的 RDAP 登记方与宣告它的 ASN 不是同一家，且该 ASN 注册不满两年或没有 PeeringDB 登记时，视为租用地址段：按商业网络计，另扣分，不显示家庭宽带或双 ISP。内置 ASN 表里的运营商不做这项判断。',
+      en: 'Cross-classified from the curated ASN table, PeeringDB network type, operator keywords, and hosting / mobile flags from ipwho.is, ipquery.io and proxycheck.io (plus optional ipapi.is). Data center status is a vote, one per source: it takes two sources, or the only source that answered, to call it a data center, and the deduction grows with the share of sources that agree; a lone dissenting flag only costs a small deduction. Registered networks that are neither hosting nor consumer broadband are classified as business networks. When both the origin ASN and the range registrant are consumer carriers, Dual ISP is shown. When the RDAP registrant of the range and the announcing ASN are different organizations and the ASN is under two years old or absent from PeeringDB, the range counts as leased: it is scored as a business network with an extra deduction and never shown as residential or Dual ISP. Operators in the curated ASN table are exempt.',
     },
     sources: [{ zh: 'JudgeIP ASN 表', en: 'JudgeIP ASN table' }, 'PeeringDB', 'RDAP', 'ipwho.is', 'ipquery.io', 'proxycheck.io'],
   },
@@ -87,7 +91,8 @@ export const SCORE_RULES: ScoreRule[] = [
     key: 'proxy',
     label: { zh: '代理 / VPN / Tor', en: 'Proxy / VPN / Tor' },
     rows: [
-      { when: { zh: '任一来源标记为代理、VPN 或 Tor，或开放了代理软件专用端口（机房地址仅 proxycheck 一家标记时不计）', en: 'Any source flags proxy, VPN or Tor, or a proxy-software port is open (a proxycheck-only flag on a data center address is not counted)' }, delta: SCORE_DELTAS.proxy },
+      { when: { zh: 'Tor、VPN 出口段或 VPN 专用 ASN，或至少两家来源标记为代理 / VPN', en: 'Tor, a VPN exit range or VPN ASN, or at least two sources flag proxy / VPN' }, delta: SCORE_DELTAS.proxy },
+      { when: { zh: '只有一家来源标记，或只开放了代理软件专用端口（机房地址仅 proxycheck 一家标记时不计）', en: 'A single source flags it, or only a proxy-software port is open (a proxycheck-only flag on a data center address is not counted)' }, delta: SCORE_DELTAS.proxySingle },
     ],
     basis: {
       zh: '综合 ipwho.is、ipquery.io、proxycheck.io（及可选 ipapi.is）的 proxy / vpn / tor 标记、Shodan 的 vpn / tor 标签、是否开放 1080、3128、9050 等代理软件专用端口，以及 ASN 是否属于商业 VPN 骨干网。',

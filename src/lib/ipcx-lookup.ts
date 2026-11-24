@@ -1,4 +1,4 @@
-import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, type UsageType } from './asn-intelligence';
+import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, mapPeeringDbType, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
 import { checkPublicReputation, checkReputationHistory, type ReputationCheck } from './reputation-feeds';
@@ -1439,13 +1439,20 @@ async function runLookup(
   const ipapiCompanyType = ipapiIs?.company?.type || '';
   const ipapiAsnType = ipapiIs?.asn?.type || '';
 
-  const upstreamHosting = Boolean(
-    ipWho?.security?.hosting
-    || ipQuery?.risk?.is_datacenter
-    || ipapiIs?.is_datacenter
-    || pcTypeLow === 'hosting'
-    || ipapiCompanyType.toLowerCase() === 'hosting'
-  );
+  // 是否机房按来源投票：每家只算一票（ipapi.is 的 is_datacenter 和 company.type 合成一票），没回答的不计。
+  // 只有一家这样标、其余都说不是时不判成机房，只按「少数来源标记为机房」轻扣分；判成机房后扣分随赞成票占比加重。
+  const pdbUsage = mapPeeringDbType(peeringDb?.infoType, `${isp} ${org}`);
+  const hostingVotes = [
+    profile ? profile.type === 'hosting' || profile.type === 'cdn' : undefined,
+    typeof ipWho?.security?.hosting === 'boolean' ? ipWho.security.hosting : undefined,
+    typeof ipQuery?.risk?.is_datacenter === 'boolean' ? ipQuery.risk.is_datacenter : undefined,
+    ipapiIs ? ipapiIs.is_datacenter === true || ipapiCompanyType.toLowerCase() === 'hosting' : undefined,
+    pcTypeLow === 'hosting' ? true : ['isp', 'residential', 'business', 'wireless', 'education'].includes(pcTypeLow) ? false : undefined,
+    pdbUsage ? pdbUsage === 'hosting' || pdbUsage === 'cdn' : undefined,
+  ].filter((v): v is boolean => typeof v === 'boolean');
+  const hostingYes = hostingVotes.filter(Boolean).length;
+  const hostingShare = hostingVotes.length ? hostingYes / hostingVotes.length : 0;
+  const upstreamHosting = hostingYes >= 2 || (hostingYes === 1 && hostingShare >= 0.5);
   const upstreamMobile = Boolean(
     ipQuery?.risk?.is_mobile
     || ipapiIs?.is_mobile
@@ -1552,6 +1559,18 @@ async function runLookup(
     || typeof ip2l?.is_proxy === 'boolean'
   );
   const isProxy = proxyFound ? true : securityKnown ? false : null;
+  // 只有一家来源标记、且不是 Tor、VPN 出口段或 VPN 专用 ASN 时，按单一来源减半扣分
+  const proxySources = [
+    ipWho?.security && (ipWho.security.proxy || ipWho.security.vpn || ipWho.security.tor),
+    ipQuery?.risk && (ipQuery.risk.is_proxy || ipQuery.risk.is_vpn || ipQuery.risk.is_tor),
+    ipapiIs && (ipapiIs.is_proxy || ipapiIs.is_vpn || ipapiIs.is_tor),
+    ip2l?.is_proxy === true,
+    pcFlag,
+    tags.includes('vpn') || tags.includes('tor'),
+    proxyPorts.length > 0 && usage !== 'cdn',
+    abuseData?.isTor,
+  ].filter(Boolean).length;
+  const proxyCertain = isTor || rangeVpn.length > 0 || Boolean(profile && profile.riskModifier <= -60) || proxySources >= 2;
   const proxyLabel = isTor ? 'Tor 出口' : isVpn ? 'VPN 节点' : isProxy === true ? '公开代理'
     : isProxy === false ? '已查来源未见代理' : '代理状态未知';
 
@@ -1624,13 +1643,17 @@ async function runLookup(
   const shodanEmpty = shodan?.noRecord ? ev('Shodan InternetDB', 'HTTP 404', 'No information available') : null;
   const shodanTags = shodanEmpty || (shodan ? ev('Shodan InternetDB', 'tags', tags.join(', ') || '[]') : []);
 
+  // 机房扣分按赞成票占比在 40%–100% 之间缩放；没有任何来源投票（只凭 ASN 名称判定）时按全额
+  const hostingWeight = hostingVotes.length ? 0.4 + 0.6 * hostingShare : 1;
+  const minorityHosting = networkKnown && usage !== 'hosting' && usage !== 'cdn' && hostingYes > 0;
   const networkDelta = !networkKnown ? 0
-    : usage === 'hosting' ? SCORE_DELTAS.hosting
+    : usage === 'hosting' ? Math.round(SCORE_DELTAS.hosting * hostingWeight)
+      : minorityHosting ? SCORE_DELTAS.hostingMinority + (usage === 'business' ? SCORE_DELTAS.business + (leasedRange ? SCORE_DELTAS.leased : 0) : 0)
       : usage === 'cdn' ? SCORE_DELTAS.cdn
         : usage === 'business' ? SCORE_DELTAS.business + (leasedRange ? SCORE_DELTAS.leased : 0)
           : usage === 'mobile' ? SCORE_DELTAS.mobile : 0;
   const nativeDelta = isNative === false && usage !== 'cdn' ? SCORE_DELTAS.nonNative : 0;
-  const proxyDelta = isProxy ? SCORE_DELTAS.proxy : 0;
+  const proxyDelta = isProxy ? (proxyCertain ? SCORE_DELTAS.proxy : SCORE_DELTAS.proxySingle) : 0;
   const reputationDelta = severeRisk ? SCORE_DELTAS.reputationSevere : moderateRisk ? SCORE_DELTAS.reputationModerate : mildRisk ? SCORE_DELTAS.reputation : 0;
   const portsDelta = openPorts.length > MANY_PORTS_THRESHOLD ? SCORE_DELTAS.manyPorts : 0;
 
@@ -1638,7 +1661,7 @@ async function runLookup(
     {
       key: 'network',
       label: '网络类型',
-      status: leasedRange && usage === 'business' ? '商业网络（租用地址段）' : ipTypeLabel,
+      status: leasedRange && usage === 'business' ? '商业网络（租用地址段）' : minorityHosting ? `${ipTypeLabel}（少数来源标记机房）` : ipTypeLabel,
       delta: networkDelta,
       tone: !networkKnown ? 'muted' : usage === 'hosting' ? 'leak' : usage === 'cdn' || usage === 'business' ? 'warn' : 'ok',
       evidence: [
@@ -1651,6 +1674,7 @@ async function runLookup(
         ...(peeringDb ? ev('PeeringDB', 'info_type', `${peeringDb.infoType} (${peeringDb.name})`) : []),
         ...(ipapiIs ? ev('ipapi.is', 'company.type / asn.type', `${ipapiCompanyType || '—'} / ${ipapiAsnType || '—'}`) : []),
         ...ev('ipapi.is', 'is_datacenter', flag(ipapiIs?.is_datacenter)),
+        ...(hostingVotes.length ? ev('JudgeIP', 'hosting votes', `${hostingYes} / ${hostingVotes.length}`) : []),
         ...(profile ? ev('JudgeIP ASN 表', `AS${profile.asn}`, `${profile.type} · ${profile.name}`) : []),
         ...(leasedRange ? ev('RDAP', 'registrant / ASN holder', `${registrant?.name} ≠ ${asnHolder?.name}${youngAsn ? ` · ASN registered ${asnHolder?.registeredAt}` : ' · not in PeeringDB'}`) : []),
       ],

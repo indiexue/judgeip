@@ -64,13 +64,13 @@ const factor = (info, key) => info.factors.find((f) => f.key === key);
 test('score factors add up to the displayed score for every network and risk combination', async () => {
   const hosting = { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 16509, isp: 'Amazon.com' }, security: { proxy: false, vpn: false, tor: false, hosting: true } }, 'network-info': { data: { prefix: '3.0.0.0/8', asns: ['16509'] } } };
   const cases = [
-    ['residential', {}, 95, {}],
-    ['hosting', hosting, 62, { network: -33 }],
-    ['non-native', { 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } } }, 83, { native: -12 }],
-    ['proxy flag', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } }, 71, { proxy: -24 }],
-    ['blocklisted', { 'dns-query': (url) => url.includes('spamcop') ? { Status: 0, Answer: [{ type: 1, data: '127.0.0.2' }] } : { Status: 3, Authority: [{ type: 6 }] } }, 77, { reputation: -18 }],
-    ['many ports', { internetdb: { ports: [21, 22, 25, 80, 110, 143, 443], tags: [], vulns: [], hostnames: [] } }, 90, { ports: -5 }],
-    ['hosting + non-native + proxy + CVE + ports', { ...hosting, 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } }, internetdb: { ports: [21, 22, 25, 80, 110, 143, 443, 1080], tags: ['vpn'], vulns: ['CVE-2024-0001'], hostnames: [] } }, 5, { network: -33, native: -12, proxy: -24, reputation: -18, ports: -5, clamp: 2 }],
+    ['residential', {}, 98, {}],
+    ['hosting', hosting, 58, { network: -40 }],
+    ['non-native', { 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } } }, 92, { native: -6 }],
+    ['proxy flag', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } }, 86, { proxy: -12 }],
+    ['blocklisted', { 'dns-query': (url) => url.includes('spamcop') ? { Status: 0, Answer: [{ type: 1, data: '127.0.0.2' }] } : { Status: 3, Authority: [{ type: 6 }] } }, 80, { reputation: -18 }],
+    ['many ports', { internetdb: { ports: [21, 22, 25, 80, 110, 143, 443], tags: [], vulns: [], hostnames: [] } }, 93, { ports: -5 }],
+    ['hosting + non-native + proxy + CVE + ports', { ...hosting, 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } }, internetdb: { ports: [21, 22, 25, 80, 110, 143, 443, 1080], tags: ['vpn'], vulns: ['CVE-2024-0001'], hostnames: [] } }, 5, { network: -40, native: -6, proxy: -24, reputation: -18, ports: -5 }],
   ];
   for (const [name, overrides, expected, deltas] of cases) {
     const info = await lookup('73.162.88.1', overrides);
@@ -103,7 +103,7 @@ test('each factor carries the raw upstream data it was judged on', async () => {
   assert.ok(has('reputation', 'Shodan InternetDB', 'vulns', 'CVE-2024-0001'));
   assert.ok(has('ports', 'Shodan InternetDB', 'ports', '22, 1080'));
   // Barracuda 1 个 DNSBL 未返回时，其余 3 个 DNSBL 与 Shodan 已就绪，仍给出中置信度评分并完整保留扣分项
-  assert.equal(info.score, 53);
+  assert.equal(info.score, 56);
   assert.equal(info.scoreConfidence, 'medium');
   assert.equal(factor(info, 'proxy').delta, -24);
   assert.equal(factor(info, 'reputation').delta, -18);
@@ -153,17 +153,17 @@ test('the text report repeats the score, grade and breakdown from the lookup', a
   });
   const zh = renderTextReport(info, 'zh');
   assert.ok(zh.startsWith('JudgeIP · 73.162.88.1\n'));
-  assert.match(zh, /评分 +71 \/ 99 · B\n/);
+  assert.match(zh, /评分 +86 \/ 99 · A\n/);
   assert.match(zh, /开放端口 +22, 443\n/);
   assert.match(zh, /黑名单 +4 个均未列入\n/);
-  assert.match(zh, /基础分 +95\n/);
-  assert.match(zh, /代理 .* −24\n/);
-  assert.match(zh, /最终得分 +B +71\n/);
+  assert.match(zh, /基础分 +98\n/);
+  assert.match(zh, /代理 .* −12\n/);
+  assert.match(zh, /最终得分 +A +86\n/);
   assert.ok(zh.endsWith('评分规则  https://judgeip.com/scoring\n'));
 
   const en = renderTextReport(localizeLookup(info, 'en'), 'en');
   assert.equal(/[\p{Script=Han}]/u.test(en), false, en);
-  assert.match(en, /Score +71 \/ 99 · B\n/);
+  assert.match(en, /Score +86 \/ 99 · A\n/);
   assert.ok(en.includes('https://judgeip.com/en/ip/73.162.88.1\n'));
   // 标签列按显示宽度对齐：每一行的值都从同一列开始
   const cols = en.split('\n').slice(2, 8).map((line) => line.search(/ {2,}\S/));
@@ -274,7 +274,7 @@ test('MCP tools return the same report text as the curl endpoint', async () => {
   assert.deepEqual(many.seen, ['73.162.88.1', '73.162.88.2']);
   const text = many.answer.result.content[0].text;
   assert.equal(/[\p{Script=Han}]/u.test(text), false, text);
-  assert.match(text, /^73\.162\.88\.1\n  Score: 95 \/ 99 · A\+\n/);
+  assert.match(text, /^73\.162\.88\.1\n  Score: 98 \/ 99 · A\+\n/);
   assert.match(text, /\n\n73\.162\.88\.2\n/);
   assert.match(text, /Adjustments: none\n/);
 
@@ -289,9 +289,9 @@ test('MCP tools return the same report text as the curl endpoint', async () => {
 
   const rules = (await call('scoring_rules', { lang: 'en' })).answer.result.content[0].text;
   assert.equal(/[\p{Script=Han}]/u.test(rules), false);
-  assert.match(rules, /starts at 95/);
-  assert.match(rules, /−33 {2}Data center/);
-  assert.match((await call('scoring_rules', { lang: 'zh' })).answer.result.content[0].text, /从 95 分起算/);
+  assert.match(rules, /starts at 98/);
+  assert.match(rules, /−40 {2}Data center/);
+  assert.match((await call('scoring_rules', { lang: 'zh' })).answer.result.content[0].text, /从 98 分起算/);
 });
 
 test('MCP lookups are rate limited per caller and counted per IP looked up', async () => {
@@ -507,7 +507,7 @@ test('a compare column carries the same score, factors and labels as the lookup'
   assert.equal(column.base + column.factors.reduce((total, f) => total + f.delta, 0), home.score);
 
   const cloud = compareColumn(await lookup('73.162.88.1', hosting), 'zh');
-  assert.deepEqual([cloud.cells.type.tone, cloud.factors.find((f) => f.key === 'network').deltaText], ['leak', '−33']);
+  assert.deepEqual([cloud.cells.type.tone, cloud.factors.find((f) => f.key === 'network').deltaText], ['leak', '−40']);
   assert.ok(cloud.score < column.score);
   const foreign = compareColumn(await lookup('73.162.88.1', { 'whois/data': { data: { authorities: ['RIPE'], records: [[{ key: 'country', value: 'DE' }]] } } }), 'zh');
   assert.deepEqual(foreign.cells.native, { text: '否', tone: 'warn', sub: '注册 DE · 定位 US' });
@@ -542,7 +542,7 @@ test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat who
     },
   });
   assert.equal(fromRdap.lookupStatus, 'complete');
-  assert.equal(fromRdap.score, 95);
+  assert.equal(fromRdap.score, 98);
   assert.equal(fromRdap.rirName, 'ARIN');
   assert.equal(fromRdap.rirCountry, 'US');
   assert.equal(fromRdap.isNative, true);
@@ -554,7 +554,7 @@ test('RDAP and RIPEstat RIR allocation fallbacks recover score when RIPEstat who
     'rir/data': { data: { rirs: [{ rir: 'ARIN', country: 'US', resource: '73.0.0.0/8' }] } },
   });
   assert.equal(fromRirAlloc.lookupStatus, 'complete');
-  assert.equal(fromRirAlloc.score, 95);
+  assert.equal(fromRirAlloc.score, 98);
   assert.equal(fromRirAlloc.rirCountry, 'US');
   assert.ok(factor(fromRirAlloc, 'native').evidence.some((e) => e.source === 'RIPEstat rir' && e.value === 'US'));
 });
@@ -572,11 +572,11 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
   assert.equal(netlab.isDualIsp, false);
   assert.equal(netlab.isProxy, true);
   assert.equal(netlab.proxyLabel, 'VPN 节点');
-  assert.equal(netlab.score, 65);
+  assert.equal(netlab.score, 80);
   assert.equal(netlab.scoreConfidence, 'high');
   assert.ok(netlab.scenes.length === 8);
 
-  // 2. Unlisted ASN classified via PeeringDB + clean ipquery -> business 89 (95 - 6)
+  // 2. Unlisted ASN classified via PeeringDB + clean ipquery -> business 92 (98 - 6)
   const regional = await lookup('154.16.10.25', {
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 64555, isp: 'Acme Regional Net', org: 'Acme Corp' } },
     'peeringdb.com': { data: [{ name: 'ACME-NET', info_type: 'Enterprise' }] },
@@ -584,7 +584,7 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
     'ipquery.io': { ip: '154.16.10.25', isp: { asn: 'AS64555', org: 'Acme Corp', isp: 'Acme Regional Net' }, location: { country_code: 'US' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
   });
   assert.equal(regional.usageType, 'business');
-  assert.equal(regional.score, 89);
+  assert.equal(regional.score, 92);
   assert.ok(factor(regional, 'network').evidence.some((e) => e.source === 'PeeringDB'));
 
   // 3. Plan B optional keys (ipapi.is Dual-ISP + AbuseIPDB high abuse confidence)
@@ -606,7 +606,7 @@ test('commercial networks like 154.12.35.2, PeeringDB types, proxycheck VPN flag
     assert.equal(enriched.hasThreat, true);
     assert.equal(enriched.score, 29); // Severe abuse cannot be offset by residential identity
     assert.equal(factor(enriched, 'reputation').delta, -65);
-    assert.equal(factor(enriched, 'safety').delta, -1);
+    assert.equal(factor(enriched, 'safety').delta, -4);
     assert.ok(factor(enriched, 'reputation').evidence.some((e) => e.source === 'AbuseIPDB'));
     assert.ok(factor(enriched, 'network').evidence.some((e) => e.source === 'ipapi.is' && e.field === 'is_datacenter' && e.value === 'false'));
     assert.equal(/[\p{Script=Han}]/u.test(JSON.stringify(localizeLookup(enriched, 'en'))), false);
@@ -623,7 +623,7 @@ test('streaming lookup emits every upstream source completion and supports cache
     const info = await lookupIpFull('82.152.6.22', null, false, null, {
       onSource: (ev) => seen.push(ev),
     });
-    assert.equal(info.score, 95);
+    assert.equal(info.score, 98);
     assert.equal(seen.length, STREAM_SOURCES.length);
     assert.deepEqual(new Set(seen.map((s) => s.id)), new Set(STREAM_SOURCES.map((s) => s.id)));
     // IP2Location.io is only queried with a key configured
@@ -702,7 +702,7 @@ test('legacy verdict API shares the evidence engine and never publishes a fraud 
     const response = await GET({ request: new Request(url, { headers: { 'cf-connecting-ip': '1.1.1.1' } }), url });
     const { report } = await response.json();
     assert.equal(response.status, 200);
-    assert.equal(report.score, 95);
+    assert.equal(report.score, 98);
     assert.equal(report.fraudRisk, null);
     assert.equal(report.scoringVersion, '2026-11-23');
     assert.equal(report.scoreBase + report.factors.reduce((sum, f) => sum + f.delta, 0), report.score);
@@ -724,7 +724,7 @@ test('free sources alone give complete reputation coverage and a clean verdict',
   assert.equal(info.reputationCoverage, 'complete');
   assert.equal(info.hasThreat, false);
   assert.equal(info.scoreConfidence, 'high');
-  assert.equal(info.score, 95);
+  assert.equal(info.score, 98);
   assert.equal(sum(info), info.score);
   assert.equal(info.reputationChecks.some((c) => c.status === 'not_configured'), false);
   assert.ok(info.scenes.every((s) => s.tone === 'ok'));

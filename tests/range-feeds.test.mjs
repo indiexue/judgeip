@@ -202,3 +202,32 @@ test('IP2Location.io supplies the postcode and a proxy flag only with a key', as
   const bad = await run('11.0.9.44', { ip2locationKey: 'bad' }, { error: { error_code: 10000, error_message: 'Invalid API key.' } });
   assert.equal(bad.postalCode, '—');
 });
+
+test('one data center vote against the rest is a small deduction, not a data center', async () => {
+  const run = async (ip, ipapi) => {
+    const previous = globalThis.fetch;
+    globalThis.fetch = upstream({
+      'ipquery.io': { ip, isp: { asn: 'AS7922', isp: 'Comcast Cable' }, location: { country_code: 'US', city: 'Dallas' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
+      'api.ipapi.is': { ip, is_datacenter: ipapi, is_proxy: false, is_vpn: false, company: { name: 'Comcast Cable', type: 'isp' }, asn: { asn: 7922, org: 'Comcast Cable', type: 'isp', country: 'US' }, location: { country_code: 'US' } },
+    });
+    try {
+      const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+      return await lookupIpFull(ip, null, false, { ipapiIsKey: 'k' });
+    } finally {
+      globalThis.fetch = previous;
+    }
+  };
+  const lone = await run('11.0.9.50', true);
+  assert.equal(lone.usageType, 'residential');
+  assert.equal(factor(lone, 'network').status, '家庭宽带（少数来源标记机房）');
+  assert.equal(factor(lone, 'network').delta, -12);
+  assert.ok(factor(lone, 'network').evidence.some((e) => e.field === 'hosting votes' && e.value === '1 / 4'));
+  assert.equal(factor(await run('11.0.9.51', false), 'network').delta, 0);
+});
+
+test('a proxy flag from one source costs half of a confirmed one', async () => {
+  const single = await lookup('11.0.9.60', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', city: 'Dallas', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } });
+  assert.equal(factor(single, 'proxy').delta, -12);
+  const confirmed = await lookup('11.0.1.60', { 'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', city: 'Dallas', connection: { asn: 7922, isp: 'Comcast Cable' }, security: { proxy: true, vpn: false, tor: false, hosting: false } } });
+  assert.equal(factor(confirmed, 'proxy').delta, -24, 'a VPN exit range confirms the flag');
+});

@@ -44,14 +44,14 @@ test('recent IPsum history lowers the score one tier below a same-day listing; a
     const sum = (info) => info.scoreBase + info.factors.reduce((n, f) => n + f.delta, 0);
     const [mild, moderate, clean] = await Promise.all(['73.162.88.1', '73.162.88.2', '73.162.88.3'].map((ip) => lookupIpFull(ip, null, false, {})));
 
-    assert.equal(clean.score, 95);
+    assert.equal(clean.score, 98);
     assert.equal(clean.hasThreat, false);
     assert.equal(clean.reputationCoverage, 'complete');
 
     assert.equal(mild.hasThreat, true);
     assert.equal(mild.threatLabel, '近 30 天曾被 3 个名单收录');
     assert.equal(reputation(mild).delta, -18);
-    assert.equal(mild.score, 77);
+    assert.equal(mild.score, 80);
     assert.ok(reputation(mild).evidence.some((e) => e.source === 'IPsum 30-day history' && e.value.endsWith('/ 3')));
     assert.equal(localizeLookup(mild, 'en').threatLabel, 'Listed by 3 lists in the last 30 days');
 
