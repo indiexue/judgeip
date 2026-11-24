@@ -1,6 +1,7 @@
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { parseIpsumFeed } from '../src/lib/ipsum-format.ts';
 import { compileHistoryIndex, parseHistoryTsv } from '../src/lib/ipsum-history-format.ts';
+import { RANGE_FEEDS, compileRangeIndex, parseRangeList } from '../src/lib/range-feeds.ts';
 
 const root = new URL('../public/assets/data/', import.meta.url);
 const url = 'https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt';
@@ -38,4 +39,21 @@ try {
 } catch (error) {
   await writeFile(new URL('ipsum-history.bin', root), Buffer.alloc(0));
   console.warn('IPsum history unavailable during build.', error instanceof Error ? error.message : 'unknown error');
+}
+
+// Range lists (VPN exits, Spamhaus DROP, FireHOL level1). A failed or truncated download keeps the previous file.
+for (const feed of RANGE_FEEDS) {
+  const target = new URL(`ranges-${feed.id}.bin`, root);
+  try {
+    const response = await fetch(feed.url, { signal: AbortSignal.timeout(20_000), headers: { 'User-Agent': 'judgeip-build (+https://judgeip.com)' } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const ranges = parseRangeList(await response.text());
+    if (ranges.length < feed.minRanges) throw new Error(`only ${ranges.length} ranges`);
+    await writeFile(target, compileRangeIndex(ranges, Date.now()));
+    console.log(`${feed.source} compiled: ${ranges.length} ranges`);
+  } catch (error) {
+    try { await readFile(target); }
+    catch { await writeFile(target, Buffer.alloc(0)); }
+    console.warn(`${feed.source} unavailable during build; keeping the previous file if any.`, error instanceof Error ? error.message : 'unknown error');
+  }
 }

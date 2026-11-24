@@ -26,6 +26,19 @@ export const REPORT_SOURCES: DataSource[] = [
     timeoutMs: 2800,
   },
   {
+    name: 'X4BNet VPN ranges / Spamhaus DROP / FireHOL level1', url: 'https://github.com/X4BNet/lists_vpn',
+    provides: { zh: '按网段发布的名单：X4BNet 的 VPN 出口段（MIT）命中按 VPN 计；Spamhaus DROP 命中按重度风险；FireHOL level1 命中按中度风险', en: 'Range lists: X4BNet VPN exit ranges (MIT) count as VPN; a Spamhaus DROP hit is severe risk; a FireHOL level1 hit is moderate risk' },
+    scope: { zh: 'IPv4；只覆盖已收录的网段，未命中不代表不是 VPN 或没有滥用', en: 'IPv4; covers listed ranges only, a miss does not rule out VPN or abuse' },
+    freshness: { zh: '每次部署时抓取；超过 8 天的文件记为未获取', en: 'Fetched at each deployment; files older than 8 days are unavailable' },
+    timeoutMs: 1200,
+  },
+  {
+    name: 'Cloudflare Radar (optional)', url: 'https://radar.cloudflare.com/',
+    provides: { zh: '人机比例：该 ASN 近 7 天发往 Cloudflare 的 HTTP 请求里人类与机器流量的占比；不参与评分', en: 'Human / bot share: human and automated share of HTTP requests from the ASN to Cloudflare over the last 7 days; not scored' },
+    scope: { zh: '整个 ASN 的统计，不是单个 IP；仅在配置 Radar API Token 时显示', en: 'Whole-ASN statistic, not per IP; shown only with a Radar API token configured' },
+    freshness: { zh: '按 ASN 缓存 12 小时', en: 'Cached per ASN for 12 hours' }, timeoutMs: 2000,
+  },
+  {
     name: 'AbuseIPDB / ipapi.is (optional)', url: 'https://www.abuseipdb.com/',
     provides: { zh: '仅配置授权 Key 时查询滥用证据；未配置与失败单独展示', en: 'Abuse evidence only with configured authorized keys; not configured and unavailable are explicit' },
     scope: { zh: '取决于提供者；不含 IPQualityScore / ipdata', en: 'Provider-dependent; does not include IPQualityScore / ipdata' },

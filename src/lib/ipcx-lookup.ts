@@ -2,6 +2,7 @@ import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, type UsageType } 
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
 import { checkPublicReputation, checkReputationHistory, type ReputationCheck } from './reputation-feeds';
+import { checkRangeFeeds } from './range-feeds';
 import { CACHE_COMPLETE_MINUTES, CACHE_PARTIAL_SECONDS, CACHE_MAX_ENTRIES } from './data-sources';
 import {
   SCORE_BASE,
@@ -57,6 +58,7 @@ export interface OptionalIntelKeys {
   ipapiIsKey?: string;
   abuseIpdbKey?: string;
   proxycheckKey?: string;
+  radarToken?: string;
 }
 
 export interface LookupSourceEvent {
@@ -143,6 +145,10 @@ export interface HomeIpLookupResult {
   city: string;
   regionEn: string;
   cityEn: string;
+  /* 邮编只取给出所显示城市的那个来源，免得城市和邮编对不上 */
+  postalCode: string;
+  /* 只有配置了 Cloudflare Radar 密钥才有；是整个 ASN 的流量占比 */
+  asnTraffic: AsnTrafficShare | null;
   latitude: number | null;
   longitude: number | null;
   timezone: string;
@@ -251,6 +257,7 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
       ipapiIsKey: e.IPAPI_IS_KEY,
       abuseIpdbKey: e.ABUSEIPDB_KEY,
       proxycheckKey: e.PROXYCHECK_KEY,
+      radarToken: e.CF_RADAR_TOKEN,
     };
   } catch {
     const p = typeof process !== 'undefined' && process.env ? process.env : {};
@@ -258,6 +265,7 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
       ipapiIsKey: p.IPAPI_IS_KEY,
       abuseIpdbKey: p.ABUSEIPDB_KEY,
       proxycheckKey: p.PROXYCHECK_KEY,
+      radarToken: p.CF_RADAR_TOKEN,
     };
   }
 }
@@ -361,6 +369,31 @@ async function fetchShodan<T>(ipv4: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+/* Cloudflare Radar：这个 ASN 发往 Cloudflare 的 HTTP 请求里人类与机器流量的占比（近 7 天）。
+   这是整个 ASN 的统计，不是单个 IP 的数据；只在配置了 CF_RADAR_TOKEN 时查询，按 ASN 缓存 12 小时 */
+export interface AsnTrafficShare { asn: number; human: number; bot: number; dateRange: string }
+const radarCache = new Map<number, { exp: number; share: AsnTrafficShare | null }>();
+
+async function fetchRadarBotShare(asn: number, token: string): Promise<AsnTrafficShare | null> {
+  const hit = radarCache.get(asn);
+  if (hit && hit.exp > Date.now()) return hit.share;
+  const resp = await fetchJson<{ success?: boolean; result?: { summary_0?: { human?: string | number; bot?: string | number } } }>(
+    `https://api.cloudflare.com/client/v4/radar/http/summary/bot_class?asn=${asn}&dateRange=7d&format=json`,
+    2000,
+    { Authorization: `Bearer ${token}` },
+  );
+  const human = Number(resp?.result?.summary_0?.human);
+  const bot = Number(resp?.result?.summary_0?.bot);
+  if (!resp?.success || !Number.isFinite(human) || !Number.isFinite(bot) || human < 0 || bot < 0 || Math.abs(human + bot - 100) > 1) return null;
+  const share = { asn, human: Math.round(human * 10) / 10, bot: Math.round(bot * 10) / 10, dateRange: '7d' };
+  if (radarCache.size > 600) {
+    const first = radarCache.keys().next().value;
+    if (first !== undefined) radarCache.delete(first);
+  }
+  radarCache.set(asn, { exp: Date.now() + 12 * 3600 * 1000, share });
+  return share;
 }
 
 /* PeeringDB 按 ASN 缓存（节点内 6 小时有效，避免重复请求） */
@@ -906,6 +939,8 @@ function limitedLookup(parsed: NonNullable<ReturnType<typeof parseIp>>, cf: Reco
     city,
     regionEn: region,
     cityEn: city,
+    postalCode: '—',
+    asnTraffic: null,
     latitude: null,
     longitude: null,
     timezone,
@@ -925,6 +960,7 @@ export const STREAM_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'dnsbl', label: '4× DNSBL' },
   { id: 'peeringdb', label: 'PeeringDB / ASN' },
   { id: 'ipsum', label: 'IPsum' },
+  { id: 'ranges', label: 'X4B / DROP / FireHOL' },
 ];
 
 export async function lookupIpFull(
@@ -1016,6 +1052,8 @@ async function runLookup(
       city: '—',
       regionEn: '—',
       cityEn: '—',
+      postalCode: '—',
+      asnTraffic: null,
       latitude: null,
       longitude: null,
       timezone: '—',
@@ -1055,6 +1093,7 @@ async function runLookup(
     country?: string;
     region?: string;
     city?: string;
+    postal?: string;
     latitude?: number;
     longitude?: number;
     connection?: { asn?: number; org?: string; isp?: string; domain?: string };
@@ -1070,6 +1109,7 @@ async function runLookup(
       country_code?: string;
       city?: string;
       state?: string;
+      zipcode?: string;
       latitude?: number;
       longitude?: number;
       timezone?: string;
@@ -1092,6 +1132,7 @@ async function runLookup(
     isocode?: string;
     region?: string;
     city?: string;
+    postcode?: string;
     timezone?: string;
     latitude?: number;
     longitude?: number;
@@ -1110,7 +1151,7 @@ async function runLookup(
     is_abuser?: boolean;
     company?: { name?: string; domain?: string; type?: string; abuser_score?: string };
     asn?: { asn?: number; org?: string; domain?: string; type?: string; country?: string; abuser_score?: string };
-    location?: { country_code?: string; state?: string; city?: string; timezone?: string; latitude?: number; longitude?: number };
+    location?: { country_code?: string; state?: string; city?: string; zip?: string; timezone?: string; latitude?: number; longitude?: number };
   }
 
   interface AbuseIpdbResp {
@@ -1139,7 +1180,7 @@ async function runLookup(
   const ipWhoUrl = `https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`;
   const ipQueryUrl = `https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`;
   const onSrc = streamOpts?.onSource;
-  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory]] = await Promise.all([
+  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory], rangeChecks] = await Promise.all([
     fetchJson<IpWhoResp>(ipWhoUrl, 2300).then((r) => {
       const ok = r?.success === true;
       const message = r && !ok ? String(r.message || 'success: false') : '';
@@ -1193,6 +1234,10 @@ async function runLookup(
       onSrc?.({ id: 'ipsum', label: 'IPsum', status: checks[0].status === 'unavailable' ? 'fail' : 'ok' });
       return checks;
     }),
+    checkRangeFeeds(parsed.normalized).then((checks) => {
+      onSrc?.({ id: 'ranges', label: 'X4B / DROP / FireHOL', status: parsed.version !== 4 ? 'skip' : checks.some((c) => c.status === 'unavailable') ? 'fail' : 'ok' });
+      return checks;
+    }),
   ]);
 
   // 严格校验各上游返回：空对象（如测试桩默认返回）或错误状态不采信
@@ -1229,6 +1274,12 @@ async function runLookup(
   const flagEmoji = isoToFlag(countryCode);
   const region = ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || (cf?.region as string) || '—';
   const city = ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || (cf?.city as string) || '—';
+  const postalCode = ([
+    [ipWho?.city, ipWho?.postal],
+    [ipQuery?.location?.city, ipQuery?.location?.zipcode],
+    [pcEntry?.city, pcEntry?.postcode],
+    [ipapiIs?.location?.city, ipapiIs?.location?.zip],
+  ] as Array<[string | undefined, string | undefined]>).find(([c, zip]) => c === city && zip && /^[\w -]{2,12}$/.test(zip.trim()))?.[1]?.trim() || '—';
   const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
   const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region);
   const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, cf?.city);
@@ -1250,7 +1301,9 @@ async function runLookup(
 
   // 若 ASN 不在内置表里，顺手查一次带 6h 缓存的 PeeringDB 拿到真实登记类型，同时查 ASN 的 RDAP 登记方
   // PeeringDB 返回 'not_listed' 表示确认未登记，null 表示没查到结果（超时或报错），两者不能混用
+  const radarShare = asn && keys.radarToken ? fetchRadarBotShare(asn, keys.radarToken) : Promise.resolve(null);
   const [peeringDbResult, asnHolder] = asn && !profile ? await Promise.all([fetchPeeringDbType(asn), fetchAsnHolder(asn)]) : [null, null];
+  const asnTraffic = await radarShare;
   const peeringDb = peeringDbResult && peeringDbResult !== 'not_listed' && peeringDbResult.infoType ? peeringDbResult : null;
   onSrc?.({
     id: 'peeringdb',
@@ -1372,6 +1425,10 @@ async function runLookup(
   // 机房本身已按网络类型扣分；家宽、移动等网络上的同一标记仍然有效（多为住宅代理）。
   const hostingNetwork = usage === 'hosting' || usage === 'cdn';
   const pcFlag = pcEntry?.proxy === 'yes' && !hostingNetwork;
+  // 网段名单：VPN 出口段按 VPN 计；Spamhaus DROP 是被劫持或犯罪团伙控制的网段，按重度；FireHOL level1 按中度
+  const rangeVpn = rangeChecks.filter((c) => c.kind === 'vpn' && c.status === 'listed');
+  const rangeAbuse = rangeChecks.filter((c) => c.kind === 'abuse' && c.status === 'listed');
+  const dropListed = rangeAbuse.some((c) => c.source === 'Spamhaus DROP');
   const isVpn = Boolean(
     ipWho?.security?.vpn
     || ipQuery?.risk?.is_vpn
@@ -1379,6 +1436,7 @@ async function runLookup(
     || (pcFlag && pcTypeLow === 'vpn')
     || tags.includes('vpn')
     || (profile && profile.riskModifier <= -60)
+    || rangeVpn.length > 0
   );
   const proxyFound = Boolean(
     isTor
@@ -1419,8 +1477,8 @@ async function runLookup(
   const aggregateCount = publicReputation.status === 'listed' ? publicReputation.count || 1 : 0;
   // 当天不在名单里、但近 30 天曾被 ≥2 个名单收录：比当天命中低一档，≥5 个名单按中度，其余按轻度
   const pastLists = aggregateCount === 0 && reputationHistory.status === 'listed' ? reputationHistory.maxLists || 2 : 0;
-  const severeRisk = hasCompromised || abuseScore >= 75 || queryRisk >= 90 || proxyRisk >= 90 || aggregateCount >= 5;
-  const moderateRisk = hasScanner || abuseScore >= 25 || ipapiIs?.is_abuser === true || queryRisk >= 65 || proxyRisk >= 75 || aggregateCount >= 3 || pastLists >= 5;
+  const severeRisk = dropListed || hasCompromised || abuseScore >= 75 || queryRisk >= 90 || proxyRisk >= 90 || aggregateCount >= 5;
+  const moderateRisk = rangeAbuse.length > 0 || hasScanner || abuseScore >= 25 || ipapiIs?.is_abuser === true || queryRisk >= 65 || proxyRisk >= 75 || aggregateCount >= 3 || pastLists >= 5;
   const mildRisk = vulnsCount > 0 || dnsblListed.length > 0 || aggregateCount > 0 || pastLists > 0;
   const reputationSeverity = severeRisk ? 'severe' : moderateRisk ? 'moderate' : mildRisk ? 'mild' : 'none';
   const threatFound = reputationSeverity !== 'none';
@@ -1441,6 +1499,7 @@ async function runLookup(
       { source: 'Shodan InternetDB', checkedAt, status: !shodan ? 'unavailable' : hasCompromised || hasScanner ? 'listed' : 'not_listed' } as ReputationCheck,
     ] : []),
     { source: 'proxycheck.io / ipquery.io risk', checkedAt, status: !riskScoreKnown ? 'unavailable' : Math.max(queryRisk, proxyRisk) >= 65 ? 'listed' : 'not_listed' },
+    ...(parsed.version === 4 ? rangeChecks : []),
     ...(keys.abuseIpdbKey ? [{ source: 'AbuseIPDB', checkedAt, status: !abuseData ? 'unavailable' : abuseScore >= 25 ? 'listed' : 'not_listed' } as ReputationCheck] : []),
     ...(keys.ipapiIsKey ? [{ source: 'ipapi.is', checkedAt, status: !ipapiIs || typeof ipapiIs.is_abuser !== 'boolean' ? 'unavailable' : ipapiIs.is_abuser ? 'listed' : 'not_listed' } as ReputationCheck] : []),
   ];
@@ -1448,6 +1507,8 @@ async function runLookup(
 
   const threatLabel = dnsblListed.length
     ? `命中黑名单 (${dnsblListed.join(', ')})`
+    : dropListed ? 'Spamhaus DROP 网段'
+    : rangeAbuse.length > 0 ? 'FireHOL 攻击来源网段'
     : aggregateCount > 0 ? '公开信誉名单命中'
       : pastLists > 0 ? `近 30 天曾被 ${pastLists} 个名单收录`
       : abuseScore >= 25 ? `滥用举报 (${abuseScore}%)`
@@ -1526,6 +1587,7 @@ async function runLookup(
         ...shodanTags,
         ...(shodan && !shodanEmpty ? ev('Shodan InternetDB', '代理特征端口', proxyPorts.join(', ') || '[]') : []),
         ...(profile && profile.riskModifier <= -60 ? ev('JudgeIP ASN 表', `AS${profile.asn}`, profile.note) : []),
+        ...rangeVpn.flatMap((c) => ev(c.source, 'range', c.range)),
       ],
     },
     {
@@ -1538,6 +1600,7 @@ async function runLookup(
         ...dnsblChecks.flatMap((c) => (c.query ? ev(c.name, c.query, c.answer || '无响应') : [])),
         ...ev('IPsum', 'status / aggregate count', `${publicReputation.status} / ${aggregateCount}`),
         ...ev('IPsum', 'updatedAt', publicReputation.updatedAt),
+        ...rangeAbuse.flatMap((c) => ev(c.source, 'range', c.range)),
         ...(reputationHistory.status === 'listed'
           ? ev('IPsum 30-day history', 'last_seen / max_lists', `${reputationHistory.lastSeen} / ${reputationHistory.maxLists}`)
           : []),
@@ -1712,6 +1775,8 @@ async function runLookup(
     city,
     regionEn,
     cityEn,
+    postalCode,
+    asnTraffic,
     latitude: latitude !== null && !Number.isNaN(latitude) ? Number(latitude.toFixed(3)) : null,
     longitude: longitude !== null && !Number.isNaN(longitude) ? Number(longitude.toFixed(3)) : null,
     timezone,

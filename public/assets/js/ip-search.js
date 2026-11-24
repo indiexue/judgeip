@@ -340,6 +340,19 @@
     );
     setFieldText('region', info.region);
     setFieldText('city', info.city);
+    var botRow = document.querySelector('[data-botshare-row]');
+    if (botRow) {
+      var share = info.asnTraffic;
+      botRow.hidden = !share;
+      setFieldHtml('botShare', share
+        ? '<span class="botshare"><span class="botshare__human" style="flex: ' + Number(share.human) + ' 1 0">' + T('人类', 'Human') + ' ' + esc(share.human) + '%</span>'
+          + '<span class="botshare__bot" style="flex: ' + Number(share.bot) + ' 1 0">' + T('机器', 'Bot') + ' ' + esc(share.bot) + '%</span></span>'
+          + '<span class="geo__note botshare-note">' + esc(T('AS' + share.asn + ' 整体流量 · Cloudflare Radar 近 7 天', 'All AS' + share.asn + ' traffic · Cloudflare Radar, last 7 days')) + '</span>'
+        : '');
+    }
+    setFieldHtml('postalCode', info.postalCode && info.postalCode !== '—'
+      ? '<span class="mono">' + esc(info.postalCode) + '</span>'
+      : '<span class="geo__note">' + T('来源未提供', 'Not provided') + '</span>');
     setFieldHtml('coords', '<span class="mono">' + (info.latitude !== null && info.longitude !== null ? esc(info.latitude + ', ' + info.longitude) : '—') + '</span>');
     setFieldHtml('timezone', '<span class="mono">' + esc(info.timezone) + '</span>' + (info.localTimeHm ? '<span class="dim"> · </span><span class="mono">' + esc(info.localTimeHm) + '</span>' : ''));
     setFieldText('continent', info.continentZh);

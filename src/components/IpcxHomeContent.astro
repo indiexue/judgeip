@@ -411,6 +411,30 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         </span>
       </div>
 
+      <div class="hero-meta__row" data-botshare-row hidden={!info.asnTraffic}>
+        <span class="hero-meta__label">{t('人机比例', 'Human / bot')}</span>
+        <span class="hero-meta__val" data-field="botShare">
+          {info.asnTraffic && (
+            <>
+              <span class="botshare">
+                <span class="botshare__human" style={`flex: ${info.asnTraffic.human} 1 0`}>{t('人类', 'Human')} {info.asnTraffic.human}%</span>
+                <span class="botshare__bot" style={`flex: ${info.asnTraffic.bot} 1 0`}>{t('机器', 'Bot')} {info.asnTraffic.bot}%</span>
+              </span>
+              <span class="geo__note botshare-note">{t(`AS${info.asnTraffic.asn} 整体流量 · Cloudflare Radar 近 7 天`, `All AS${info.asnTraffic.asn} traffic · Cloudflare Radar, last 7 days`)}</span>
+            </>
+          )}
+        </span>
+      </div>
+
+      <div class="hero-meta__row">
+        <span class="hero-meta__label">{t('邮编', 'Postcode')}</span>
+        <span class="hero-meta__val" data-field="postalCode">
+          {info.postalCode && info.postalCode !== '—'
+            ? <span class="mono">{info.postalCode}</span>
+            : <span class="geo__note">{t('来源未提供', 'Not provided')}</span>}
+        </span>
+      </div>
+
       <div class="hero-meta__row">
         <span class="hero-meta__label">PTR</span>
         <span class="hero-meta__val" data-field="heroPtr">

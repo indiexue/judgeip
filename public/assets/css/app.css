@@ -3534,3 +3534,10 @@ main:focus {
     display: none;
   }
 }
+
+/* 人机比例：Cloudflare Radar 的 ASN 流量占比 */
+.botshare { display: flex; height: 20px; border-radius: 4px; overflow: hidden; font-size: 11.5px; font-weight: 600; line-height: 20px; }
+.botshare__human { background: var(--solid-green-bg); color: var(--solid-green-fg); padding: 0 8px; white-space: nowrap; min-width: max-content; }
+.botshare__bot { background: var(--solid-red-bg); color: var(--solid-red-fg); padding: 0 8px; white-space: nowrap; min-width: max-content; }
+.botshare-note { display: block; margin-top: 4px; }
+.hero-meta__row[hidden] { display: none; }

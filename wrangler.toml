@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 binding = "ASSETS"
 # 这些路径先进 Worker，由 src/worker.ts 拒绝外部下载；服务端经 ASSETS 绑定读取不受影响
-run_worker_first = ["/assets/data/ipsum*"]
+run_worker_first = ["/assets/data/ipsum*", "/assets/data/ranges-*"]
 
 [observability]
 enabled = true

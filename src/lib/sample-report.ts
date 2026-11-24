@@ -88,6 +88,8 @@ export const SAMPLE_REPORT: HomeIpLookupResult = {
   rpkiLabel: 'RPKI 有效 (Valid)',
   ptrRecord: 'dns.google',
   ptrStatus: 'found',
+  postalCode: '—',
+  asnTraffic: null,
   openPorts: [53, 443],
   proxyPorts: [],
   vulnsCount: 0,

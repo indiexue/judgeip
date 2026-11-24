@@ -136,6 +136,8 @@ const LABELS: Record<string, string> = {
   未获取: 'Unavailable',
   基础检查不完整: 'Base checks incomplete',
   公开信誉名单命中: 'Public reputation listing',
+  'Spamhaus DROP 网段': 'Spamhaus DROP range',
+  'FireHOL 攻击来源网段': 'FireHOL attack-source range',
   信誉证据覆盖: 'Reputation coverage',
   已查信誉来源齐备: 'Configured reputation evidence available',
   信誉覆盖有限: 'Limited reputation coverage',

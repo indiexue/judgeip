@@ -10,6 +10,13 @@ ipsumFixture.write('IPSM');
 ipsumFixture.writeDoubleBE(Date.now(), 4);
 ipsumFixture.writeUInt32BE(1000, 12);
 for (let i = 0; i < 1000; i++) { ipsumFixture.writeUInt32BE(11 * 2 ** 24 + i, 16 + i * 5); ipsumFixture.writeUInt8(1, 20 + i * 5); }
+// One range (11.0.1.0 – 11.0.1.255) in every range list; the addresses under test stay outside it
+const rangeFixture = Buffer.alloc(24);
+rangeFixture.write('IPRG');
+rangeFixture.writeDoubleBE(Date.now(), 4);
+rangeFixture.writeUInt32BE(1, 12);
+rangeFixture.writeUInt32BE(11 * 2 ** 24 + 256, 16);
+rangeFixture.writeUInt32BE(11 * 2 ** 24 + 511, 20);
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -25,6 +32,7 @@ function upstream(overrides = {}) {
     'ipwho.is': { success: true, country_code: 'US', continent_code: 'NA', connection: { asn: 7922, isp: 'Comcast Cable' }, timezone: { id: 'America/New_York' }, security: { proxy: false, vpn: false, tor: false, hosting: false } },
     'abuseipdb.com': { data: { abuseConfidenceScore: 0, totalReports: 0 } },
     'judgeip.com/assets/data/ipsum.bin': () => new Response(ipsumFixture),
+    'judgeip.com/assets/data/ranges-': () => new Response(rangeFixture),
     internetdb: { ports: [], tags: [], vulns: [], hostnames: [] },
     'whois/data': { data: { authorities: ['ARIN'], records: [[{ key: 'NetRange', value: '73.0.0.0 - 73.255.255.255' }, { key: 'Country', value: 'US' }, { key: 'Comment', value: 'ignored' }]] } },
     'network-info': { data: { prefix: '73.162.0.0/16', asns: ['7922'] } },
