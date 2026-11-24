@@ -367,7 +367,10 @@ const footCols = [
         </div>
 
         <div class="foot__bottom">
-          <span>© 2026 JudgeIP.com · {t('每项评分均附带可展开核对的上游原始数据', 'Every deduction is backed by verifiable upstream records')}</span>
+          <span>
+            © 2026 JudgeIP.com · {t('每项评分均附带可展开核对的上游原始数据', 'Every deduction is backed by verifiable upstream records')}
+            <span class="foot__credit">· {t('部分定位数据来自', 'Some geolocation by')} <a href="https://www.ip2location.io" rel="noopener">IP2Location.io</a></span>
+          </span>
           <span class="foot__legal">
             <a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a>
             <a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a>

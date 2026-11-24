@@ -33,6 +33,12 @@ export const REPORT_SOURCES: DataSource[] = [
     timeoutMs: 1200,
   },
   {
+    name: 'IP2Location.io (optional)', url: 'https://www.ip2location.io/',
+    provides: { zh: '城市、邮编、经纬度和公开代理标记（is_proxy，免费版只覆盖公开代理）', en: 'City, postcode, coordinates and a public-proxy flag (is_proxy; the free plan covers public proxies only)' },
+    scope: { zh: '仅在配置 IP2LOCATION_KEY 时查询；邮编只在它给出的城市与页面显示的城市一致时采用', en: 'Queried only with IP2LOCATION_KEY configured; its postcode is used only when its city matches the displayed city' },
+    freshness: { zh: '随查询获取；免费账号每月 5 万次', en: 'Fetched per lookup; 50,000 queries a month on the free plan' }, timeoutMs: 2200,
+  },
+  {
     name: 'Cloudflare Radar (optional)', url: 'https://radar.cloudflare.com/',
     provides: { zh: '人机比例：该 ASN 近 7 天发往 Cloudflare 的 HTTP 请求里人类与机器流量的占比；不参与评分', en: 'Human / bot share: human and automated share of HTTP requests from the ASN to Cloudflare over the last 7 days; not scored' },
     scope: { zh: '整个 ASN 的统计，不是单个 IP；仅在配置 Radar API Token 时显示', en: 'Whole-ASN statistic, not per IP; shown only with a Radar API token configured' },

@@ -60,6 +60,7 @@ export interface OptionalIntelKeys {
   abuseIpdbKey?: string;
   proxycheckKey?: string;
   radarToken?: string;
+  ip2locationKey?: string;
 }
 
 export interface LookupSourceEvent {
@@ -259,6 +260,7 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
       abuseIpdbKey: e.ABUSEIPDB_KEY,
       proxycheckKey: e.PROXYCHECK_KEY,
       radarToken: e.CF_RADAR_TOKEN,
+      ip2locationKey: e.IP2LOCATION_KEY,
     };
   } catch {
     const p = typeof process !== 'undefined' && process.env ? process.env : {};
@@ -267,6 +269,7 @@ async function resolveOptionalKeys(explicit?: OptionalIntelKeys | null): Promise
       abuseIpdbKey: p.ABUSEIPDB_KEY,
       proxycheckKey: p.PROXYCHECK_KEY,
       radarToken: p.CF_RADAR_TOKEN,
+      ip2locationKey: p.IP2LOCATION_KEY,
     };
   }
 }
@@ -1008,6 +1011,7 @@ export const STREAM_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'dnsbl', label: '4× DNSBL' },
   { id: 'peeringdb', label: 'PeeringDB / ASN' },
   { id: 'ipsum', label: 'IPsum' },
+  { id: 'ip2location', label: 'IP2Location.io' },
   { id: 'ranges', label: 'X4B / DROP / FireHOL' },
 ];
 
@@ -1202,6 +1206,17 @@ async function runLookup(
     location?: { country_code?: string; state?: string; city?: string; zip?: string; timezone?: string; latitude?: number; longitude?: number };
   }
 
+  interface Ip2LocationResp {
+    country_code?: string;
+    region_name?: string;
+    city_name?: string;
+    latitude?: number;
+    longitude?: number;
+    zip_code?: string;
+    is_proxy?: boolean;
+    error?: { error_code?: number; error_message?: string };
+  }
+
   interface AbuseIpdbResp {
     data?: {
       abuseConfidenceScore?: number;
@@ -1228,7 +1243,7 @@ async function runLookup(
   const ipWhoUrl = `https://ipwho.is/${encodeURIComponent(parsed.normalized)}?lang=en`;
   const ipQueryUrl = `https://api.ipquery.io/${encodeURIComponent(parsed.normalized)}?format=json`;
   const onSrc = streamOpts?.onSource;
-  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory], rangeChecks] = await Promise.all([
+  const [ipWhoRaw, ipQueryRaw, proxyCheckRaw, shodanRaw, routing, dnsblChecks, ipapiIsRaw, abuseRaw, [publicReputation, reputationHistory], rangeChecks, ip2lRaw] = await Promise.all([
     fetchJson<IpWhoResp>(ipWhoUrl, 2300).then((r) => {
       const ok = r?.success === true;
       const message = r && !ok ? String(r.message || 'success: false') : '';
@@ -1297,6 +1312,23 @@ async function runLookup(
       onSrc?.({ id: 'ranges', label: 'X4B / DROP / FireHOL', status: parsed.version !== 4 ? 'skip' : checks.some((c) => c.status === 'unavailable') ? 'fail' : 'ok' });
       return checks;
     }),
+    // IP2Location.io 免费账号：城市、邮编和公开代理标记。只在配了 IP2LOCATION_KEY 时查询，不用无 Key 的共享额度
+    keys.ip2locationKey
+      ? (async () => {
+          let message = '';
+          const { value, healthId } = await withKeys('api.ip2location.io', keys.ip2locationKey, async (key, id) => {
+            const res = await fetchJson<Ip2LocationResp>(`https://api.ip2location.io/?key=${encodeURIComponent(key)}&ip=${encodeURIComponent(parsed.normalized)}&format=json`, 2200, undefined, id);
+            message = String(res?.error?.error_message || '');
+            if (message && /key|limit|quota|exceed|credit/i.test(message)) pauseUpstream(id, message.slice(0, 80));
+            return res && res.country_code ? res : null;
+          });
+          onSrc?.({ id: 'ip2location', label: 'IP2Location.io', status: value ? 'ok' : 'fail', ...(value ? {} : { detail: message.slice(0, 120) || upstreamFailure(healthId) }) });
+          return value;
+        })()
+      : Promise.resolve(null).then((r) => {
+          onSrc?.({ id: 'ip2location', label: 'IP2Location.io', status: 'skip' });
+          return r;
+        }),
   ]);
 
   // 严格校验各上游返回：空对象（如测试桩默认返回）或错误状态不采信
@@ -1308,6 +1340,8 @@ async function runLookup(
       ? (proxyCheckRaw[parsed.normalized] as ProxyCheckEntry)
       : null;
   const ipapiIs = ipapiIsRaw && typeof ipapiIsRaw.asn === 'object' && ipapiIsRaw.asn !== null ? ipapiIsRaw : null;
+  // 邮编为 "-" 表示该来源没有
+  const ip2l = ip2lRaw ? { ...ip2lRaw, zip_code: ip2lRaw.zip_code && ip2lRaw.zip_code !== '-' ? ip2lRaw.zip_code : undefined } : null;
   const abuseData = abuseRaw && typeof abuseRaw.data?.abuseConfidenceScore === 'number'
     && Number.isFinite(abuseRaw.data.abuseConfidenceScore) && abuseRaw.data.abuseConfidenceScore >= 0
     && abuseRaw.data.abuseConfidenceScore <= 100 ? abuseRaw.data : null;
@@ -1331,21 +1365,22 @@ async function runLookup(
   const continentCode = ((cf?.continent as string) || ipWho?.continent_code || '').toUpperCase();
   const countryZh = countryCodeToZh(countryCode, ipWho?.country || ipQuery?.location?.country || pcEntry?.country || countryCode);
   const flagEmoji = isoToFlag(countryCode);
-  const region = ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || (cf?.region as string) || '—';
-  const city = ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || (cf?.city as string) || '—';
+  const region = ipWho?.region || ipQuery?.location?.state || pcEntry?.region || ipapiIs?.location?.state || ip2l?.region_name || (cf?.region as string) || '—';
+  const city = ipWho?.city || ipQuery?.location?.city || pcEntry?.city || ipapiIs?.location?.city || ip2l?.city_name || (cf?.city as string) || '—';
   const postalCode = ([
     [ipWho?.city, ipWho?.postal],
     [ipQuery?.location?.city, ipQuery?.location?.zipcode],
     [pcEntry?.city, pcEntry?.postcode],
+    [ip2l?.city_name, ip2l?.zip_code],
     [ipapiIs?.location?.city, ipapiIs?.location?.zip],
     // 只有查访客自己的出口时才有 Cloudflare 的 request.cf
     [cf?.city as string | undefined, cf?.postalCode as string | undefined],
   ] as Array<[string | undefined, string | undefined]>).find(([c, zip]) => c === city && zip && /^[\w -]{2,12}$/.test(zip.trim()))?.[1]?.trim() || '—';
   const englishPlace = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && Boolean(v) && !/[\p{Script=Han}]/u.test(v)) || '—';
-  const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, cf?.region);
-  const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, cf?.city);
-  const latitude = ipWho?.latitude ?? ipQuery?.location?.latitude ?? pcEntry?.latitude ?? ipapiIs?.location?.latitude ?? (cf?.latitude ? Number(cf.latitude) : null);
-  const longitude = ipWho?.longitude ?? ipQuery?.location?.longitude ?? pcEntry?.longitude ?? ipapiIs?.location?.longitude ?? (cf?.longitude ? Number(cf.longitude) : null);
+  const regionEn = englishPlace(ipWho?.region, ipQuery?.location?.state, pcEntry?.region, ipapiIs?.location?.state, ip2l?.region_name, cf?.region);
+  const cityEn = englishPlace(ipWho?.city, ipQuery?.location?.city, pcEntry?.city, ipapiIs?.location?.city, ip2l?.city_name, cf?.city);
+  const latitude = ipWho?.latitude ?? ipQuery?.location?.latitude ?? pcEntry?.latitude ?? ipapiIs?.location?.latitude ?? ip2l?.latitude ?? (cf?.latitude ? Number(cf.latitude) : null);
+  const longitude = ipWho?.longitude ?? ipQuery?.location?.longitude ?? pcEntry?.longitude ?? ipapiIs?.location?.longitude ?? ip2l?.longitude ?? (cf?.longitude ? Number(cf.longitude) : null);
   const timezone = ipWho?.timezone?.id || ipQuery?.location?.timezone || pcEntry?.timezone || ipapiIs?.location?.timezone || (cf?.timezone as string) || '—';
 
   const parseAsnStr = (s?: string) => (s ? Number((s.match(/(\d+)/) || [])[1]) || null : null);
@@ -1505,6 +1540,7 @@ async function runLookup(
     || ipWho?.security?.proxy
     || ipQuery?.risk?.is_proxy
     || ipapiIs?.is_proxy
+    || ip2l?.is_proxy === true
     || pcFlag
     || (proxyPorts.length > 0 && usage !== 'cdn')
   );
@@ -1513,6 +1549,7 @@ async function runLookup(
     || (ipQuery?.risk && typeof ipQuery.risk.is_proxy === 'boolean')
     || (pcEntry && (pcEntry.proxy === 'yes' || pcEntry.proxy === 'no'))
     || (ipapiIs && typeof ipapiIs.is_proxy === 'boolean')
+    || typeof ip2l?.is_proxy === 'boolean'
   );
   const isProxy = proxyFound ? true : securityKnown ? false : null;
   const proxyLabel = isTor ? 'Tor 出口' : isVpn ? 'VPN 节点' : isProxy === true ? '公开代理'
@@ -1645,6 +1682,7 @@ async function runLookup(
         ...ev('ipquery.io', 'risk.is_vpn / is_proxy', ipQuery?.risk ? `${Boolean(ipQuery.risk.is_vpn)} / ${Boolean(ipQuery.risk.is_proxy)}` : ''),
         ...ev('proxycheck.io', 'proxy / type', pcEntry ? `${pcEntry.proxy || 'no'}${pcEntry.type ? ` (${pcEntry.type})` : ''}` : ''),
         ...(ipapiIs ? ev('ipapi.is', 'is_vpn / is_proxy', `${Boolean(ipapiIs.is_vpn)} / ${Boolean(ipapiIs.is_proxy)}`) : []),
+        ...(typeof ip2l?.is_proxy === 'boolean' ? ev('IP2Location.io', 'is_proxy', String(ip2l.is_proxy)) : []),
         ...shodanTags,
         ...(shodan && !shodanEmpty ? ev('Shodan InternetDB', '代理特征端口', proxyPorts.join(', ') || '[]') : []),
         ...(profile && profile.riskModifier <= -60 ? ev('JudgeIP ASN 表', `AS${profile.asn}`, profile.note) : []),

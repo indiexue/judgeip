@@ -163,3 +163,42 @@ test('a self lookup can take the postcode from Cloudflare request data', async (
     globalThis.fetch = previous;
   }
 });
+
+test('IP2Location.io supplies the postcode and a proxy flag only with a key', async () => {
+  const calls = [];
+  const ip2l = (body) => (url) => { calls.push(url); return json(body); };
+  const run = async (ip, keys, body, extra = {}) => {
+    const previous = globalThis.fetch;
+    globalThis.fetch = upstream({
+      'ipwho.is': { success: false, message: 'quota' },
+      'ipquery.io': { ip, isp: { asn: 'AS7922', isp: 'Comcast Cable' }, location: { country_code: 'US', city: 'Dallas', zipcode: '' }, risk: { is_datacenter: false, is_vpn: false, is_tor: false, is_proxy: false, risk_score: 0 } },
+      'api.ip2location.io': ip2l(body),
+      ...extra,
+    });
+    try {
+      const { lookupIpFull } = await loadTs('../src/lib/ipcx-lookup.ts');
+      return await lookupIpFull(ip, null, false, keys);
+    } finally {
+      globalThis.fetch = previous;
+    }
+  };
+  const answer = { country_code: 'US', region_name: 'Texas', city_name: 'Dallas', latitude: 32.78, longitude: -96.8, zip_code: '75244', is_proxy: false };
+
+  const none = await run('11.0.9.40', {}, answer);
+  assert.equal(calls.length, 0, 'no key, no request');
+  assert.equal(none.postalCode, '—');
+
+  const keyed = await run('11.0.9.41', { ip2locationKey: 'k' }, answer);
+  assert.equal(keyed.postalCode, '75244');
+  assert.ok(keyed.factors.find((f) => f.key === 'proxy').evidence.some((e) => e.source === 'IP2Location.io' && e.value === 'false'));
+
+  const proxied = await run('11.0.9.42', { ip2locationKey: 'k' }, { ...answer, is_proxy: true });
+  assert.equal(proxied.isProxy, true);
+
+  const otherCity = await run('11.0.9.43', { ip2locationKey: 'k' }, { ...answer, city_name: 'Plano', zip_code: '75024' });
+  assert.equal(otherCity.city, 'Dallas');
+  assert.equal(otherCity.postalCode, '—', 'a postcode for another city is not shown');
+
+  const bad = await run('11.0.9.44', { ip2locationKey: 'bad' }, { error: { error_code: 10000, error_message: 'Invalid API key.' } });
+  assert.equal(bad.postalCode, '—');
+});

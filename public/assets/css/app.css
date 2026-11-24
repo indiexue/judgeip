@@ -3541,3 +3541,6 @@ main:focus {
 .botshare__bot { background: var(--solid-red-bg); color: var(--solid-red-fg); padding: 0 8px; white-space: nowrap; min-width: max-content; }
 .botshare-note { display: block; margin-top: 4px; }
 .hero-meta__row[hidden] { display: none; }
+.foot__credit { opacity: 0.55; font-size: 11.5px; }
+.foot__credit a { color: inherit; text-decoration: none; }
+.foot__credit a:hover { text-decoration: underline; }

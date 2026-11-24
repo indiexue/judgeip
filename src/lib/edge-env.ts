@@ -11,6 +11,7 @@ export interface EdgeEnv {
   ABUSEIPDB_KEY?: string;
   PROXYCHECK_KEY?: string;
   CF_RADAR_TOKEN?: string;
+  IP2LOCATION_KEY?: string;
 }
 
 export function getEdgeEnv(): EdgeEnv {

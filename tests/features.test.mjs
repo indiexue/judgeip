@@ -625,7 +625,8 @@ test('streaming lookup emits every upstream source completion and supports cache
     assert.equal(info.score, 95);
     assert.equal(seen.length, STREAM_SOURCES.length);
     assert.deepEqual(new Set(seen.map((s) => s.id)), new Set(STREAM_SOURCES.map((s) => s.id)));
-    assert.ok(seen.every((s) => s.status === 'ok'));
+    // IP2Location.io is only queried with a key configured
+    assert.ok(seen.every((s) => s.status === (s.id === 'ip2location' ? 'skip' : 'ok')));
 
     // Cached call still fires all source events so client progress reaches 10/10
     const cachedSeen = [];
