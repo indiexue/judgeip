@@ -131,8 +131,12 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
               <td>{t(`边缘节点的内存里，每个节点最多 ${CACHE_MAX_ENTRIES} 条，节点重启即清空`, `In memory on the edge node, at most ${CACHE_MAX_ENTRIES} entries per node, cleared when the node restarts`)}</td>
             </tr>
             <tr>
+              <th scope="row">{t('限额源缓存', 'Quota-limited source cache')}</th>
+              <td>{t('proxycheck、ipapi.is、IP2Location.io、AbuseIPDB 的成功结果另按目标 IP 保存在 Cloudflare Cache API 中 6 小时，不写入排名数据库', 'Successful proxycheck, ipapi.is, IP2Location.io and AbuseIPDB responses are also cached by target IP in Cloudflare Cache API for 6 hours, separately from the ranking database')}</td>
+            </tr>
+            <tr>
               <th scope="row">{t('持久化', 'Persistence')}</th>
-              <td>{t('没有。查询结果不写入数据库', 'None. Lookup results are not written to a database')}</td>
+              <td>{t('原始查询结果不写入数据库。启用排名库后，私有 D1 只保存目标 IP 的 HMAC 去重标识、ASN、最近评分、规则版本与更新时间；按近 30 天的有效样本统计', 'Raw lookup results are not written to a database. When ranking storage is enabled, private D1 stores only a target-IP HMAC identifier, ASN, latest score, rule version and update time; rankings use valid samples from the last 30 days')}</td>
             </tr>
           </tbody>
         </table>

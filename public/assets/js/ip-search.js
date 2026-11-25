@@ -9,6 +9,26 @@
   var lp = function (p) { return window.I18N ? window.I18N.path(p) : p; };
   var isEn = !!(window.I18N && window.I18N.lang === 'en');
 
+  window.JudgeIPRankings = function (info) {
+    var wrap = document.querySelector('[data-field="heroRankings"]');
+    if (!wrap) return;
+    wrap.hidden = !!info.isBogon;
+    function set(name, value) {
+      var el = wrap.querySelector('[data-rank="' + name + '"]');
+      if (el) el.textContent = value;
+    }
+    var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+    set('site', info.siteRanking ? '#' + fmt(info.siteRanking.rank) : '—');
+    set('siteTotal', info.siteRanking ? ' / ' + fmt(info.siteRanking.total) : '');
+    set('percentile', typeof info.percentileRanking === 'number' ? info.percentileRanking.toFixed(1) + '%' : '—');
+    set('asLabel', info.asn ? T('AS' + info.asn + ' 内排名', 'Rank in AS' + info.asn) : T('AS 内排名', 'AS rank'));
+    set('as', info.asRanking ? '#' + fmt(info.asRanking.rank) : '—');
+    set('asTotal', info.asRanking ? ' / ' + fmt(info.asRanking.total) : '');
+    set('note', info.siteRanking
+      ? info.siteRanking.total < 2 ? T('样本积累中，暂不计算百分位', 'Collecting samples; percentile needs another IP') : T('近 30 天已评分 IP · 同分并列', 'Scored IPs in the last 30 days · ties share a rank')
+      : info.score === null ? T('暂无评分，不参与排名', 'Unscored IPs are not ranked') : T('排名统计暂不可用', 'Ranking statistics unavailable'));
+  };
+
   var heroBox = document.getElementById('ip-hero');
   var form = document.querySelector('[data-ip-search-form]');
   if (!heroBox || !form || !window.fetch || !window.ReadableStream) return;
@@ -317,20 +337,7 @@
       setFieldHtml('heroReasons', reasonsHtml);
     }
 
-    var kpiWrap = document.querySelector('[data-field="heroKpis"]');
-    if (kpiWrap) {
-      kpiWrap.hidden = !!info.isBogon;
-      if (!info.isBogon) {
-        var listedCount = Array.isArray(info.dnsblListed) ? info.dnsblListed.length : 0;
-        var totalCount = info.dnsblTotal || 4;
-        var openLen = Array.isArray(info.openPorts) ? info.openPorts.length : 0;
-        var rpkiText = info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—';
-        kpiWrap.innerHTML =
-          '<div class="hero-kpi"><span class="hero-kpi__label">' + T('DNSBL 黑名单', 'Blocklists') + '</span><span class="hero-kpi__val mono ' + (listedCount > 0 ? 'is-bad' : 'is-good') + '">' + (info.version !== 4 ? 'IPv4' : listedCount + ' / ' + totalCount) + '</span></div>' +
-          '<div class="hero-kpi"><span class="hero-kpi__label">' + T('公网开放端口', 'Open ports') + '</span><span class="hero-kpi__val mono">' + (info.version !== 4 ? '—' : !info.portsKnown ? '?' : openLen) + '</span></div>' +
-          '<div class="hero-kpi"><span class="hero-kpi__label">' + T('RPKI 路由签名', 'RPKI ROA') + '</span><span class="hero-kpi__val mono ' + (info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : '') + '">' + rpkiText + '</span></div>';
-      }
-    }
+    window.JudgeIPRankings(info);
 
     setFieldHtml(
       'country',

@@ -1,4 +1,5 @@
 import { cachedUpstream } from './edge-cache';
+import { EMPTY_RANKINGS, lookupRankings, type IpRankings } from './ip-rankings';
 import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, mapPeeringDbType, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
@@ -81,7 +82,7 @@ export interface LookupStreamOptions {
   visitorIp?: string;
 }
 
-export interface HomeIpLookupResult {
+export interface HomeIpLookupResult extends IpRankings {
   ip: string;
   version: 4 | 6;
   isBogon: boolean;
@@ -986,6 +987,7 @@ function limitedLookup(parsed: NonNullable<ReturnType<typeof parseIp>>, cf: Reco
     abuseEmail: '—',
     scenes: [],
     riskChecks: [],
+    ...EMPTY_RANKINGS,
     countryCode,
     countryZh: countryCode ? countryCodeToZh(countryCode, countryCode) : '未知',
     flagEmoji: isoToFlag(countryCode),
@@ -1100,6 +1102,9 @@ async function runLookup(
       abuseEmail: '—',
       scenes: [],
       riskChecks: [],
+      siteRanking: null,
+      percentileRanking: null,
+      asRanking: null,
       countryCode: '',
       countryZh: '内网 / 保留地址',
       flagEmoji: '',
@@ -1127,7 +1132,7 @@ async function runLookup(
         streamOpts.onSource({ id: src.id, label: src.label, status });
       }
     }
-    return { ...cached.data, localTimeHm: formatLocalTime(cached.data.timezone) };
+    return { ...cached.data, ...await lookupRankings(cached.data, false), localTimeHm: formatLocalTime(cached.data.timezone) };
   }
 
   if (streamOpts?.visitorIp) {
@@ -1902,6 +1907,7 @@ async function runLookup(
     abuseEmail: routing.abuseEmail || '—',
     scenes,
     riskChecks,
+    ...EMPTY_RANKINGS,
     countryCode,
     countryZh,
     flagEmoji,
@@ -1924,5 +1930,5 @@ async function runLookup(
   }
   const cacheTtlMs = score !== null ? CACHE_COMPLETE_MINUTES * 60 * 1000 : CACHE_PARTIAL_SECONDS * 1000;
   memCache.set(cacheKey, { exp: Date.now() + cacheTtlMs, data: result });
-  return result;
+  return { ...result, ...await lookupRankings(result, true) };
 }

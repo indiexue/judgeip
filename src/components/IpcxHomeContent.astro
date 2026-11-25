@@ -270,26 +270,34 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         )}
       </ul>
 
-      <!-- Quick KPI Stat Strip (Authentic factual metrics, zero fake rankings) -->
-      <div class="hero-kpis" data-field="heroKpis" hidden={info.isBogon}>
-        <div class="hero-kpi">
-          <span class="hero-kpi__label">{t('DNSBL 黑名单', 'Blocklists')}</span>
-          <span class={`hero-kpi__val mono ${info.dnsblListed.length > 0 ? 'is-bad' : 'is-good'}`}>
-            {info.version !== 4 ? 'IPv4' : `${info.dnsblListed.length} / ${info.dnsblTotal}`}
-          </span>
+      <!-- Rankings use JudgeIP's own deduplicated lookup sample. -->
+      <div class="hero-rankings" data-field="heroRankings" hidden={info.isBogon}>
+        <div class="hero-kpis">
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('站内排名', 'Site rank')}</span>
+            <span class="hero-kpi__val">
+              <span data-rank="site">{info.siteRanking ? `#${info.siteRanking.rank.toLocaleString('en-US')}` : '—'}</span>
+              <span class="hero-kpi__context" data-rank="siteTotal">{info.siteRanking ? ` / ${info.siteRanking.total.toLocaleString('en-US')}` : ''}</span>
+            </span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('优于已查询 IP', 'Better than queried IPs')}</span>
+            <span class="hero-kpi__val" data-rank="percentile">{info.percentileRanking !== null ? `${info.percentileRanking.toFixed(1)}%` : '—'}</span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label" data-rank="asLabel">{info.asn ? t(`AS${info.asn} 内排名`, `Rank in AS${info.asn}`) : t('AS 内排名', 'AS rank')}</span>
+            <span class="hero-kpi__val">
+              <span data-rank="as">{info.asRanking ? `#${info.asRanking.rank.toLocaleString('en-US')}` : '—'}</span>
+              <span class="hero-kpi__context" data-rank="asTotal">{info.asRanking ? ` / ${info.asRanking.total.toLocaleString('en-US')}` : ''}</span>
+            </span>
+          </div>
         </div>
-        <div class="hero-kpi">
-          <span class="hero-kpi__label">{t('公网开放端口', 'Open ports')}</span>
-          <span class="hero-kpi__val mono">
-            {info.version !== 4 ? '—' : !info.portsKnown ? '?' : info.openPorts.length}
-          </span>
-        </div>
-        <div class="hero-kpi">
-          <span class="hero-kpi__label">{t('RPKI 路由签名', 'RPKI ROA')}</span>
-          <span class={`hero-kpi__val mono ${info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : ''}`}>
-            {info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—'}
-          </span>
-        </div>
+        <p class="hero-rankings__note">
+          <span data-rank="note">{info.siteRanking
+            ? info.siteRanking.total < 2 ? t('样本积累中，暂不计算百分位', 'Collecting samples; percentile needs another IP') : t('近 30 天已评分 IP · 同分并列', 'Scored IPs in the last 30 days · ties share a rank')
+            : info.score === null ? t('暂无评分，不参与排名', 'Unscored IPs are not ranked') : t('排名统计暂不可用', 'Ranking statistics unavailable')}</span>
+          <a href={lp('/scoring') + '#rankings'}>{t('统计口径', 'Method')}</a>
+        </p>
       </div>
     </div>
 

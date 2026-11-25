@@ -35,6 +35,34 @@ pnpm test
 pnpm build
 ```
 
+## Ranking storage (optional)
+
+The three hero statistics use JudgeIP’s own deduplicated, rolling 30-day sample, not competitor data. Higher scores rank first; ties share a rank. Only the same scoring-rule version is compared. Without `RANKINGS_DB`, lookups still work and rankings show `—`. No historical sample is backfilled.
+
+Private D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring version and update time. The migration generates the HMAC key inside D1; never copy it into source control or logs. Raw target IPs and visitor identities are not stored in this ranking database. Valid ranking requests remove records aged 30 days or more; there is no scheduled cleanup when the site is idle. Cache hits read current rankings without extending the sample lifetime.
+
+### Local D1 verification
+
+`wrangler.rankings.local.jsonc` is **local-only** and contains an emulator ID, not a production database binding. Never deploy it or use it with `--remote`.
+
+```bash
+pnpm exec wrangler d1 migrations apply RANKINGS_DB --local --config wrangler.rankings.local.jsonc --persist-to .wrangler/rankings-local
+pnpm test
+pnpm build
+pnpm exec wrangler dev --local --config wrangler.rankings.local.jsonc --persist-to .wrangler/rankings-local --port 18899
+```
+
+### Production setup (requires Cloudflare authorization)
+
+The binding in `wrangler.toml` is deliberately commented out until a real database exists. After authorization and approval to release:
+
+1. Create the database with `pnpm exec wrangler d1 create judgeip-rankings`.
+2. Uncomment `[[d1_databases]]` in `wrangler.toml` and use the returned, non-secret database ID with binding `RANKINGS_DB` and `migrations_dir = "migrations"`.
+3. Apply the migration with `pnpm exec wrangler d1 migrations apply RANKINGS_DB --remote --config wrangler.toml` **before** building and deploying the Worker.
+4. Build and deploy through the existing Workers Builds flow, then verify rankings start with the newly collected sample.
+
+Migration failure, missing binding or storage errors degrade to empty rankings, not fabricated values. To disable collection, remove the binding and release the Worker; this does not delete existing D1 data. Database deletion or HMAC-key rotation needs a separate, deliberate data reset (rotation breaks deduplication against existing records).
+
 ## Deployment
 
 Connected directly to Cloudflare Workers Builds (`indiexue/judgeip`):

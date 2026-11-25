@@ -1378,9 +1378,13 @@ main:focus {
   background: var(--badge-green-bg);
 }
 
-/* Quick 3-Cell Factual KPI Box inside Score Column */
-.hero-kpis {
+/* Three-cell ranking summary inside the score column. */
+.hero-rankings {
   margin-top: auto;
+  min-width: 0;
+}
+
+.hero-kpis {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border);
@@ -1390,10 +1394,12 @@ main:focus {
 }
 
 .hero-kpi {
-  padding: 8px 10px;
+  min-width: 0;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .hero-kpi + .hero-kpi {
@@ -1402,20 +1408,41 @@ main:focus {
 
 .hero-kpi__label {
   font-size: 11px;
+  line-height: 1.5;
   color: var(--text-mute);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .hero-kpi__val {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.5;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
-.hero-kpi__val.is-good { color: var(--badge-green-fg); }
-.hero-kpi__val.is-bad  { color: var(--badge-red-fg); }
+.hero-kpi__context {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
+.hero-rankings__note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+.hero-rankings__note a { margin-left: auto; }
+
+@media (max-width: 480px) {
+  .hero-kpi { padding: 10px 7px; }
+  .hero-kpi__val { font-size: 18px; }
+}
 
 /* Right Column inside Hero Box + Real-Time Multi-Source Aggregator Loading Panel */
 .hero-right {
@@ -1477,7 +1504,7 @@ main:focus {
 .hero-box.is-loading .hero-score__main,
 .hero-box.is-loading .spectrum__thumb,
 .hero-box.is-loading .hero-reasons,
-.hero-box.is-loading .hero-kpis,
+.hero-box.is-loading .hero-rankings,
 .hero-box.is-loading .hero-meta {
   display: none !important;
 }

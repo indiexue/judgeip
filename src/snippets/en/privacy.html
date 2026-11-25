@@ -4,7 +4,7 @@
 </section>
 
 <article class="prose prose--page">
-  <p class="prose__meta">Last updated: November 23, 2026</p>
+  <p class="prose__meta">Last updated: November 24, 2026</p>
 
   <p>
     judgeip.com ("this site") is an IP lookup and network testing tool. This policy explains what information this site processes when you use it,
@@ -31,7 +31,8 @@
   </p>
   <p>
     To avoid repeating upstream requests, results are cached by IP in the memory of the Cloudflare edge node that handled the request: 20 minutes for results with a score, 30 seconds for incomplete ones;
-    PeeringDB answers are cached by ASN for 6 hours. Nothing is written to a database, and the cache is gone when the node restarts.
+    PeeringDB answers are cached by ASN for 6 hours. These memory caches are not written to a database and are gone when the node restarts.
+    Successful proxycheck, ipapi.is, IP2Location.io and AbuseIPDB responses are also cached by target IP in Cloudflare Cache API for 6 hours to save upstream quota; they are not put into the ranking database or made available for public download.
   </p>
   <p>
     The Cloudflare edge and CDN node pages estimate how far each node is from you using your IP's approximate location, so they run the same lookup on your IP (see section 8).
@@ -39,6 +40,13 @@
   <p>
     IP report pages (<span class="mono">/ip/…</span>) and any address with query parameters ask search engines not to index them (<span class="mono">noindex</span>);
     pages containing IP information are always served as <span class="mono">private, no-store</span> and stay out of shared caches. The home page title and share preview use fixed text that never contains the visitor's IP.
+  </p>
+
+  <p>
+    When ranking storage is enabled, public IPs that receive a score enter this site's rolling 30-day lookup sample. Private Cloudflare D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring-rule version and update time,
+    not the raw target IP, visitor identity or a link recording who looked up whom. The HMAC key stays in the private database; the identifier supports deduplication and is not a claim of complete anonymity.
+    Repeated queries do not increase the sample count. A fresh valid score updates the record; a result-cache hit does not extend its lifetime. Valid ranking requests delete records whose last update was at least 30 days ago; there is no scheduled cleanup while the site is idle.
+    If ranking storage is disabled or unavailable, the request adds no statistics and rankings show “—” without blocking ordinary lookups. Access logs and upstream caches are still handled as described above.
   </p>
 
   <h3>3. Multi-database location</h3>

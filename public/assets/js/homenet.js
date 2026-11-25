@@ -410,18 +410,7 @@
           }
           setFieldHtml('heroReasons', reasonsHtml);
         }
-        if (!info.isBogon) {
-          var listedCount = Array.isArray(info.dnsblListed) ? info.dnsblListed.length : 0;
-          var totalCount = info.dnsblTotal || 4;
-          var openLen = Array.isArray(info.openPorts) ? info.openPorts.length : 0;
-          var rpkiText = info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—';
-          setFieldHtml(
-            'heroKpis',
-            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('DNSBL 黑名单', 'Blocklists') + '</span><span class="hero-kpi__val mono ' + (listedCount > 0 ? 'is-bad' : 'is-good') + '">' + listedCount + ' / ' + totalCount + '</span></div>' +
-            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('公网开放端口', 'Open ports') + '</span><span class="hero-kpi__val mono">' + (!info.portsKnown ? '?' : openLen) + '</span></div>' +
-            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('RPKI 路由签名', 'RPKI ROA') + '</span><span class="hero-kpi__val mono ' + (info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : '') + '">' + rpkiText + '</span></div>'
-          );
-        }
+        if (window.JudgeIPRankings) window.JudgeIPRankings(info);
 
         setFieldHtml(
           'country',

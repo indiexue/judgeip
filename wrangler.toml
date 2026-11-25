@@ -17,5 +17,13 @@ enabled = true
 # binding = "IP_CACHE"
 # id = "YOUR_KV_NAMESPACE_ID"
 
+# Ranking storage: rolling 30-day deduplicated sample for the three hero rankings.
+# The migration in migrations/ must be applied to this database (see README).
+[[d1_databases]]
+binding = "RANKINGS_DB"
+database_name = "judgeip-rankings"
+database_id = "a3dded5f-5de5-49c0-a992-96cf833d9929"
+migrations_dir = "migrations"
+
 [vars]
 PUBLIC_SITE_URL = "https://judgeip.com"

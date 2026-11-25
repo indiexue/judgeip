@@ -1,8 +1,9 @@
 import { env } from 'cloudflare:workers';
-import type { KVNamespace } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
 
 export interface EdgeEnv {
   IP_CACHE?: KVNamespace;
+  RANKINGS_DB?: D1Database;
   PUBLIC_SITE_URL?: string;
   TURNSTILE_SECRET_KEY_MANAGED?: string;
   TURNSTILE_SECRET_KEY_NON_INTERACTIVE?: string;
