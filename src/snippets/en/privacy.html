@@ -43,7 +43,7 @@
   </p>
 
   <p>
-    When ranking storage is enabled, public IPs that receive a score enter this site's rolling 30-day lookup sample. Private Cloudflare D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring-rule version and update time,
+    When ranking storage is enabled, public IPs that receive a score enter this site's rolling 30-day lookup sample. Private Cloudflare D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring-rule version and update time, plus lookup counters (total and per UTC day) that contain no IP or visitor information,
     not the raw target IP, visitor identity or a link recording who looked up whom. The HMAC key stays in the private database; the identifier supports deduplication and is not a claim of complete anonymity.
     Repeated queries do not increase the sample count. A fresh valid score updates the record; a result-cache hit does not extend its lifetime. Valid ranking requests delete records whose last update was at least 30 days ago; there is no scheduled cleanup while the site is idle.
     If ranking storage is disabled or unavailable, the request adds no statistics and rankings show “—” without blocking ordinary lookups. Access logs and upstream caches are still handled as described above.

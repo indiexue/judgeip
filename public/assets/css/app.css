@@ -1442,6 +1442,52 @@ main:focus {
 .hero-kpi__val.is-good { color: var(--badge-green-fg); }
 .hero-kpi__val.is-bad  { color: var(--badge-red-fg); }
 
+/* Site-wide lookup counters strip (total / today / online since). */
+.site-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 7px 12px;
+  margin: 0 0 14px;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+.site-stats[hidden] { display: none; }
+
+.site-stats__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.site-stats__item strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.site-stats__icon {
+  width: 13px;
+  height: 13px;
+  color: var(--text-mute);
+}
+
+.site-stats__item--today strong { color: var(--badge-green-fg); }
+
+.site-stats__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--badge-green-fg);
+}
+
 @media (max-width: 480px) {
   .hero-kpi { padding: 10px 7px; }
   .hero-kpi__val { font-size: 18px; }

@@ -3,6 +3,7 @@ import { STREAM_SOURCES, type HomeIpLookupResult } from '../lib/ipcx-lookup';
 import { getLang, localePath } from '../lib/i18n';
 import { formatDelta } from '../lib/score-rules';
 import { limitedNotice } from '../lib/lookup-en';
+import SiteStatsBar from './SiteStatsBar.astro';
 
 const lang = getLang(Astro.locals);
 const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
@@ -115,6 +116,8 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
   </svg>
   <span data-search-error-text>{errorMsg}</span>
 </p>
+
+<SiteStatsBar />
 
 <!-- Unified Hero Inspection Box (ipfinal style) -->
 <section class="hero-box current" id="ip-hero" data-current-card data-is-self={isSelf ? '1' : '0'} data-initial-version={String(info.version)}>

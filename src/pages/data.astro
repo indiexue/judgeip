@@ -136,7 +136,7 @@ const timeout = (ms: number) => (ms > 0 ? `${(ms / 1000).toFixed(1)} s` : '—')
             </tr>
             <tr>
               <th scope="row">{t('持久化', 'Persistence')}</th>
-              <td>{t('原始查询结果不写入数据库。启用排名库后，私有 D1 只保存目标 IP 的 HMAC 去重标识、ASN、最近评分、规则版本与更新时间；按近 30 天的有效样本统计', 'Raw lookup results are not written to a database. When ranking storage is enabled, private D1 stores only a target-IP HMAC identifier, ASN, latest score, rule version and update time; rankings use valid samples from the last 30 days')}</td>
+              <td>{t('原始查询结果不写入数据库。启用排名库后，私有 D1 只保存目标 IP 的 HMAC 去重标识、ASN、最近评分、规则版本与更新时间（按近 30 天的有效样本统计），以及不含任何 IP 或访客信息的站点检测次数计数器（累计与按 UTC 日期）', 'Raw lookup results are not written to a database. When ranking storage is enabled, private D1 stores only a target-IP HMAC identifier, ASN, latest score, rule version and update time (rankings use valid samples from the last 30 days), plus site lookup counters (total and per UTC day) that contain no IP or visitor information')}</td>
             </tr>
           </tbody>
         </table>

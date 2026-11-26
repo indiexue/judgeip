@@ -1,0 +1,33 @@
+---
+import { getLang, pick } from '../lib/i18n';
+import { getSiteStats, type SiteStats } from '../lib/site-stats';
+
+const lang = getLang(Astro.locals);
+const stats: SiteStats | null = await getSiteStats();
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+---
+
+{/* 计数来自真实查询记录；存储未启用、未迁移或无数据时整个条不渲染，绝不展示虚构数字。 */}
+{stats && (
+  <div class="site-stats" data-site-stats>
+    <span class="site-stats__item">
+      <svg class="site-stats__icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 13V8h2v5H3zm4 0V3h2v10H7zm4 0V6h2v7h-2z"/></svg>
+      {pick(lang, '已检测', 'Checked')}
+      <strong class="mono" data-stats-total>{fmt(stats.totalChecks)}</strong>
+      {pick(lang, '次', 'times')}
+    </span>
+    <span class="site-stats__item site-stats__item--today">
+      <span class="site-stats__dot" aria-hidden="true"></span>
+      {pick(lang, '今日', 'Today')}
+      <strong class="mono" data-stats-today>{fmt(stats.todayChecks)}</strong>
+      {pick(lang, '次', 'times')}
+    </span>
+    <span class="site-stats__item">
+      <svg class="site-stats__icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13 2h-9a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1zM5 4h6v2H5V4zm0 4h6v2H5V8z"/></svg>
+      {pick(lang, '上线于', 'Online since')}
+      <strong class="mono" data-stats-since>{stats.onlineSince}</strong>
+    </span>
+  </div>
+)}
+{!stats && <div class="site-stats" data-site-stats hidden></div>}

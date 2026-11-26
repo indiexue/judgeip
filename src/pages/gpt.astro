@@ -1,5 +1,6 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
+import SiteStatsBar from "../components/SiteStatsBar.astro";
 import zhHtml from "../snippets/gpt.html?raw";
 import enHtml from "../snippets/en/gpt.html?raw";
 import { getLang, pick } from "../lib/i18n";
@@ -19,7 +20,8 @@ const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
   currentLabel={pick(lang, 'GPT · Codex 检测', 'GPT · Codex check')}
   activeNav="/gpt"
   extraCss={["/assets/css/ai.css"]}
-  extraJs={["/assets/js/probe.js", "/assets/js/history.js", "/assets/js/ai.js"]}
+  extraJs={["/assets/js/probe.js", "/assets/js/history.js", "/assets/js/stats.js", "/assets/js/ai.js"]}
 >
+  <SiteStatsBar />
   <Fragment set:html={html} />
 </IpcxLayout>

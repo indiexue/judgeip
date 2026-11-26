@@ -1,5 +1,6 @@
 ---
 import IpcxLayout from "../layouts/IpcxLayout.astro";
+import SiteStatsBar from "../components/SiteStatsBar.astro";
 import zhHtml from "../snippets/claude.html?raw";
 import enHtml from "../snippets/en/claude.html?raw";
 import { getLang, pick } from "../lib/i18n";
@@ -19,7 +20,8 @@ const html = pick(lang, zhHtml, enHtml).replaceAll("__VISITOR_IP__", visitorIp);
   currentLabel={pick(lang, 'Claude 检测', 'Claude check')}
   activeNav="/claude"
   extraCss={[]}
-  extraJs={["/assets/js/history.js", "/assets/js/claude.js"]}
+  extraJs={["/assets/js/history.js", "/assets/js/stats.js", "/assets/js/claude.js"]}
 >
+  <SiteStatsBar />
   <Fragment set:html={html} />
 </IpcxLayout>

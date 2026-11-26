@@ -1,5 +1,6 @@
 import { cachedUpstream } from './edge-cache';
 import { EMPTY_RANKINGS, lookupRankings, type IpRankings } from './ip-rankings';
+import { recordLookupStat } from './site-stats';
 import { classifyIspAndAsn, detectDualIsp, KNOWN_ASN_PROFILES, mapPeeringDbType, type UsageType } from './asn-intelligence';
 import { parseIp } from './ip-utils';
 import { rateLimit } from './rate-limit';
@@ -1930,5 +1931,6 @@ async function runLookup(
   }
   const cacheTtlMs = score !== null ? CACHE_COMPLETE_MINUTES * 60 * 1000 : CACHE_PARTIAL_SECONDS * 1000;
   memCache.set(cacheKey, { exp: Date.now() + cacheTtlMs, data: result });
-  return { ...result, ...await lookupRankings(result, true) };
+  const [rankings] = await Promise.all([lookupRankings(result, true), recordLookupStat(result)]);
+  return { ...result, ...rankings };
 }
