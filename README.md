@@ -37,13 +37,13 @@ pnpm build
 
 ## Ranking storage (optional)
 
-The three hero statistics use JudgeIP’s own deduplicated, rolling 30-day sample, not competitor data. Higher scores rank first; ties share a rank. Only the same scoring-rule version is compared. Samples keep collecting at all times, but rankings stay hidden until the site sample grows beyond 500 entries, since smaller samples are meaningless; lookups always work with or without `RANKINGS_DB`. No historical sample is backfilled.
+The three hero statistics use JudgeIP’s own deduplicated, rolling 30-day sample, not competitor data. Higher scores rank first; ties share a rank. Only the same scoring-rule version is compared. Samples keep collecting at all times, but rankings stay hidden until the site sample grows beyond 100 entries, since smaller samples are meaningless; lookups always work with or without `RANKINGS_DB`. No historical sample is backfilled.
 
 Private D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring version and update time. The migration generates the HMAC key inside D1; never copy it into source control or logs. Raw target IPs and visitor identities are not stored in this ranking database. Valid ranking requests remove records aged 30 days or more; there is no scheduled cleanup when the site is idle. Cache hits read current rankings without extending the sample lifetime.
 
 ### Sample nurturing
 
-`.github/workflows/nurture-rankings.yml` probes a rotating batch of 12 representative IPs (public DNS, major clouds, residential ISPs and public VPN exits from `scripts/seed-ips.ts`) once a day. These are real lookups with real scores — the same ones users would get — so the rolling 30-day sample passes the 500-entry display threshold within roughly two days of first enablement, and a full rotation every ~23 days keeps existing samples from expiring. The batch derives deterministically from the date, so a manual re-run on the same day re-probes the same IPs instead of burning extra upstream quota.
+`.github/workflows/nurture-rankings.yml` probes a rotating batch of 24 representative IPs (public DNS, major clouds, residential ISPs and public VPN exits from `scripts/seed-ips.ts`) once a day. These are real lookups with real scores — the same ones users would get — so the rolling 30-day sample passes the 100-entry display threshold within the first week of enablement, and a full rotation every ~12 days keeps existing samples from expiring. The batch derives deterministically from the date, so a manual re-run on the same day re-probes the same IPs instead of burning extra upstream quota.
 
 ### Local D1 verification
 

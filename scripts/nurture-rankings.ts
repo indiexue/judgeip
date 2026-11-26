@@ -5,7 +5,7 @@ import { buildSeedPool } from './seed-ips.ts';
 // 所以样本里的评分和真实用户查询完全一致——这正是排名有参考意义的前提。
 //
 // 节奏设计：
-// - 每次运行查询 batch 个 IP（默认 12），seed 清单约 250 个，三周完成一轮全覆盖；
+// - 每次运行查询 batch 个 IP（默认 24），seed 清单约 275 个，11 天半完成一轮全覆盖；
 //   一轮结束后从头再来，老样本的 30 天有效期因此被持续刷新，不会自然过期。
 // - 同一批次内串行 + 间隔 sleep，避免触发站内 rate limit（每节点每分钟 20 次全量查询）。
 // - 已缓存的 IP（20 分钟内查过）会命中边缘缓存，不消耗上游，但也不重新记录排名；
@@ -16,7 +16,7 @@ import { buildSeedPool } from './seed-ips.ts';
 // - 不伪造任何数据：所有样本都来自 judgeip.com 自己的真实评分结果。
 
 const SITE = process.env.NURTURE_BASE_URL || 'https://judgeip.com';
-const BATCH = Number(process.env.NURTURE_BATCH || '12');
+const BATCH = Number(process.env.NURTURE_BATCH || '24');
 const SPACING_MS = Number(process.env.NURTURE_SPACING_MS || '8000');
 const TIMEOUT_MS = 90_000;
 

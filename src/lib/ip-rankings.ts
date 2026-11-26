@@ -26,7 +26,7 @@ interface RankingCounts {
 export const EMPTY_RANKINGS: IpRankings = { siteRanking: null, percentileRanking: null, asRanking: null };
 export const RANKING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 // 样本太少时排名没有参考意义：样本仍在记录，但全站有效样本超过该数量前不返回任何排名。
-export const RANKING_MIN_SAMPLE_TOTAL = 500;
+export const RANKING_MIN_SAMPLE_TOTAL = 100;
 
 export async function lookupRankings(
   info: RankedLookup,

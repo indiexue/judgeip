@@ -5,7 +5,7 @@ name: Nurture rankings
 
 on:
   schedule:
-    # 错开 IPsum 的 03:20 UTC，避免两个任务同时打上游；12 IP × 8s ≈ 2 分钟跑完
+    # 错开 IPsum 的 03:20 UTC，避免两个任务同时打上游；24 IP × 8s ≈ 4 分钟跑完
     - cron: '40 4 * * *'
   workflow_dispatch:
 

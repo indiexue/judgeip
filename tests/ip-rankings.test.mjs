@@ -50,6 +50,10 @@ test('one real sample ranks first, but cannot have a percentile', async () => {
   await assertBuckets();
 });
 
+test('the production default threshold is 100', () => {
+  assert.equal(RANKING_MIN_SAMPLE_TOTAL, 100);
+});
+
 test('rankings stay hidden until the site sample exceeds the minimum, while recording continues', async () => {
   // 基数行放在不同的分数桶（0 分），不影响被测 IP（80 分）的高低计数，只抬高全站总数。
   const padTotal = async (extra) => {
