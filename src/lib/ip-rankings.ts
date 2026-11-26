@@ -25,12 +25,15 @@ interface RankingCounts {
 
 export const EMPTY_RANKINGS: IpRankings = { siteRanking: null, percentileRanking: null, asRanking: null };
 export const RANKING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+// 样本太少时排名没有参考意义：样本仍在记录，但全站有效样本超过该数量前不返回任何排名。
+export const RANKING_MIN_SAMPLE_TOTAL = 500;
 
 export async function lookupRankings(
   info: RankedLookup,
   record: boolean,
   database?: D1Database | null,
   now = Date.now(),
+  minTotal = RANKING_MIN_SAMPLE_TOTAL,
 ): Promise<IpRankings> {
   const parsed = parseIp(info.ip);
   if (!parsed || parsed.isBogon || info.isBogon || info.score === null || !Number.isInteger(info.score)
@@ -68,7 +71,7 @@ export async function lookupRankings(
     const counts = results[results.length - 1].results;
     const site = counts.find((row) => row.scope === 0);
     const network = counts.find((row) => row.scope === asn);
-    if (!site || site.total < 1) return { ...EMPTY_RANKINGS };
+    if (!site || site.total < 1 || site.total <= minTotal) return { ...EMPTY_RANKINGS };
     return {
       siteRanking: { rank: site.higher + 1, total: site.total },
       // 排除当前 IP；同分不算优于，样本只有一个时不显示百分比。

@@ -4,11 +4,12 @@ import { readFile } from 'node:fs/promises';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { loadTs } from './load-ts.mjs';
 
-const { lookupRankings, EMPTY_RANKINGS, RANKING_WINDOW_MS } = await loadTs('../src/lib/ip-rankings.ts');
+const { lookupRankings, EMPTY_RANKINGS, RANKING_WINDOW_MS, RANKING_MIN_SAMPLE_TOTAL } = await loadTs('../src/lib/ip-rankings.ts');
 const now = Date.UTC(2026, 10, 24);
 const info = (ip = '8.8.8.8', score = 80, asn = 15169, extra = {}) => ({
   ip, score, asn, scoringVersion: 'test-v1', isBogon: false, lookupStatus: 'complete', ...extra,
 });
+
 let mf;
 let db;
 
@@ -28,8 +29,9 @@ before(async () => {
 beforeEach(async () => { await db.prepare('DELETE FROM ranked_ips').run(); });
 after(async () => { await mf?.dispose(); });
 
-const record = (data, time = now) => lookupRankings(data, true, db, time);
-const read = (data, time = now) => lookupRankings(data, false, db, time);
+// 排名算法用例关闭展示门槛（minTotal = 0），与门槛上线前的行为一致；门槛本身由专项用例覆盖。
+const record = (data, time = now, minTotal = 0) => lookupRankings(data, true, db, time, minTotal);
+const read = (data, time = now, minTotal = 0) => lookupRankings(data, false, db, time, minTotal);
 const rows = async (sql) => (await db.prepare(sql).all()).results;
 
 async function assertBuckets() {
@@ -45,6 +47,26 @@ test('one real sample ranks first, but cannot have a percentile', async () => {
   assert.deepEqual(await record(info()), {
     siteRanking: { rank: 1, total: 1 }, percentileRanking: null, asRanking: { rank: 1, total: 1 },
   });
+  await assertBuckets();
+});
+
+test('rankings stay hidden until the site sample exceeds the minimum, while recording continues', async () => {
+  // 基数行放在不同的分数桶（0 分），不影响被测 IP（80 分）的高低计数，只抬高全站总数。
+  const padTotal = async (extra) => {
+    await db.prepare('DELETE FROM ranking_counts WHERE score = 0 AND scope = 0').run();
+    if (extra > 0) await db.prepare('INSERT INTO ranking_counts (scope, scoring_version, score, count) VALUES (0, ?, 0, ?)').bind('test-v1', extra).run();
+  };
+  // 500 个样本（1 条真实记录 + 499 条基数）时仍不展示，但查询照常写入去重记录。
+  await padTotal(499);
+  assert.deepEqual(await record(info(), now, 500), EMPTY_RANKINGS);
+  assert.equal((await rows('SELECT * FROM ranked_ips')).length, 1, 'recording continues below the threshold');
+  // 501 个样本时开始展示。
+  await padTotal(500);
+  assert.deepEqual((await read(info(), now, 500)).siteRanking, { rank: 1, total: 501 });
+  // 缓存命中路径同样遵守门槛。
+  await padTotal(100);
+  assert.deepEqual(await read(info(), now, 500), EMPTY_RANKINGS);
+  await db.prepare('DELETE FROM ranking_counts WHERE score = 0 AND scope = 0').run();
   await assertBuckets();
 });
 

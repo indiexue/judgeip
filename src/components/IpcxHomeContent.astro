@@ -270,8 +270,8 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         )}
       </ul>
 
-      <!-- Rankings use JudgeIP's own deduplicated lookup sample. -->
-      <div class="hero-rankings" data-field="heroRankings" hidden={info.isBogon}>
+      <!-- Rankings use JudgeIP's own deduplicated lookup sample; hidden until the sample is large enough. -->
+      <div class="hero-rankings" data-field="heroRankings" hidden={!info.siteRanking}>
         <div class="hero-kpis">
           <div class="hero-kpi">
             <span class="hero-kpi__label">{t('站内排名', 'Site rank')}</span>
@@ -293,9 +293,7 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
           </div>
         </div>
         <p class="hero-rankings__note">
-          <span data-rank="note">{info.siteRanking
-            ? info.siteRanking.total < 2 ? t('样本积累中，暂不计算百分位', 'Collecting samples; percentile needs another IP') : t('近 30 天已评分 IP · 同分并列', 'Scored IPs in the last 30 days · ties share a rank')
-            : info.score === null ? t('暂无评分，不参与排名', 'Unscored IPs are not ranked') : t('排名统计暂不可用', 'Ranking statistics unavailable')}</span>
+          <span data-rank="note">{t('近 30 天已评分 IP · 同分并列', 'Scored IPs in the last 30 days · ties share a rank')}</span>
           <a href={lp('/scoring') + '#rankings'}>{t('统计口径', 'Method')}</a>
         </p>
       </div>

@@ -37,7 +37,7 @@ pnpm build
 
 ## Ranking storage (optional)
 
-The three hero statistics use JudgeIP’s own deduplicated, rolling 30-day sample, not competitor data. Higher scores rank first; ties share a rank. Only the same scoring-rule version is compared. Without `RANKINGS_DB`, lookups still work and rankings show `—`. No historical sample is backfilled.
+The three hero statistics use JudgeIP’s own deduplicated, rolling 30-day sample, not competitor data. Higher scores rank first; ties share a rank. Only the same scoring-rule version is compared. Samples keep collecting at all times, but rankings stay hidden until the site sample grows beyond 500 entries, since smaller samples are meaningless; lookups always work with or without `RANKINGS_DB`. No historical sample is backfilled.
 
 Private D1 stores only an HMAC-SHA256 identifier of the normalized target IP, ASN, latest score, scoring version and update time. The migration generates the HMAC key inside D1; never copy it into source control or logs. Raw target IPs and visitor identities are not stored in this ranking database. Valid ranking requests remove records aged 30 days or more; there is no scheduled cleanup when the site is idle. Cache hits read current rankings without extending the sample lifetime.
 
