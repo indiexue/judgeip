@@ -9,15 +9,31 @@
   var lp = function (p) { return window.I18N ? window.I18N.path(p) : p; };
   var isEn = !!(window.I18N && window.I18N.lang === 'en');
 
-  // 样本数未过门槛时服务端不下发排名（样本照常积累），整个区块保持隐藏。
+  // 样本数未过门槛时服务端不下发排名（样本照常积累）：回退显示不依赖样本量的真实检测指标，
+  // 排名出现后取而代之。两个区块同一位置互斥，避免左栏留白。
   window.JudgeIPRankings = function (info) {
     var wrap = document.querySelector('[data-field="heroRankings"]');
+    var metrics = document.querySelector('[data-field="heroMetrics"]');
     if (!wrap) return;
-    if (!info.siteRanking) {
-      wrap.hidden = true;
+    var hasRanking = !!info.siteRanking;
+    wrap.hidden = !hasRanking;
+    if (!hasRanking) {
+      if (metrics) {
+        metrics.hidden = !!info.isBogon;
+        if (!info.isBogon) {
+          var listedCount = Array.isArray(info.dnsblListed) ? info.dnsblListed.length : 0;
+          var totalCount = info.dnsblTotal || 4;
+          var openLen = Array.isArray(info.openPorts) ? info.openPorts.length : 0;
+          var rpkiText = info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—';
+          metrics.querySelector('.hero-kpis').innerHTML =
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('DNSBL 黑名单', 'Blocklists') + '</span><span class="hero-kpi__val mono ' + (listedCount > 0 ? 'is-bad' : 'is-good') + '">' + (info.version !== 4 ? 'IPv4' : listedCount + ' / ' + totalCount) + '</span></div>' +
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('公网开放端口', 'Open ports') + '</span><span class="hero-kpi__val mono">' + (info.version !== 4 ? '—' : !info.portsKnown ? '?' : openLen) + '</span></div>' +
+            '<div class="hero-kpi"><span class="hero-kpi__label">' + T('RPKI 路由签名', 'RPKI ROA') + '</span><span class="hero-kpi__val mono ' + (info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : '') + '">' + rpkiText + '</span></div>';
+        }
+      }
       return;
     }
-    wrap.hidden = false;
+    if (metrics) metrics.hidden = true;
     function set(name, value) {
       var el = wrap.querySelector('[data-rank="' + name + '"]');
       if (el) el.textContent = value;

@@ -1439,6 +1439,9 @@ main:focus {
 
 .hero-rankings__note a { margin-left: auto; }
 
+.hero-kpi__val.is-good { color: var(--badge-green-fg); }
+.hero-kpi__val.is-bad  { color: var(--badge-red-fg); }
+
 @media (max-width: 480px) {
   .hero-kpi { padding: 10px 7px; }
   .hero-kpi__val { font-size: 18px; }

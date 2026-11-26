@@ -270,6 +270,30 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         )}
       </ul>
 
+      <!-- 排名样本数未过门槛时，回退显示不依赖样本量的真实检测指标；排名出现后取而代之。 -->
+      <div class="hero-rankings" data-field="heroMetrics" hidden={!!info.siteRanking || info.isBogon}>
+        <div class="hero-kpis">
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('DNSBL 黑名单', 'Blocklists')}</span>
+            <span class={`hero-kpi__val mono ${info.dnsblListed.length > 0 ? 'is-bad' : 'is-good'}`}>
+              {info.version !== 4 ? 'IPv4' : `${info.dnsblListed.length} / ${info.dnsblTotal}`}
+            </span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('公网开放端口', 'Open ports')}</span>
+            <span class="hero-kpi__val mono">
+              {info.version !== 4 ? '—' : !info.portsKnown ? '?' : info.openPorts.length}
+            </span>
+          </div>
+          <div class="hero-kpi">
+            <span class="hero-kpi__label">{t('RPKI 路由签名', 'RPKI ROA')}</span>
+            <span class={`hero-kpi__val mono ${info.rpkiStatus === 'valid' ? 'is-good' : info.rpkiStatus === 'invalid' ? 'is-bad' : ''}`}>
+              {info.rpkiStatus === 'valid' ? 'VALID' : info.rpkiStatus === 'invalid' ? 'INVALID' : '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- Rankings use JudgeIP's own deduplicated lookup sample; hidden until the sample is large enough. -->
       <div class="hero-rankings" data-field="heroRankings" hidden={!info.siteRanking}>
         <div class="hero-kpis">
