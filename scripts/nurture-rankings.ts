@@ -24,7 +24,7 @@ const pool = buildSeedPool().all;
 
 // 用当天日期做确定性的轮转偏移：同一天重跑（workflow_dispatch 调试）查的是同一批，不会反复消耗配额。
 function batchForToday(): string[] {
-  const dayIndex = Math.floor(Date.now() / 86_400_000);
+  const dayIndex = Math.floor(Date.now() / 86_400_000) + Number(process.env.NURTURE_DAY_OFFSET || '0');
   const start = (dayIndex * BATCH) % pool.length;
   const out: string[] = [];
   for (let i = 0; i < BATCH; i++) out.push(pool[(start + i) % pool.length]);
