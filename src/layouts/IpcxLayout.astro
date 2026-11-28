@@ -34,6 +34,16 @@ if (!Astro.response.headers.has('Cache-Control')) Astro.response.headers.set('Ca
 const hideFromIndex = noindex || Astro.url.search !== '';
 if (hideFromIndex) Astro.response.headers.set('X-Robots-Tag', 'noindex');
 
+// 搜索引擎站长平台验证码：仅在 Cloudflare Workers 运行时变量里配置即生效。
+// 不读构建期环境变量，避免本地误设的变量被意外内嵌进部署产物。
+let googleVerification = '';
+let bingVerification = '';
+try {
+  const { env } = await import('cloudflare:workers') as unknown as { env: Record<string, string | undefined> };
+  googleVerification = env.PUBLIC_GOOGLE_SITE_VERIFICATION || '';
+  bingVerification = env.PUBLIC_BING_SITE_VERIFICATION || '';
+} catch { /* 非 Workers 环境不输出验证码 */ }
+
 const lang: Lang = getLang(Astro.locals);
 const en = lang === 'en';
 const t = (zh: string, enText: string) => (en ? enText : zh);
@@ -179,6 +189,8 @@ const footCols = [
     <link rel="alternate" hreflang="zh-CN" href={zhUrl} />
     <link rel="alternate" hreflang="en" href={enUrl} />
     <link rel="alternate" hreflang="x-default" href={zhUrl} />
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+    {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
     <meta name="author" content="JudgeIP" />
     <meta name="color-scheme" content="only light" data-light="only light" data-dark="dark" />
     <meta name="theme-color" content="#f7f8f7" data-light="#f7f8f7" data-dark="#09090b" />
