@@ -33,6 +33,8 @@ const CORE_ROUTES = [
   '/api-docs',
   '/privacy',
   '/terms',
+  '/about',
+  '/contact',
 ];
 
 export const GET: APIRoute = async () => {

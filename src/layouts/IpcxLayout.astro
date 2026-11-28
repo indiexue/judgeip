@@ -171,6 +171,8 @@ const footCols = [
       { path: '/api-docs', label: t('API 与 MCP', 'API & MCP') },
       { path: '/headers', label: t('HTTP 请求头', 'HTTP Headers') },
       { path: '/status', label: t('服务状态', 'Service Status') },
+      { path: '/about', label: t('关于本站', 'About') },
+      { path: '/contact', label: t('联系我们', 'Contact') },
     ],
   },
 ];
@@ -384,6 +386,8 @@ const footCols = [
             <span class="foot__credit">· {t('部分定位数据来自', 'Some geolocation by')} <a href="https://www.ip2location.io" rel="noopener">IP2Location.io</a></span>
           </span>
           <span class="foot__legal">
+            <a class="foot__link" href={href('/about')}>{t('关于', 'About')}</a>
+            <a class="foot__link" href={href('/contact')}>{t('联系', 'Contact')}</a>
             <a class="foot__link" href={href('/terms')}>{t('服务条款', 'Terms')}</a>
             <a class="foot__link" href={href('/privacy')}>{t('隐私政策', 'Privacy')}</a>
           </span>

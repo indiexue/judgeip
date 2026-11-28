@@ -1,0 +1,23 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import zhHtml from "../snippets/contact.html?raw";
+import enHtml from "../snippets/en/contact.html?raw";
+import { getLang, pick } from "../lib/i18n";
+
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
+---
+
+<IpcxLayout
+  title={pick(lang, '联系我们 — 数据勘误、功能反馈与合作 · JudgeIP', 'Contact us — data corrections, feedback and partnerships · JudgeIP')}
+  description={pick(lang, '联系 JudgeIP 维护者：数据勘误、功能故障、安全报告与合作洽谈的方式。', 'Reach the JudgeIP maintainer: data corrections, broken features, security reports and partnerships.')}
+  canonicalPath="/contact"
+  bodyClass="page-contact"
+  currentLabel={pick(lang, '联系我们', 'Contact')}
+  activeNav="/contact"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

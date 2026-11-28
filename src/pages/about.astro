@@ -1,0 +1,23 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import zhHtml from "../snippets/about.html?raw";
+import enHtml from "../snippets/en/about.html?raw";
+import { getLang, pick } from "../lib/i18n";
+
+const lang = getLang(Astro.locals);
+
+const html = pick(lang, zhHtml, enHtml);
+---
+
+<IpcxLayout
+  title={pick(lang, '关于 JudgeIP — 这个站是什么、怎么工作、怎么赚钱', 'About JudgeIP — what it is, how it works, how it makes money')}
+  description={pick(lang, 'JudgeIP 是做什么的，数据从哪里来，评分意味着什么，以及这个站的运营方式。', 'What JudgeIP does, where the data comes from, what the score means and how the site is run.')}
+  canonicalPath="/about"
+  bodyClass="page-about"
+  currentLabel={pick(lang, '关于', 'About')}
+  activeNav="/about"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <Fragment set:html={html} />
+</IpcxLayout>

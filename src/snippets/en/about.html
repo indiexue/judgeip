@@ -1,0 +1,54 @@
+<section class="hero">
+  <h1 class="hero__title">About JudgeIP</h1>
+</section>
+
+<article class="prose prose--page">
+  <p>
+    JudgeIP is an IP intelligence and network diagnostics toolkit. It answers one concrete question:
+    what does the IP you are using right now look like to platform risk engines — residential or hosting,
+    natively registered or re-announced, present on public blocklists, flagged as a proxy or VPN by any source.
+  </p>
+
+  <h2>Why this site exists</h2>
+  <p>
+    Anyone running cross-border business, working remotely, or simply trying to use an AI service
+    has hit the same wall: the network is fine, yet the platform says no. The reason is rarely
+    connectivity — it is the exit IP itself: its registration, reputation history and flags.
+    This information is public but scattered across databases, and there is no convenient way
+    to check it all at once. JudgeIP turns it into a single lookup, with the source and record
+    behind every conclusion attached.
+  </p>
+
+  <h2>How it works</h2>
+  <ul>
+    <li>Open and test instantly. No sign-up, no accounts, no names, emails or phone numbers collected.</li>
+    <li>Every lookup aggregates a dozen public data sources in real time: RIR registration records, BGP routing and RPKI state, four DNSBL blocklists, the IPsum threat feed, Shodan InternetDB and several IP intelligence services.</li>
+    <li>The scoring rules are fully public — every deduction can be verified on the <a href="/en/scoring">scoring rules</a> page, and the data sources plus caching behavior are documented on the <a href="/en/data">data sources</a> page.</li>
+    <li>The whole site runs on Cloudflare edge nodes. Lookups execute close to the visitor, and results are cached briefly per IP to reduce repeated upstream traffic.</li>
+  </ul>
+
+  <h2>The score is not a verdict</h2>
+  <p>
+    What this site provides is a reference score: it describes the objective traits of an IP in public
+    data, not the actual admission decision of any platform. Risk engines are private, change without
+    notice, and consider signals this site cannot see, such as account behavior and device fingerprints.
+    A high-scoring IP guarantees nothing; a low-scoring one is not proof of wrongdoing — it simply shows
+    what the address looks like in public records. Samples and rankings likewise reflect only this site's
+    own lookup history, not a portrait of the internet.
+  </p>
+
+  <h2>How this site makes money</h2>
+  <p>
+    It does not, currently. No ads, no paywall; every core feature is free and requires no sign-up.
+    If any form of monetization is introduced in the future (advertising, paid services or partnerships),
+    it will be stated here and in the terms of service — and lookup contents, history or visitor information
+    will never be sold to anyone. That constraint is spelled out in the <a href="/en/privacy">privacy policy</a>.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Found incorrect data, a broken feature, or have a suggestion? Reach us through the channels listed
+    on the <a href="/en/contact">contact page</a>. For data issues, including the specific IP and the field
+    you believe is wrong helps us verify it against the upstream records.
+  </p>
+</article>
