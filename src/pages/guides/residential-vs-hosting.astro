@@ -1,0 +1,40 @@
+---
+import IpcxLayout from "../../layouts/IpcxLayout.astro";
+import zhHtml from "../../snippets/guides/residential-vs-hosting.html?raw";
+import enHtml from "../../snippets/en/guides/residential-vs-hosting.html?raw";
+import { getLang, pick } from "../../lib/i18n";
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const html = pick(lang, zhHtml, enHtml);
+
+const title = pick(lang,
+  '住宅 IP 和机房 IP 到底差在哪：从技术原理到平台风控 · JudgeIP',
+  'Residential vs hosting IPs: what actually differs · JudgeIP');
+const description = pick(lang,
+  '为什么同一个动作换种网络结果完全不同：住宅 IP 与机房 IP 的技术本质、平台风控的判断逻辑、广播段的陷阱与分场景选择建议。',
+  'Why the same action succeeds on one network type and fails on another: the technical difference, how risk engines judge them, the re-announced range trap and scene-by-scene advice.');
+---
+
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath="/guides/residential-vs-hosting"
+  bodyClass="page-guide"
+  currentLabel={pick(lang, '住宅 vs 机房', 'Residential vs hosting')}
+  activeNav="/guides"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <Fragment set:html={html} />
+  <script type="application/ld+json" set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: pick(lang, '住宅 IP 和机房 IP 到底差在哪', 'Residential vs hosting IPs: what actually differs'),
+    description,
+    author: { '@type': 'Organization', name: 'JudgeIP', url: 'https://judgeip.com' },
+    publisher: { '@type': 'Organization', name: 'JudgeIP', url: 'https://judgeip.com' },
+    datePublished: '2026-11-28',
+    inLanguage: en ? 'en' : 'zh-CN',
+  })} />
+</IpcxLayout>

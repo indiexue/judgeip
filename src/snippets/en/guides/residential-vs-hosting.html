@@ -1,0 +1,136 @@
+<section class="hero">
+  <h1 class="hero__title">Residential vs hosting IPs: what actually differs</h1>
+  <p class="hero__lede">From routing fundamentals to platform risk engines — why the same action succeeds on one network type and fails on another</p>
+</section>
+
+<article class="prose prose--page">
+  <p class="prose__meta">November 2026 · 8 min read</p>
+
+  <p>
+    Nearly everyone starting cross-border work hits the same confusion: the server pings fine, pages load fast,
+    yet Amazon fails the second review, PayPal limits the account, and ChatGPT loops CAPTCHAs. Meanwhile your
+    home broadband is slow and expensive, but veteran operators insist you must run accounts on residential IPs.
+    The answer is not network quality — it is a more fundamental dimension: <strong>what type of network your IP
+    belongs to</strong>. This article explains it thoroughly.
+  </p>
+
+  <h2>1. An IP is never just a number</h2>
+  <p>
+    An IP address never exists in isolation. It belongs to a BGP-announced prefix, which belongs to an autonomous
+    system (AS), which has an operator — perhaps a residential carrier like Comcast or NTT, perhaps a cloud
+    provider like AWS. All of this is public: anyone can look up any IP's registration, announcement path and
+    history in seconds. <strong>Platform risk engines certainly can, and they do it more diligently than anyone.</strong>
+  </p>
+  <p>
+    So the difference between residential and hosting IPs is not marketing language — it is objective fact written
+    in public registration data:
+  </p>
+  <ul>
+    <li><strong>Residential IPs</strong>: assigned by telecom carriers (Comcast, China Telecom, NTT…) to household broadband
+        customers. They are scattered across neighborhoods, each behind a family paying a monthly bill.</li>
+    <li><strong>Hosting IPs</strong>: assigned by cloud and hosting providers (AWS, GCP, Vultr, Hetzner…) to servers in data
+        centers. They cluster densely in a few large facilities, behind rows of humming racks.</li>
+  </ul>
+
+  <h2>2. Why risk engines care</h2>
+  <p>
+    Risk assessment is ultimately the question "is there a real person behind this screen, and should we trust them?"
+    Network type is the cheapest, most reliable first signal, for three reasons:
+  </p>
+
+  <h3>a. Real people do not live in data centers</h3>
+  <p>
+    This is the root of everything. A normal user scrolling videos, shopping or chatting produces traffic from home,
+    the office, or a phone. If a login arrives from an AWS server in Oregon, there are only two possibilities: the
+    person uses a proxy or VPN (hiding their real location at minimum), or it is not a person at all — it is automation.
+    Either way, scrutiny is justified. Not because hosting IPs are "bad", but because they contradict the identity
+    the user claims.
+  </p>
+
+  <h3>b. The economics of abuse</h3>
+  <p>
+    Abuse has a cost structure too. Residential IPs are hard to obtain in bulk — you either compromise real homes or
+    buy them expensively from residential proxy networks — while a hosting IP costs pennies per hour. The result:
+    the overwhelming majority of automated abuse on the internet — mass registration, scraping, credential stuffing,
+    fake engagement — originates from hosting ranges. Risk engines do not need to know whether you specifically are
+    a good actor; they only need the base rate: a signup from a hosting range is orders of magnitude more likely to
+    be abuse than one from residential space. Whole ranges get discounted by default.
+  </p>
+
+  <h3>c. Asymmetric cost of false positives</h3>
+  <p>
+    Blocking a residential IP by mistake can hurt a real paying customer — complaints and churn cost real money.
+    Blocking a hosting IP by mistake hurts almost no legitimate user, because legitimate users should not be coming
+    from there in the first place. This asymmetry means platforms block hosting ranges aggressively, without hesitation,
+    and their blocklists update fast.
+  </p>
+
+  <h2>3. But "hosting equals bad" is a crude myth</h2>
+  <p>
+    If the story ended there, every server on earth should shut down. Reality is more nuanced:
+  </p>
+  <ul>
+    <li><strong>Hosting ranges vary enormously inside.</strong> Within the same cloud provider, a clean new range and one
+        polluted by abuse can score forty or fifty points apart. Providers with strict abuse handling (the main AWS
+        and GCP ranges) carry noticeably better reputation than cheap budget hosts.</li>
+    <li><strong>The scene defines what "good" means.</strong> Running scrapers, deploying services or CI/CD on hosting IPs is
+        exactly what they are for — no problem at all. The problem only appears in scenes where you need to look like
+        a person: logins, payments, registrations, posting.</li>
+    <li><strong>Residential IPs can be dirty too.</strong> Abuse targets residential ranges for botnets and proxy relays as well.
+        A polluted residential IP can be worse than a clean hosting one. Network type is only the baseline — the final
+        verdict comes from the individual IP's blocklist and abuse records.</li>
+  </ul>
+
+  <h2>4. Native vs re-announced: the real and the fake within "residential"</h2>
+  <p>
+    One more subtlety: even within residential ASNs, ranges come in native and re-announced (leased) flavors. Native
+    IPs are allocated by the carrier to users in the registered region; re-announced ones are broadcast from elsewhere,
+    or resold from another operator entirely. Their registration country and actual usage country do not match, and
+    the whois data often contradicts itself.
+  </p>
+  <p>
+    Why care? Because many proxies marketed as "US residential IPs" are actually re-announced ranges — registered on
+    some small island, broadcast into the US. Technically they do run inside an American carrier's AS, but commercial
+    risk databases (MaxMind, IPQS and friends) know the major leased blocks well. Running accounts on re-announced
+    IPs means paying residential prices for hosting-grade treatment. Detecting them is simple: check whether the IP's
+    RIR registration country matches its actual location, and whether the whois description matches the carrier's own
+    documentation — exactly what the native-IP check on this site does.
+  </p>
+
+  <h2>5. Scene-by-scene recommendations</h2>
+  <ul>
+    <li><strong>Cross-border commerce (Amazon, TikTok Shop, Shopee)</strong>: commit to one native residential IP long-term.
+        Stability and type matter far more than speed — store-linkage detection watches exactly those.</li>
+    <li><strong>Cross-border payments (PayPal, Stripe, card verification)</strong>: same story. Payment platforms are extremely
+        sensitive to IP drift — a US residential login today and a German hosting one tomorrow guarantees a challenge.</li>
+    <li><strong>AI services (ChatGPT, Claude, Gemini)</strong>: more lenient than commerce. Clean hosting IPs often work, but
+        over-shared budget VPN ranges trigger repeated challenges. Residential passes almost everywhere.</li>
+    <li><strong>Streaming (Netflix, Disney+)</strong>: the most aggressive hosting-range blocking of any industry. Only residential
+        IPs and a few native re-announced ranges unlock reliably.</li>
+    <li><strong>Scraping, automation, dev testing</strong>: use hosting IPs — cheap, abundant, and do not burn residential proxy money.</li>
+    <li><strong>Gaming</strong>: network type barely matters; latency and packet loss do. Hosting IPs are perfectly fine.</li>
+  </ul>
+
+  <h2>6. Verify yourself — do not trust the sales pitch</h2>
+  <p>
+    The residential proxy market is one of the murkiest corners of this industry, and "native residential IP" claims
+    routinely diverge from what is delivered. Verification is entirely public — you do not need to trust anyone:
+  </p>
+  <ol>
+    <li>Check what type of network the IP's ASN is (residential carrier or cloud provider);</li>
+    <li>Check whether its registration country matches its actual location (native or re-announced);</li>
+    <li>Check its records across public blocklists and threat intelligence;</li>
+    <li>Check whether its PTR record and open ports match household broadband characteristics.</li>
+  </ol>
+  <p>
+    All four steps are one lookup away on this site, with the original data source attached behind every result —
+    you can follow the links and verify upstream yourself. Rather than trusting any review, including this one,
+    running the check once yourself is always more reliable.
+  </p>
+
+  <p class="asn-fidelity">
+    Further reading: the <a href="/en/scoring">scoring rules</a> explain every factor and its weight;
+    the <a href="/en/native-ip">native IP check</a> and <a href="/en/residential-ip">residential IP check</a> can measure
+    your current exit right now.
+  </p>
+</article>

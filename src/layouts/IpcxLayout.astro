@@ -60,7 +60,7 @@ const switchHref = (en ? basePath : localePath(basePath, 'en')) + search;
 
 const isLeakActive = ['/webrtc', '/dnsleak', '/fingerprint', '/headers'].includes(activeNav);
 const isNetActive = ['/connectivity', '/egress', '/cloudflare', '/cdn', '/split', '/ping'].includes(activeNav);
-const isToolsActive = ['/tools', '/platforms', '/compare', '/native-ip', '/residential-ip', '/tiktok-ip', '/whois', '/dns-tools', '/ip-calc', '/card', '/status', '/scoring', '/data', '/api-docs'].includes(activeNav);
+const isToolsActive = ['/tools', '/platforms', '/compare', '/native-ip', '/residential-ip', '/tiktok-ip', '/whois', '/dns-tools', '/ip-calc', '/card', '/status', '/scoring', '/data', '/api-docs', '/guides', '/asn'].includes(activeNav);
 
 const topNav = [
   { path: '/', label: t('首页', 'Home') },
@@ -171,6 +171,7 @@ const footCols = [
       { path: '/api-docs', label: t('API 与 MCP', 'API & MCP') },
       { path: '/headers', label: t('HTTP 请求头', 'HTTP Headers') },
       { path: '/status', label: t('服务状态', 'Service Status') },
+      { path: '/guides', label: t('深度指南', 'Guides') },
       { path: '/about', label: t('关于本站', 'About') },
       { path: '/contact', label: t('联系我们', 'Contact') },
     ],

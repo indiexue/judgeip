@@ -1,0 +1,205 @@
+---
+import IpcxLayout from '../../layouts/IpcxLayout.astro';
+import { getAsnPageData } from '../../lib/asn-profile';
+import { asnCopy } from '../../lib/asn-copy';
+import { getLang, localePath, type Lang } from '../../lib/i18n';
+import { KNOWN_ASN_PROFILES, type UsageType } from '../../lib/asn-intelligence';
+
+const lang: Lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const raw = Astro.params.asn || '';
+const asnNum = Number(raw.replace(/^as/i, ''));
+if (!Number.isInteger(asnNum) || asnNum < 1 || asnNum > 4294967295 || String(asnNum) !== raw.replace(/^as/i, '')) {
+  return Astro.redirect(href('/tools'));
+}
+
+const data = await getAsnPageData(asnNum);
+if (!data) {
+  return new Response(null, { status: 404, statusText: 'Unknown ASN' });
+}
+
+const copy = asnCopy(data.type);
+
+const TYPE_LABEL: Record<UsageType, [string, string]> = {
+  hosting: ['机房 / 数据中心', 'Hosting / Data center'],
+  residential: ['住宅宽带', 'Residential broadband'],
+  mobile: ['移动蜂窝网络', 'Mobile cellular'],
+  cdn: ['CDN / 边缘网络', 'CDN / Edge network'],
+  business: ['企业 / 骨干网', 'Business / Backbone'],
+  education: ['教育 / 科研网', 'Education / Research'],
+  reserved: ['保留地址', 'Reserved'],
+};
+const typeLabel = t(...TYPE_LABEL[data.type]);
+
+const title = t(
+  `AS${data.asn} ${data.displayName} — 网络类型、IP 风险画像与场景适配 · JudgeIP`,
+  `AS${data.asn} ${data.displayName} — network type, IP risk profile & scene fit · JudgeIP`,
+);
+const description = t(
+  `AS${data.asn}（${data.displayName}）是${typeLabel}网络。查看它的注册信息、BGP 宣告、本站实测评分分布，以及它的 IP 在跨境电商、支付、AI 服务等场景下的适用性分析。`,
+  `AS${data.asn} (${data.displayName}) is a ${typeLabel} network. Registration, BGP announcements, live score distribution from this site, and how its IPs fit commerce, payment, AI and streaming scenarios.`,
+);
+
+// 同类型相邻 ASN 推荐（优先 curated 档案库内同类型）
+const siblings = Object.values(KNOWN_ASN_PROFILES)
+  .filter((p) => p.type === data.type && p.asn !== data.asn)
+  .slice(0, 6);
+
+const fmtNum = (n: number) => n.toLocaleString('en-US');
+---
+
+<IpcxLayout
+  title={title}
+  description={description}
+  canonicalPath={`/asn/${data.asn}`}
+  bodyClass="page-asn"
+  currentLabel={`AS${data.asn}`}
+  activeNav="/asn"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <section class="hero">
+    <h1 class="hero__title">AS{data.asn} <span class="hero__title-dim">{data.displayName}</span></h1>
+    <p class="hero__lede">
+      {typeLabel}
+      {data.registeredCountry && <> · {t('注册于', 'Registered in')} {data.registeredCountry}</>}
+      {data.registeredAt && <> · {t('分配于', 'Allocated')} {data.registeredAt}</>}
+    </p>
+  </section>
+
+  <article class="prose prose--page asn-page">
+
+    <!-- ============ 实时数据区：差异化核心 ============ -->
+    <section class="asn-live">
+      <h2>{t('实时画像', 'Live profile')}</h2>
+      <div class="asn-cards">
+        {data.stats && data.stats.sampleCount >= 3 ? (
+          <div class="asn-card">
+            <span class="asn-card__label">{t('本站实测评分分布', 'Scores measured here')}</span>
+            <span class="asn-card__val mono">
+              {data.stats.avgScore}
+              <span class="asn-card__sub"> / 100 · {t('均值', 'avg')}</span>
+            </span>
+            <span class="asn-card__note">
+              {t(`近 30 天 ${fmtNum(data.stats.sampleCount)} 个样本 · 区间 ${data.stats.minScore}–${data.stats.maxScore}`, `${fmtNum(data.stats.sampleCount)} samples in 30 days · range ${data.stats.minScore}–${data.stats.maxScore}`)}
+            </span>
+          </div>
+        ) : (
+          <div class="asn-card">
+            <span class="asn-card__label">{t('本站实测评分分布', 'Scores measured here')}</span>
+            <span class="asn-card__val">—</span>
+            <span class="asn-card__note">{t('样本不足，随查询积累自动出现', 'Not enough samples yet; appears as lookups accumulate')}</span>
+          </div>
+        )}
+        <div class="asn-card">
+          <span class="asn-card__label">{t('BGP 宣告前缀', 'Announced prefixes')}</span>
+          <span class="asn-card__val mono">
+            {data.bgp?.v4Prefixes !== null && data.bgp?.v4Prefixes !== undefined ? fmtNum(data.bgp.v4Prefixes) : '—'}
+            <span class="asn-card__sub"> IPv4{data.bgp?.v6Prefixes ? ` · ${fmtNum(data.bgp.v6Prefixes)} IPv6` : ''}</span>
+          </span>
+          <span class="asn-card__note">{t('RIPEstat 实时数据', 'Live from RIPEstat')}</span>
+        </div>
+        {data.peeringdb && (
+          <div class="asn-card">
+            <span class="asn-card__label">{t('PeeringDB 画像', 'PeeringDB profile')}</span>
+            <span class="asn-card__val">{data.peeringdb.infoType || '—'}</span>
+            <span class="asn-card__note">
+              {[
+                data.peeringdb.trafficVolume && `${t('流量规模', 'Traffic')} ${data.peeringdb.trafficVolume}`,
+                data.peeringdb.trafficRatio && `${t('进出比', 'Ratio')} ${data.peeringdb.trafficRatio}`,
+              ].filter(Boolean).join(' · ') || t('已登记', 'Listed')}
+            </span>
+          </div>
+        )}
+      </div>
+      <p class="asn-cta">
+        <a class="asn-cta__btn" href={href('/')}>{t('立即检测这个网段的 IP', 'Check an IP from this network')}</a>
+        <span class="asn-cta__hint">{t('输入该 ASN 下的任意地址即可实测', 'Enter any address within this ASN to measure it live')}</span>
+      </p>
+    </section>
+
+    <!-- ============ 事实档案区 ============ -->
+    <section class="asn-facts">
+      <h2>{t('注册与路由档案', 'Registration & routing')}</h2>
+      <dl class="asn-factlist">
+        <div class="asn-fact"><dt>{t('ASN', 'ASN')}</dt><dd class="mono">AS{data.asn}</dd></div>
+        <div class="asn-fact"><dt>{t('登记名称', 'Registered name')}</dt><dd>{data.displayName}</dd></div>
+        {data.registeredCountry && <div class="asn-fact"><dt>{t('注册国家/地区', 'Registered country')}</dt><dd>{data.registeredCountry}</dd></div>}
+        {data.rir && <div class="asn-fact"><dt>{t('注册局', 'RIR')}</dt><dd>{data.rir}</dd></div>}
+        {data.registeredAt && <div class="asn-fact"><dt>{t('分配日期', 'Allocation date')}</dt><dd class="mono">{data.registeredAt}</dd></div>}
+        {data.peeringdb?.website && (
+          <div class="asn-fact"><dt>{t('官网', 'Website')}</dt><dd><a href={data.peeringdb.website} rel="noopener nofollow external" class="mono">{data.peeringdb.website.replace(/^https?:\/\//, '')}</a></dd></div>
+        )}
+        {data.profile?.note && <div class="asn-fact"><dt>{t('网络备注', 'Network note')}</dt><dd>{data.profile.note}</dd></div>}
+      </dl>
+    </section>
+
+    <!-- ============ 解读区：内容价值核心 ============ -->
+    <section class="asn-analysis">
+      <h2>{t('这个网络是干什么的', 'What this network is')}</h2>
+      <p>{copy.whatIsIt(lang)}</p>
+
+      <h2>{t('平台风控如何看待它的 IP', 'How risk engines view its IPs')}</h2>
+      <p>{copy.riskView(lang)}</p>
+
+      {copy.scenes.length > 0 && (
+        <>
+          <h2>{t('分场景适用性', 'Scene-by-scene fit')}</h2>
+          <ul class="asn-scenes">
+            {copy.scenes.map((s) => (
+              <li class={`asn-scene asn-scene--${s.level}`}>
+                <strong>{t(s.zh, s.en)}</strong>
+                <span>{t(s.verdictZh, s.verdictEn)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {copy.caveat(lang) && (
+        <>
+          <h2>{t('一个必要的提醒', 'A necessary caveat')}</h2>
+          <p>{copy.caveat(lang)}</p>
+        </>
+      )}
+
+      <p class="asn-fidelity">
+        {t(
+          '以上场景结论是基于网络类型的一般性规律。同一个 ASN 下不同 IP 段的评分可能相差很大——评估具体某个 IP 时，请以本站对该 IP 的实测结果为准。',
+          'These scene conclusions are general patterns by network type. Individual ranges inside one ASN can score very differently — always defer to the per-IP measurement on this site for the address you actually use.',
+        )}
+      </p>
+    </section>
+
+    <!-- ============ 导航区 ============ -->
+    {siblings.length > 0 && (
+      <section class="asn-nav">
+        <h2>{t('同类型网络', 'Similar networks')}</h2>
+        <ul class="asn-siblings">
+          {siblings.map((p) => (
+            <li><a href={href(`/asn/${p.asn}`)} class="asn-sibling">
+              <span class="mono">AS{p.asn}</span> {p.name}
+            </a></li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: title,
+    description,
+    about: {
+      '@type': 'Thing',
+      name: `AS${data.asn}`,
+      alternateName: data.displayName,
+    },
+    author: { '@type': 'Organization', name: 'JudgeIP', url: 'https://judgeip.com' },
+    inLanguage: en ? 'en' : 'zh-CN',
+  })} />
+</IpcxLayout>

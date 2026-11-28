@@ -35,6 +35,12 @@ const CORE_ROUTES = [
   '/terms',
   '/about',
   '/contact',
+  '/guides',
+  '/guides/residential-vs-hosting',
+  // ASN 标杆页：验证收录效果后再决定铺开范围，暂只收录内容最厚的三个
+  '/asn/15169',
+  '/asn/4134',
+  '/asn/9009',
 ];
 
 export const GET: APIRoute = async () => {

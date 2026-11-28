@@ -1,0 +1,63 @@
+---
+import IpcxLayout from "../layouts/IpcxLayout.astro";
+import { getLang, localePath, pick } from "../lib/i18n";
+
+const lang = getLang(Astro.locals);
+const en = lang === 'en';
+const t = (zh: string, enText: string) => (en ? enText : zh);
+const href = (path: string) => localePath(path, lang);
+
+const GUIDES = [
+  {
+    path: '/guides/residential-vs-hosting',
+    titleZh: '住宅 IP 和机房 IP 到底差在哪',
+    titleEn: 'Residential vs hosting IPs: what actually differs',
+    descZh: '从技术原理到平台风控：为什么同一个动作，换个网络类型结果就完全不同。约 8 分钟。',
+    descEn: 'From routing fundamentals to platform risk engines — why the same action succeeds on one network type and fails on another. 8 min read.',
+    date: '2026-11-28',
+  },
+];
+---
+
+<IpcxLayout
+  title={pick(lang, '深度指南 — IP 网络类型、风控逻辑与场景选择 · JudgeIP', 'Guides — IP network types, risk logic and scene fit · JudgeIP')}
+  description={pick(lang, '关于 IP 类型、平台风控与跨境业务网络环境的深度文章。', 'In-depth articles on IP types, platform risk engines and network environments for cross-border work.')}
+  canonicalPath="/guides"
+  bodyClass="page-guides"
+  currentLabel={pick(lang, '深度指南', 'Guides')}
+  activeNav="/guides"
+  extraCss={[]}
+  extraJs={[]}
+>
+  <section class="hero">
+    <h1 class="hero__title">{t('深度指南', 'Guides')}</h1>
+    <p class="hero__lede">{t('不讲玄学，只讲可以亲自验证的事实。', 'No folklore — only facts you can verify yourself.')}</p>
+  </section>
+
+  <article class="prose prose--page">
+    <ul class="guide-list">
+      {GUIDES.map((g) => (
+        <li class="guide-list__item">
+          <a class="guide-list__link" href={href(g.path)}>
+            <strong>{t(g.titleZh, g.titleEn)}</strong>
+            <span class="guide-list__desc">{t(g.descZh, g.descEn)}</span>
+            <span class="guide-list__date mono">{g.date}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </article>
+
+  <style>{`
+    .guide-list { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 12px; }
+    .guide-list__link {
+      display: grid; gap: 6px; padding: 16px 18px;
+      border: 1px solid var(--border); border-radius: 8px;
+      text-decoration: none; color: var(--text);
+    }
+    .guide-list__link:hover { border-color: var(--accent, #047857); }
+    .guide-list__link strong { font-size: 16px; }
+    .guide-list__desc { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+    .guide-list__date { font-size: 11px; color: var(--text-mute); }
+  `}</style>
+</IpcxLayout>

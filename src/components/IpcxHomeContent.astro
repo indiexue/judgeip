@@ -369,9 +369,12 @@ const activeDeductions = info.factors.filter((f) => f.delta < 0 && f.key !== 'cl
         <span class="hero-meta__val">
           <span data-field="asn">
             {info.asn ? (
-              <a class="asn-link mono" href={lp(`/whois?q=${info.asnCode}`)} title={lang === 'en' ? `View registration data for ${info.asnCode}` : `查看 ${info.asnCode} 注册信息`}>
-                {info.asnCode}
-              </a>
+              <>
+                <a class="asn-link mono" href={lp(`/asn/${info.asn}`)} title={lang === 'en' ? `Network profile of ${info.asnCode}` : `查看 ${info.asnCode} 网络画像`}>
+                  {info.asnCode}
+                </a>
+                <a class="asn-whois dim" href={lp(`/whois?q=${info.asnCode}`)} title={lang === 'en' ? `Raw registration data for ${info.asnCode}` : `${info.asnCode} 原始注册信息`}>whois</a>
+              </>
             ) : (
               <span class="mono">—</span>
             )}

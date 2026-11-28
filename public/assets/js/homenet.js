@@ -344,7 +344,8 @@
         if (info.asn) {
           setFieldHtml(
             'asn',
-            '<a class="asn-link mono" href="' + lp('/whois') + '?q=' + esc(info.asnCode) + T('" title="查看 ', '" title="View registration data for ') + esc(info.asnCode) + T(' 注册信息">', '">') + esc(info.asnCode) + '</a>'
+            '<a class="asn-link mono" href="' + lp('/asn/' + info.asn) + T('" title="查看 ', '" title="Network profile of ') + esc(info.asnCode) + T(' 网络画像">', '">') + esc(info.asnCode) + '</a>' +
+            '<a class="asn-whois dim" href="' + lp('/whois') + '?q=' + esc(info.asnCode) + T('" title="', '" title="Raw registration data for ') + esc(info.asnCode) + T(' 原始注册信息">whois</a>', '">whois</a>')
           );
         } else {
           setFieldText('asn', '—');
