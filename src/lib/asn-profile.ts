@@ -158,9 +158,9 @@ async function fetchLiveStats(asn: number): Promise<AsnLiveStats | null> {
 async function buildAsnData(asn: number): Promise<AsnPageData | null> {
   const profile = KNOWN_ASN_PROFILES[asn] || null;
 
-  const rdapPromise = fetchJson<RdapAutnum>(`https://rdap.db.ripe.net/autnum/${asn}`, 3000);
+  const rdapPromise = fetchJson<RdapAutnum>(`https://rdap.db.ripe.net/autnum/${asn}`, 8000);
   const pdbPromise = fetchJson<PeeringDbNet>(`https://www.peeringdb.com/api/net?asn=${asn}&depth=0`, 2500);
-  const ripePromise = fetchJson<RipestatPrefixCount>(`https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS${asn}`, 3000);
+  const ripePromise = fetchJson<RipestatPrefixCount>(`https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS${asn}`, 12000);
   const statsPromise = fetchLiveStats(asn);
 
   const [rdap, pdb, ripe, stats] = await Promise.all([rdapPromise, pdbPromise, ripePromise, statsPromise]);
